@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Безпека Бою - GIS v26</title>
+
+    <!-- ЛОКАЛЬНА ІКОНКА (АВАТАР) -->
+    <link rel="icon" href="avatar.png" type="image/png">
+
+    <!-- Fonts, Leaflet & Tailwind -->
+    <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.13.0/dist/leaflet-geoman.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.13.0/dist/leaflet-geoman.min.js"></script>
+
+    <!-- Custom Extracted Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-slate-950 text-slate-200 p-2 overflow-hidden text-[13px]">
+
+    <div class="flex h-screen gap-2">
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="w-96 glass-panel rounded-xl flex flex-col shadow-2xl z-[1000] relative">
+            <img src="sidebar_logo.png" class="sidebar-logo-img" alt="Sidebar Background Logo">
+
+            <div class="p-4 border-b border-white/10 relative z-10">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em]">МІСІЯ</h3>
+                    <div class="flex gap-1.5">
+                        <button onclick="deleteCurrentMission()" id="delete-mission-btn"
+                            class="bg-red-950 hover:bg-red-800 border border-red-700/50 text-red-200 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors btn-disabled">Видалити</button>
+                        <button onclick="openNewMissionModal()"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors">Створити</button>
+                    </div>
+                </div>
+                <select id="mission-combo-box" class="custom-select" onchange="handleMissionChange(this.value)">
+                    <option value="">-- Оберіть місію із списку --</option>
+                </select>
+            </div>
+
+            <div class="p-4 bg-white/5 border-b border-white/10 relative z-10">
+                <h3 class="text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em]">ЗВІТ ЗАХОДІВ</h3>
+            </div>
+
+            <div id="sidebar-content" class="p-4 overflow-y-auto flex-1 space-y-1 relative z-10">
+                <p class="text-slate-500 italic text-center py-20 text-[9px]">Оберіть місію та об'єкт</p>
+            </div>
+
+            <div class="p-4 bg-black/20 border-t border-white/5 relative z-10 flex flex-col gap-2">
+                <p id="draw-hint" class="hidden text-[9px] text-yellow-500 text-center animate-pulse"> Double-Click для
+                    фіксації</p>
+                <button onclick="openSettingsModal()" id="settings-btn" title="Налаштування бази даних"
+                    class="w-full py-2 bg-slate-900/80 hover:bg-emerald-900/40 border border-white/10 hover:border-emerald-500/50 text-slate-300 hover:text-white rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md select-none cursor-pointer text-xs uppercase font-bold tracking-wider">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span>База даних</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- МАПА -->
+        <main class="flex-1 flex flex-col gap-2">
+            <header class="flex justify-between items-center glass-panel p-3 rounded-xl shadow-lg">
+                <div class="flex gap-4 items-center">
+                    <img src="header_logo.png" class="h-[45px] w-auto filter invert grayscale brightness-[1.5]"
+                        alt="Header Logo">
+                    <div>
+                        <h1 class="brand-title text-emerald-500 text-[18px] mb-0.5">412 ОБрБпС "Nemesis"</h1>
+                        <h2 class="brand-title">Безпека Бою</h2>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div id="header-status"
+                        class="text-[9px] text-slate-400 font-mono text-right uppercase leading-tight bg-black/30 p-2 rounded border border-white/10">
+                        Очікування...<br>RECO_ENGINE: READY
+                    </div>
+                </div>
+            </header>
+            <div class="relative border-2 border-white/10 rounded-xl overflow-hidden flex-1 shadow-inner">
+                <div id="map"></div>
+                <div class="absolute right-3 top-44 z-[1000] flex flex-col gap-2 p-1.5 glass-panel rounded-xl border border-white/10 shadow-2xl">
+                    <button onclick="validateDrawing('route')" id="draw-btn-route" title="Додати маршрут"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer text-lg">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="3 3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 20 L10 12 L14 16 L20 4" />
+                        </svg>
+                    </button>
+                    <button onclick="validateDrawing('area')" id="draw-btn-area" title="Додати район позиції"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer text-lg">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 4 20 8 20 16 12 20 4 16 4 8" />
+                        </svg>
+                    </button>
+                    <button onclick="startThreatPlacement()" id="draw-btn-threat" title="Додати загрозу"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer text-lg">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" stroke-width="2.5" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" />
+                        </svg>
+                    </button>
+                    <button onclick="startBoxSelect()" id="box-select-btn" title="Виділити область"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer text-lg">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="12" height="12" stroke-dasharray="3 3" />
+                            <path d="M10 10l10 3-3.5 1.5 3.5 5-2 1.5-3.5-5-1.5 3.5z" fill="currentColor" />
+                        </svg>
+                    </button>
+                    <button onclick="startRulerMeasurement()" id="ruler-btn" title="Виміряти відстань"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer text-lg">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="10" rx="1" />
+                            <line x1="6" y1="7" x2="6" y2="11" />
+                            <line x1="10" y1="7" x2="10" y2="13" />
+                            <line x1="14" y1="7" x2="14" y2="11" />
+                            <line x1="18" y1="7" x2="18" y2="11" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: НОВА МІСІЯ -->
+    <div id="modal-new-mission" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[3000]">
+        <div class="glass-panel border-white/20 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-emerald-400 font-black uppercase text-xs mb-4 border-b border-white/10 pb-2 tracking-widest">
+                Нова операція</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва
+                        місії</label>
+                    <input type="text" id="mission-name-input"
+                        class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Тип
+                        місії</label>
+                    <select id="mission-type-select" class="custom-select">
+                        <option value="Маневр">Маневр</option>
+                        <option value="Рекогностування">Рекогностування</option>
+                        <option value="Позиція">Позиція</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button onclick="closeModals()"
+                        class="flex-1 py-2 text-[10px] uppercase font-bold border border-white/10 hover:bg-white/5 transition-colors">Скасувати</button>
+                    <button onclick="createMission()"
+                        class="flex-1 py-2 text-[10px] uppercase font-bold bg-emerald-600 text-white rounded shadow-lg active:scale-95 transition-transform">Створити</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКИ ЗАГРОЗ -->
+    <div id="modal-threat" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[2000]">
+        <div class="glass-panel border-white/20 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl">
+            <div class="flex border-b border-white/10">
+                <button onclick="toggleThreatTab('primary')" id="tab-primary"
+                    class="flex-1 p-4 text-[11px] font-bold bg-white/5 text-white uppercase border-b-2 border-emerald-500 transition-none">Основні</button>
+                <button onclick="toggleThreatTab('secondary')" id="tab-secondary"
+                    class="flex-1 p-4 text-[11px] font-bold text-slate-500 uppercase border-b-2 border-transparent transition-none">Вторинні</button>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto grid grid-cols-1 gap-1" id="threat-list"></div>
+            <div class="p-4 bg-black/40 flex justify-center border-t border-white/10">
+                <button onclick="closeModals()"
+                    class="text-slate-500 uppercase text-[10px] font-bold py-2 border border-white/10 px-16 rounded hover:text-white transition-colors">ЗАКРИТИ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВИБІР ЗАХОДІВ -->
+    <div id="modal-controls" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[2000] p-4">
+        <div class="glass-panel border-emerald-500 w-full max-w-[95vw] rounded-2xl flex flex-col max-h-[90vh] shadow-2xl">
+            <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex justify-between items-center">
+                <h3 id="controls-title" class="text-emerald-400 font-black uppercase text-xs">Вибір заходів</h3>
+                <button onclick="closeModals()"
+                    class="text-white text-3xl font-light hover:text-red-500 transition-colors">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto" id="controls-selection-area"></div>
+        </div>
+    </div>
+
+    <!-- ПРИВ'ЯЗАТИ ВТОРИННУ -->
+    <div id="modal-linked" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[2000]">
+        <div class="glass-panel border-orange-500 w-full max-w-md rounded-xl p-6 shadow-2xl">
+            <h3
+                class="text-orange-400 font-bold uppercase text-[10px] mb-4 border-b border-orange-900/30 pb-2 tracking-widest">
+                ПРИВ'ЯЗАТИ ВТОРИННУ</h3>
+            <div class="space-y-1" id="linked-list"></div>
+            <button onclick="closeModals()"
+                class="w-full mt-4 text-slate-500 uppercase text-[9px] font-bold hover:text-white transition-colors">СКАСУВАТИ</button>
+        </div>
+    </div>
+
+    <!-- MODAL: SETTINGS -->
+    <div id="modal-settings" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[3000] p-4">
+        <div class="glass-panel border-emerald-500 w-full max-w-5xl rounded-2xl flex flex-col h-[85vh] shadow-2xl overflow-hidden">
+            <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-emerald-400 font-black uppercase text-sm tracking-wider">Налаштування бази даних</h3>
+                    <button onclick="resetDbToDefault()" class="bg-red-950/60 hover:bg-red-900 border border-red-700/30 text-red-200 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-wider transition-colors">Скинути до початкових</button>
+                </div>
+                <button onclick="closeModals()" class="text-white text-3xl font-light hover:text-red-500 transition-colors">&times;</button>
+            </div>
+            
+            <!-- Tab headers -->
+            <div class="flex border-b border-white/10 bg-slate-900/60">
+                <button onclick="switchSettingsTab('threats')" id="settings-tab-threats" class="px-6 py-3 text-xs font-bold text-emerald-400 border-b-2 border-emerald-500 uppercase">Загрози</button>
+                <button onclick="switchSettingsTab('measures')" id="settings-tab-measures" class="px-6 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent uppercase">Заходи контролю</button>
+                <button onclick="switchSettingsTab('tools')" id="settings-tab-tools" class="px-6 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent uppercase">Інструменти ідентифікації</button>
+                <button onclick="switchSettingsTab('connections')" id="settings-tab-connections" class="px-6 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent uppercase">Матриця зв'язків</button>
+            </div>
+
+            <!-- Tab contents -->
+            <div class="flex-1 overflow-y-auto p-6" id="settings-tab-content">
+                <!-- Dynamic content loaded via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- КОНТЕКСТНЕ МЕНЮ МАПИ -->
+    <div id="map-context-menu"
+        class="hidden absolute glass-panel rounded-lg shadow-2xl z-[4000] py-1.5 w-48 border border-white/10">
+        <button onclick="handleContextMenuAction('route')"
+            class="w-full text-left px-3 py-2 hover:bg-emerald-900/40 text-slate-300 hover:text-white transition-colors flex items-center gap-2">
+            <span>➕</span> <span>Створити маршрут</span>
+        </button>
+        <button onclick="handleContextMenuAction('area')"
+            class="w-full text-left px-3 py-2 hover:bg-emerald-900/40 text-slate-300 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5">
+            <span>➕</span> <span>Створити район позиції</span>
+        </button>
+        <button onclick="handleContextMenuAction('threat')"
+            class="w-full text-left px-3 py-2 hover:bg-emerald-900/40 text-slate-300 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5">
+            <span>⚠️</span> <span>Додати загрозу</span>
+        </button>
+        <button id="menu-delete-shape-btn" onclick="handleContextMenuAction('delete_shape')"
+            class="hidden w-full text-left px-3 py-2 hover:bg-red-900/40 text-red-300 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5">
+            <span>🗑️</span> <span id="menu-delete-shape-text">Видалити об'єкт</span>
+        </button>
+    </div>
+
+    <!-- ПІДКЛЮЧЕННЯ БАЗИ ДАНИХ -->
+    <script src="measures.js?v=1.0.2"></script>
+    <script src="res/logistika.js"></script>
+
+    <!-- Custom Extracted App Scripts -->
+    <script src="app.js?v=1.0.2"></script>
+</body>
+
+</html>

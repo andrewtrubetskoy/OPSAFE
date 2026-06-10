@@ -1,0 +1,390 @@
+/* Global Reset & Typography */
+* {
+    font-family: 'Play', sans-serif !important;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #020617;
+    background-image: radial-gradient(#1e293b 1px, transparent 1px);
+    background-size: 40px 40px;
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    background: #020617 !important;
+    width: 100%;
+    height: 100%;
+}
+
+/* Glassmorphism & Panel Styling */
+.glass-panel {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-logo-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+    filter: grayscale(1) brightness(1.8);
+}
+
+.brand-title {
+    font-size: 22px;
+    font-weight: 700;
+    font-style: normal;
+    color: white;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Tactical Map Markers */
+.threat-marker-wrapper {
+    position: relative;
+    width: 0;
+    height: 0;
+}
+
+.diamond {
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    position: absolute;
+    left: 0;
+    top: 0;
+    border: 2px solid white;
+    z-index: 10;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.diamond:hover {
+    transform: translate(-50%, -50%) rotate(45deg) scale(1.15);
+    filter: brightness(1.2);
+}
+
+.marker-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+}
+
+.sev-катастрофічно {
+    background: #7f1d1d;
+    border-color: #fca5a5;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.sev-критично {
+    background: #b91c1c;
+    border-color: #fecaca;
+    box-shadow: 0 0 12px rgba(22, 38, 38, 0.4);
+}
+
+.sev-помірно {
+    background: #b45309;
+    border-color: #fde68a;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.sec-diamond {
+    background: #f97316;
+    border-color: #fed7aa;
+    width: 18px;
+    height: 18px;
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+}
+
+.secured {
+    background: #16a34a !important;
+    box-shadow: 0 0 12px rgba(22, 163, 74, 0.6) !important;
+}
+
+.threat-icon-img {
+    display: inline-block;
+    vertical-align: middle;
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+    filter: invert(1);
+}
+
+.marker-icon .threat-icon-img {
+    width: 16px;
+    height: 16px;
+    margin-right: 0;
+    display: block;
+}
+
+/* UI Tactical Buttons on Markers */
+.btn-ui {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    font-size: 12px;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    transition: transform 0.15s ease, filter 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-ui:hover {
+    transform: scale(1.25);
+    filter: brightness(1.2);
+}
+
+.btn-s-sec {
+    background: #6d28d9;
+    transform: rotate(45deg);
+    width: 16px;
+    height: 16px;
+}
+
+.btn-s-sec span {
+    transform: rotate(-45deg);
+    display: inline-block;
+}
+
+.btn-s-sec:hover {
+    transform: rotate(45deg) scale(1.25);
+}
+
+.btn-ctrl {
+    background: #059669;
+    border-color: #6ee7b7;
+}
+
+.btn-info {
+    background: #0ea5e9;
+    border-color: #7dd3fc;
+}
+
+.btn-close {
+    background: #7f1d1d;
+    border-color: #fca5a5;
+    width: 14px;
+    height: 14px;
+    font-size: 10px;
+    z-index: 110;
+    opacity: 0.6;
+    transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-close:hover {
+    opacity: 1;
+    background: #dc2626;
+}
+
+.label-threat {
+    position: absolute;
+    left: 22px;
+    top: -14px;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 10px;
+    text-shadow: 1px 1px 2px black;
+    pointer-events: none;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Sidebar Item List Styling */
+.sidebar-item {
+    border-left: 3px solid #10b981;
+    background: rgba(30, 41, 59, 0.8);
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    font-size: 11px;
+    line-height: 1.35;
+    border-radius: 0 6px 6px 0;
+    transition: transform 0.15s ease, background-color 0.15s ease, border-left-color 0.15s ease;
+}
+
+.sidebar-item:hover {
+    transform: translateX(3px);
+    background: rgba(30, 41, 59, 1);
+    border-left-color: #34d399;
+}
+
+/* Custom Input / Combo-box select */
+.custom-select {
+    background: #1e293b;
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 6px;
+    width: 100%;
+    outline: none;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.custom-select:focus,
+.custom-select:hover {
+    border-color: rgba(16, 185, 129, 0.5);
+    background-color: #0f172a;
+}
+
+.btn-disabled {
+    opacity: 0.2;
+    cursor: not-allowed !important;
+    filter: grayscale(1);
+    transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+/* Premium Animations for Modals */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.fixed:not(.hidden) > div {
+    animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fixed {
+    transition: opacity 0.25s ease;
+}
+
+/* Geoman Vertex Handle Styling - Smaller & Interactive */
+.leaflet-marker-icon.leaflet-pm-draggable {
+    width: 5px !important;
+    height: 5px !important;
+    margin-left: -2.5px !important;
+    margin-top: -2.5px !important;
+    background-color: #3b82f6 !important;
+    border: 1px solid #ffffff !important;
+    border-radius: 50% !important;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5) !important;
+    transition: transform 0.1s ease !important;
+}
+
+.leaflet-marker-icon.leaflet-pm-draggable:hover {
+    transform: scale(1.6) !important;
+}
+
+/* Make ghost (intermediate) vertex markers even smaller and less prominent */
+.leaflet-marker-icon.leaflet-pm-draggable.leaflet-pm-ghost-marker {
+    width: 4px !important;
+    height: 4px !important;
+    margin-left: -2px !important;
+    margin-top: -2px !important;
+    background-color: #cbd5e1 !important;
+    opacity: 0.6 !important;
+}
+
+/* Custom Route Length Tooltip */
+.route-length-tooltip {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1px solid rgba(34, 197, 94, 0.3) !important;
+    color: #4ade80 !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    font-family: 'Play', sans-serif !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+    pointer-events: auto !important;
+}
+.route-length-tooltip::before {
+    display: none !important;
+}
+
+/* DeepState Frontline Tooltip */
+.frontline-feature-tooltip {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border: 1px solid rgba(220, 38, 38, 0.4) !important;
+    color: #fca5a5 !important;
+    font-size: 10px !important;
+    font-family: 'Play', sans-serif !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+}
+.frontline-feature-tooltip::before {
+    display: none !important;
+}
+
+/* Base Routes Tooltip */
+.base-route-tooltip {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border: 1px solid rgba(168, 85, 247, 0.4) !important;
+    color: #d8b4fe !important;
+    font-size: 10px !important;
+    font-family: 'Play', sans-serif !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+}
+.base-route-tooltip::before {
+    display: none !important;
+}
+
+/* Probability dropdown menu selector */
+.probability-select {
+    background-color: #374151 !important; /* gray-700 background */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 4px !important;
+    outline: none !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+}
+
+.probability-select option {
+    background-color: #374151 !important; /* gray-700 background */
+}
+
+/* Yellow Ruler Tooltip styling */
+.ruler-length-tooltip {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1px solid rgba(234, 179, 8, 0.4) !important; /* Yellow border (#eab308) */
+    color: #facc15 !important; /* Yellow text (#facc15) */
+    font-size: 10px !important;
+    font-weight: bold !important;
+    font-family: 'Play', sans-serif !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+    pointer-events: auto !important;
+}
+.ruler-length-tooltip::before {
+    display: none !important;
+}

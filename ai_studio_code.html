@@ -1,0 +1,2699 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Безпека Бою - GIS v22</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- ПІДКЛЮЧЕННЯ БАЗИ ДАНИХ -->
+    <script src="measures.js?v=1.0.2"></script>
+    <script src="res/logistika.js"></script>
+
+    <style>
+        * {
+            transition: none !important;
+            animation: none !important;
+            font-family: 'Play', sans-serif;
+        }
+
+        body {
+            background-color: #020617;
+        }
+
+        #map {
+            background: #020617 !important;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+            filter: grayscale(1) brightness(1.8);
+        }
+
+        .brand-title {
+            font-size: 22px;
+            font-weight: 700;
+            font-style: normal;
+            color: white;
+            letter-spacing: -0.02em;
+        }
+
+        /* Маркери */
+        .threat-marker-wrapper {
+            position: relative;
+            width: 0;
+            height: 0;
+        }
+
+        .diamond {
+            width: 24px;
+            height: 24px;
+            transform: translate(-50%, -50%) rotate(45deg);
+            position: absolute;
+            left: 0;
+            top: 0;
+            border: 2px solid white;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        .marker-icon {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-45deg);
+            font-size: 11px;
+            line-height: 1;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .sev-катастрофічно {
+            background: #7f1d1d;
+            border-color: #fca5a5;
+        }
+
+        .sev-критично {
+            background: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        .sev-помірно {
+            background: #b45309;
+            border-color: #fde68a;
+        }
+
+        .sec-diamond {
+            background: #7c3aed;
+            border-color: #ddd6fe;
+            width: 18px;
+            height: 18px;
+        }
+
+        .secured {
+            background: #14532d !important;
+            box-shadow: 0 0 12px rgba(22, 163, 74, 0.6) !important;
+        }
+
+        .threat-icon-img {
+            display: inline-block;
+            vertical-align: middle;
+            width: 14px;
+            height: 14px;
+            margin-right: 4px;
+            filter: invert(1);
+        }
+
+        .marker-icon .threat-icon-img {
+            width: 16px;
+            height: 16px;
+            margin-right: 0;
+            display: block;
+        }
+
+        /* UI Кнопки */
+        .btn-ui {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            border: 1px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            font-size: 12px;
+            z-index: 100;
+        }
+
+        .btn-s-sec {
+            background: #6d28d9;
+            transform: rotate(45deg);
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn-s-sec span {
+            transform: rotate(-45deg);
+        }
+
+        .btn-ctrl {
+            background: #2563eb;
+        }
+
+        .btn-info {
+            background: #0ea5e9;
+            border-color: #7dd3fc;
+        }
+
+        .btn-close {
+            background: #dc2626;
+            width: 14px;
+            height: 14px;
+            font-size: 10px;
+            z-index: 110;
+        }
+
+        .label-threat {
+            position: absolute;
+            left: 22px;
+            top: -14px;
+            white-space: nowrap;
+            font-weight: bold;
+            font-size: 10px;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+            padding: 1px 4px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 2px;
+        }
+
+        .sidebar-item {
+            border-left: 3px solid #10b981;
+            background: rgba(30, 41, 59, 0.8);
+            padding: 8px;
+            margin-bottom: 4px;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        /* Controls */
+        .custom-select {
+            background: #1e293b;
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            width: 100%;
+            outline: none;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .probability-select {
+            background-color: #374151 !important;
+            /* gray-700 background */
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 4px !important;
+            outline: none !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+        }
+
+        .probability-select option {
+            background-color: #374151 !important;
+            /* gray-700 background */
+        }
+
+        .btn-disabled {
+            opacity: 0.3;
+            cursor: not-allowed !important;
+            filter: grayscale(1);
+        }
+
+        .ruler-length-tooltip {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid rgba(234, 179, 8, 0.4) !important; /* Yellow border (#eab308) */
+            color: #facc15 !important; /* Yellow text (#facc15) */
+            font-size: 10px !important;
+            font-weight: bold !important;
+            font-family: 'Play', sans-serif !important;
+            padding: 2px 6px !important;
+            border-radius: 4px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+            pointer-events: auto !important;
+        }
+        .ruler-length-tooltip::before {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-200 p-2 overflow-hidden text-[13px]">
+
+    <div class="flex h-screen gap-2">
+        <!-- SIDEBAR -->
+        <div id="sidebar" class="w-96 glass-panel rounded-xl flex flex-col shadow-2xl z-[1000] relative">
+            <img src="sidebar_logo.png" class="sidebar-logo" alt="">
+
+            <div class="p-4 border-b border-white/10 relative z-10">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em]">МІСІЯ</h3>
+                    <div class="flex gap-1.5">
+                        <button onclick="deleteCurrentMission()" id="delete-mission-btn"
+                            class="bg-red-950 hover:bg-red-800 border border-red-700/50 text-red-200 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors btn-disabled">Видалити</button>
+                        <button onclick="openNewMissionModal()"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] px-2 py-1 rounded font-bold uppercase">Створити</button>
+                    </div>
+                </div>
+                <select id="mission-combo-box" class="custom-select" onchange="handleMissionChange(this.value)">
+                    <option value="">-- Оберіть місію --</option>
+                </select>
+            </div>
+
+            <div class="p-4 bg-white/5 border-b border-white/10 relative z-10 flex justify-between items-center">
+                <h3 class="text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em]">ЗВІТ</h3>
+                <span id="active-mission-id-label" class="text-[8px] font-mono opacity-40"></span>
+            </div>
+
+            <div id="sidebar-content" class="p-4 overflow-y-auto flex-1 space-y-1 relative z-10">
+                <p class="text-slate-500 italic text-center py-20 text-[9px]">Створіть місію та оберіть об'єкт</p>
+            </div>
+
+            <div class="p-4 bg-black/20 border-t border-white/5 relative z-10 flex flex-col gap-2">
+                <p id="draw-hint" class="hidden text-[9px] text-yellow-500 text-center animate-pulse tracking-widest">
+                    ПОДВІЙНИЙ КЛІК ДЛЯ ФІКСАЦІЇ</p>
+                <button onclick="openSettingsModal()" id="settings-btn" title="Налаштування бази даних"
+                    class="w-full py-2 mt-2 bg-slate-900 border border-white/10 hover:border-emerald-500/50 text-slate-300 hover:text-white rounded flex items-center justify-center gap-2 active:scale-95 transition-all text-xs uppercase font-bold tracking-wider cursor-pointer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span>База даних</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN AREA -->
+        <div class="flex-1 flex flex-col gap-2">
+            <header class="flex justify-between items-center glass-panel p-3 rounded-xl shadow-lg">
+                <div class="flex gap-4 items-center">
+                    <div>
+                        <h1 class="text-emerald-500 text-[10px] font-bold tracking-[0.4em] mb-0.5">412 ОБрБпС "Nemesis"
+                        </h1>
+                        <h2 class="brand-title italic">Безпека Бою</h2>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div id="header-status"
+                        class="text-[9px] text-slate-400 font-mono text-right uppercase leading-tight bg-black/30 p-2 rounded border border-white/10">
+                        Очікування місії...<br>RECO: READY
+                    </div>
+                    <img src="header_logo.png" class="h-[45px] w-auto filter invert grayscale brightness-[1.5]"
+                        alt="Logo">
+                </div>
+            </header>
+            <div class="relative border-2 border-white/10 rounded-xl overflow-hidden flex-1 shadow-inner">
+                <div id="map"></div>
+                <!-- FLOATING TOOLBAR -->
+                <div class="absolute right-3 top-44 z-[1000] flex flex-col gap-2 p-1.5 glass-panel rounded-xl border border-white/10 shadow-2xl">
+                    <button onclick="validateDrawing('route')" id="draw-btn-route" title="Додати маршрут"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="3 3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 20 L10 12 L14 16 L20 4" />
+                        </svg>
+                    </button>
+                    <button onclick="validateDrawing('area')" id="draw-btn-area" title="Додати район позиції"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="2" stroke-dasharray="3 3" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 4 20 8 20 16 12 20 4 16 4 8" />
+                        </svg>
+                    </button>
+                    <button onclick="startRulerMeasurement()" id="ruler-btn" title="Виміряти відстань"
+                        class="btn-disabled w-10 h-10 bg-slate-900/50 hover:bg-emerald-950/60 border border-white/5 hover:border-emerald-500/50 text-slate-400 rounded-lg flex items-center justify-center active:scale-95 transition-all shadow-md select-none cursor-pointer">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="7" width="20" height="10" rx="1" />
+                            <line x1="6" y1="7" x2="6" y2="11" />
+                            <line x1="10" y1="7" x2="10" y2="13" />
+                            <line x1="14" y1="7" x2="14" y2="11" />
+                            <line x1="18" y1="7" x2="18" y2="11" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NEW MISSION -->
+    <div id="modal-new-mission" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[3000]">
+        <div class="glass-panel border-white/20 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-emerald-400 font-black uppercase text-xs mb-4 border-b border-white/10 pb-2">Нова місія</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Назва</label>
+                    <input type="text" id="mission-name-input"
+                        class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none"
+                        placeholder="Ми спалимо вам все нахуй">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Тип операції</label>
+                    <select id="mission-type-select" class="custom-select">
+                        <option value="Маневр">Маневр</option>
+                        <option value="Рекогностування">Рекогностування</option>
+                        <option value="Позиція">Позиція</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button onclick="closeModals()"
+                        class="flex-1 py-2 text-[10px] uppercase font-bold border border-white/10">Скасувати</button>
+                    <button onclick="createMission()"
+                        class="flex-1 py-2 text-[10px] uppercase font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded">Створити</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- THREAT & CONTROL MODALS -->
+    <div id="modal-threat" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[2000]">
+        <div class="glass-panel border-white/20 w-full max-w-2xl rounded-2xl overflow-hidden">
+            <div class="flex border-b border-white/10"><button onclick="toggleThreatTab('primary')" id="tab-primary"
+                    class="flex-1 p-4 text-[11px] font-bold bg-white/5 text-white uppercase border-b-2 border-emerald-500">Основні</button><button
+                    onclick="toggleThreatTab('secondary')" id="tab-secondary"
+                    class="flex-1 p-4 text-[11px] font-bold text-slate-500 uppercase border-b-2 border-transparent">Вторинні</button>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto grid grid-cols-1 gap-1" id="threat-list"></div>
+            <div class="p-4 bg-black/40 flex justify-center"><button onclick="closeModals()"
+                    class="text-slate-500 uppercase text-[10px] font-bold py-2 border border-white/10 px-16 rounded">ЗАКРИТИ</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-controls" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[2000] p-4">
+        <div class="glass-panel border-emerald-500 w-full max-w-[95vw] rounded-2xl flex flex-col max-h-[90vh] shadow-2xl">
+            <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex justify-between items-center">
+                <h3 id="controls-title" class="text-emerald-400 font-black uppercase text-xs">Вибір заходів</h3><button
+                    onclick="closeModals()" class="text-white text-3xl font-light hover:text-red-500">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto" id="controls-selection-area"></div>
+        </div>
+    </div>
+    <div id="modal-linked" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[2000]">
+        <div class="glass-panel border-purple-500 w-full max-w-md rounded-xl p-6 shadow-2xl">
+            <h3
+                class="text-purple-400 font-bold uppercase text-[10px] mb-4 border-b border-purple-900/30 pb-2 tracking-widest">
+                ПРИВ'ЯЗАТИ ВТОРИННУ</h3>
+            <div class="space-y-1" id="linked-list"></div><button onclick="closeModals()"
+                class="w-full mt-4 text-slate-500 uppercase text-[9px] font-bold">СКАСУВАТИ</button>
+        </div>
+    </div>
+
+    <!-- MODAL: SETTINGS -->
+    <div id="modal-settings" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[3000] p-4">
+        <div class="glass-panel border-emerald-500 w-full max-w-5xl rounded-2xl flex flex-col h-[85vh] shadow-2xl overflow-hidden">
+            <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-emerald-400 font-black uppercase text-sm tracking-wider">Налаштування бази даних</h3>
+                    <button onclick="resetDbToDefault()" class="bg-red-950/60 hover:bg-red-900 border border-red-700/30 text-red-200 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-wider transition-colors">Скинути до початкових</button>
+                </div>
+                <button onclick="closeModals()" class="text-white text-3xl font-light hover:text-red-500 transition-colors">&times;</button>
+            </div>
+            
+            <!-- Tab headers -->
+            <div class="flex border-b border-white/10 bg-slate-900/60">
+                <button onclick="switchSettingsTab('threats')" id="settings-tab-threats" class="px-6 py-3 text-xs font-bold text-emerald-400 border-b-2 border-emerald-500 uppercase">Загрози</button>
+                <button onclick="switchSettingsTab('measures')" id="settings-tab-measures" class="px-6 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent uppercase">Заходи контролю</button>
+                <button onclick="switchSettingsTab('tools')" id="settings-tab-tools" class="px-6 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent uppercase">Інструменти ідентифікації</button>
+                <button onclick="switchSettingsTab('connections')" id="settings-tab-connections" class="px-6 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent uppercase">Матриця зв'язків</button>
+            </div>
+
+            <!-- Tab contents -->
+            <div class="flex-1 overflow-y-auto p-6" id="settings-tab-content">
+                <!-- Dynamic content loaded via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- КОНТЕКСТНЕ МЕНЮ МАПИ -->
+    <div id="map-context-menu"
+        class="hidden absolute glass-panel rounded-lg shadow-2xl z-[4000] py-1.5 w-48 border border-white/10">
+        <button onclick="handleContextMenuAction('route')"
+            class="w-full text-left px-3 py-2 hover:bg-emerald-900/40 text-slate-300 hover:text-white transition-colors flex items-center gap-2">
+            <span>➕</span> <span>Створити маршрут</span>
+        </button>
+        <button onclick="handleContextMenuAction('area')"
+            class="w-full text-left px-3 py-2 hover:bg-emerald-900/40 text-slate-300 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5">
+            <span>➕</span> <span>Створити район</span>
+        </button>
+        <button onclick="handleContextMenuAction('threat')"
+            class="w-full text-left px-3 py-2 hover:bg-emerald-900/40 text-slate-300 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5">
+            <span>⚠️</span> <span>Додати загрозу</span>
+        </button>
+        <button id="menu-delete-shape-btn" onclick="handleContextMenuAction('delete_shape')"
+            class="hidden w-full text-left px-3 py-2 hover:bg-red-900/40 text-red-300 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5">
+            <span>🗑️</span> <span id="menu-delete-shape-text">Видалити об'єкт</span>
+        </button>
+    </div>
+
+    <script>
+        let missions = [];
+        let currentMissionId = null;
+        let missionCounter = 1;
+        const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
+
+
+
+        const map = L.map('map', { center: [47.749631, 35.919113], zoom: 11, zoomControl: false });
+        L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] }).addTo(map);
+
+        let activeLayers = L.layerGroup().addTo(map);
+        let markersLayer = L.layerGroup().addTo(map);
+        let frontlineLayer = L.layerGroup().addTo(map);
+        let baseRoutesLayer = L.layerGroup().addTo(map);
+
+        // Add standard Leaflet Layer Control
+        const layerControl = L.control.layers(null, {
+            "Маршрути та Загрози": L.layerGroup([activeLayers, markersLayer]).addTo(map),
+            "Базові маршрути": baseRoutesLayer,
+            "Лінія зіткнення (DeepState)": frontlineLayer
+        }, { position: 'topright', collapsed: false }).addTo(map);
+
+        // Inject "Без підписів" checkbox into layer control panel
+        function injectCheckboxIntoLayerControl(control) {
+            const container = control.getContainer();
+            if (!container) return;
+            
+            let overlaysList = container.querySelector('.leaflet-control-layers-overlays');
+            if (!overlaysList) {
+                overlaysList = container.querySelector('form') || container;
+            }
+            
+            const separator = document.createElement('div');
+            separator.className = 'leaflet-control-layers-separator';
+            separator.style.margin = '6px 0';
+            separator.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+            overlaysList.appendChild(separator);
+            
+            const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+            label.style.gap = '6px';
+            label.style.marginTop = '6px';
+            label.style.cursor = 'pointer';
+            label.className = 'select-none text-[11px] font-bold text-slate-300 hover:text-white';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'accent-emerald-500';
+            checkbox.checked = window.amplifiersDisabled;
+            checkbox.style.cursor = 'pointer';
+            checkbox.onchange = (e) => {
+                toggleAmplifiers(e.target.checked);
+            };
+            
+            const span = document.createElement('span');
+            span.innerText = 'Без підписів';
+            
+            label.appendChild(checkbox);
+            label.appendChild(span);
+            overlaysList.appendChild(label);
+        }
+
+        injectCheckboxIntoLayerControl(layerControl);
+        let isDrawing = false, drawingMode = null, drawPoints = [], tempGraphic = null, tempLatLng = null;
+
+        let contextMenuLatLng = null;
+        let contextMenuTargetLayer = null;
+        let contextMenuThreat = null;
+
+        window.amplifiersDisabled = false;
+        function toggleAmplifiers(disabled) {
+            window.amplifiersDisabled = disabled;
+            const labels = document.querySelectorAll('.label-threat');
+            labels.forEach(lbl => {
+                if (disabled) lbl.classList.add('hidden');
+                else lbl.classList.remove('hidden');
+            });
+        }
+
+        // --- HELPER GEOMETRY FUNCTIONS ---
+        function getFlatLatLngs(layer) {
+            let latlngs = layer.getLatLngs();
+            while (Array.isArray(latlngs) && latlngs.length > 0 && Array.isArray(latlngs[0])) {
+                latlngs = latlngs[0];
+            }
+            return latlngs;
+        }
+
+        function getDistanceToSegment(p, p1, p2) {
+            const x = p.x, y = p.y;
+            const x1 = p1.x, y1 = p1.y;
+            const x2 = p2.x, y2 = p2.y;
+            const A = x - x1;
+            const B = y - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+            if (len_sq !== 0) param = dot / len_sq;
+            let xx, yy;
+            if (param < 0) {
+                xx = x1; yy = y1;
+            } else if (param > 1) {
+                xx = x2; yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            const dx = x - xx;
+            const dy = y - yy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function isPointInPolygon(p, vs) {
+            const x = p.x, y = p.y;
+            let inside = false;
+            for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+                const xi = vs[i].x, yi = vs[i].y;
+                const xj = vs[j].x, yj = vs[j].y;
+                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function findNearestLayer(latlng, thresholdPx = 45) {
+            let closestLayer = null;
+            let minDistance = Infinity;
+            const clickPoint = map.latLngToLayerPoint(latlng);
+
+            activeLayers.eachLayer((layer) => {
+                if (layer instanceof L.Polyline) {
+                    const latlngs = getFlatLatLngs(layer);
+                    const points = latlngs.map(ll => map.latLngToLayerPoint(ll));
+                    if (points.length < 2) return;
+
+                    if (layer instanceof L.Polygon) {
+                        const bounds = layer.getBounds();
+                        if (bounds.contains(latlng)) {
+                            if (isPointInPolygon(clickPoint, points)) {
+                                closestLayer = layer;
+                                minDistance = 0;
+                                return;
+                            }
+                        }
+                    }
+
+                    for (let i = 0; i < points.length; i++) {
+                        if (i === points.length - 1 && !(layer instanceof L.Polygon)) continue;
+                        const p1 = points[i];
+                        const p2 = points[(i + 1) % points.length];
+                        const dist = getDistanceToSegment(clickPoint, p1, p2);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            closestLayer = layer;
+                        }
+                    }
+                }
+            });
+
+            if (minDistance <= thresholdPx) return closestLayer;
+            return null;
+        }
+
+        function deleteShape(layer) {
+            if (!layer || !currentMissionId) return;
+            const m = missions.find(x => x.id === currentMissionId);
+            if (!m) return;
+            const layerCoords = getFlatLatLngs(layer);
+
+            if (layer instanceof L.Polygon) {
+                if (confirm("Ви дійсно бажаєте видалити цей район позицій?")) {
+                    m.data.areas = m.data.areas.filter(areaCoords => {
+                        const flat = areaCoords.map(c => L.latLng(c));
+                        if (flat.length !== layerCoords.length) return true;
+                        for (let i = 0; i < flat.length; i++) {
+                            if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
+                        }
+                        return false;
+                    });
+                    activeLayers.removeLayer(layer);
+                    saveMissions();
+                    handleMissionChange(currentMissionId);
+                }
+            } else if (layer instanceof L.Polyline) {
+                if (confirm("Ви дійсно бажаєте видалити цей маршрут?")) {
+                    m.data.routes = m.data.routes.filter(routeCoords => {
+                        const flat = routeCoords.map(c => L.latLng(c));
+                        if (flat.length !== layerCoords.length) return true;
+                        for (let i = 0; i < flat.length; i++) {
+                            if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
+                        }
+                        return false;
+                    });
+                    activeLayers.removeLayer(layer);
+                    saveMissions();
+                    handleMissionChange(currentMissionId);
+                }
+            }
+        }
+
+        // --- PERSISTENCE LAYER ---
+        function saveMissions() {
+            localStorage.setItem('opsafe_missions', JSON.stringify(missions));
+            localStorage.setItem('opsafe_current_mission_id', currentMissionId || '');
+            localStorage.setItem('opsafe_mission_counter', missionCounter);
+        }
+
+        function loadMissions() {
+            const savedMissions = localStorage.getItem('opsafe_missions');
+            const savedCurrentId = localStorage.getItem('opsafe_current_mission_id');
+            const savedCounter = localStorage.getItem('opsafe_mission_counter');
+            if (savedMissions) {
+                try {
+                    missions = JSON.parse(savedMissions);
+                    if (!Array.isArray(missions)) {
+                        missions = [];
+                    }
+                    missions.forEach(m => {
+                        if (m.data && m.data.database) {
+                            m.data.database.forEach(item => {
+                                item.editing = false;
+                                if (item.secondaries) {
+                                    item.secondaries.forEach(sec => { sec.editing = false; });
+                                }
+                            });
+                        }
+                    });
+                    const exists = missions.some(x => x.id === savedCurrentId);
+                    currentMissionId = exists ? savedCurrentId : (missions.length > 0 ? missions[0].id : null);
+                    missionCounter = savedCounter ? parseInt(savedCounter) : 1;
+                } catch (e) {
+                    console.error("Error loading missions:", e);
+                    initDefaultMission();
+                }
+            } else {
+                initDefaultMission();
+            }
+        }
+
+        function initDefaultMission() {
+            missions = [
+                {
+                    id: "m_test",
+                    name: "Тестова місія",
+                    type: "Рекогностування",
+                    data: {
+                        routes: [
+                            [
+                                { lat: 47.694463, lng: 36.086256 },
+                                { lat: 47.705000, lng: 36.100000 },
+                                { lat: 47.715000, lng: 36.120000 }
+                            ]
+                        ],
+                        areas: [
+                            [
+                                { lat: 47.680000, lng: 36.050000 },
+                                { lat: 47.690000, lng: 36.050000 },
+                                { lat: 47.690000, lng: 36.070000 },
+                                { lat: 47.680000, lng: 36.070000 }
+                            ]
+                        ],
+                        database: [
+                            {
+                                id: 123456789,
+                                name: "Ураження FPV \\ баражуючий боєприпас",
+                                tag: "#критично",
+                                severity: "критично",
+                                rel: [0, 1, 2, 3, 4, 6],
+                                latlng: { lat: 47.705000, lng: 36.100000 },
+                                measures: ["Постійний моніторинг ефіру", "Використання засобів окопного РЕБ"],
+                                secondaries: [],
+                                type: "primary"
+                            }
+                        ]
+                    }
+                }
+            ];
+            currentMissionId = "m_test";
+            missionCounter = 1;
+            saveMissions();
+        }
+
+        function deleteCurrentMission() {
+            if (!currentMissionId) return alert("Оберіть місію для видалення");
+            const idx = missions.findIndex(x => x.id === currentMissionId);
+            if (idx === -1) {
+                currentMissionId = null;
+                saveMissions();
+                updateMissionSelect();
+                handleMissionChange(null);
+                return;
+            }
+            const m = missions[idx];
+            if (confirm(`Ви дійсно бажаєте видалити місію "${m.name}"?`)) {
+                missions.splice(idx, 1);
+                currentMissionId = missions.length > 0 ? missions[0].id : null;
+                saveMissions();
+                updateMissionSelect();
+                handleMissionChange(currentMissionId);
+            }
+        }
+
+        // --- CONTEXT MENU AND DRAWING FLOW ---
+        function showContextMenu(latlng, originalEvent, targetLayer = null) {
+            contextMenuLatLng = latlng;
+            contextMenuTargetLayer = targetLayer || findNearestLayer(latlng, 45);
+            contextMenuThreat = null;
+
+            const menu = document.getElementById('map-context-menu');
+            if (!menu) return;
+
+            Array.from(menu.children).forEach(btn => {
+                if (btn.id === 'menu-delete-shape-btn') {
+                    if (contextMenuTargetLayer) {
+                        btn.classList.remove('hidden');
+                        const deleteText = document.getElementById('menu-delete-shape-text');
+                        if (deleteText) {
+                            deleteText.innerText = (contextMenuTargetLayer instanceof L.Polygon) ? "Видалити район" : "Видалити маршрут";
+                        }
+                    } else {
+                        btn.classList.add('hidden');
+                    }
+                } else {
+                    btn.classList.remove('hidden');
+                }
+            });
+
+            menu.style.left = `${originalEvent.pageX}px`;
+            menu.style.top = `${originalEvent.pageY}px`;
+            menu.classList.remove('hidden');
+        }
+
+        function showThreatContextMenu(pid, sidx, event) {
+            contextMenuThreat = { pid, sidx };
+            contextMenuTargetLayer = null;
+
+            const menu = document.getElementById('map-context-menu');
+            if (!menu) return;
+
+            Array.from(menu.children).forEach(btn => {
+                if (btn.id === 'menu-delete-shape-btn') {
+                    btn.classList.remove('hidden');
+                    const deleteText = document.getElementById('menu-delete-shape-text');
+                    if (deleteText) {
+                        deleteText.innerText = sidx === null ? "Видалити загрозу" : "Видалити фактор";
+                    }
+                } else {
+                    btn.classList.add('hidden');
+                }
+            });
+
+            menu.style.left = `${event.pageX}px`;
+            menu.style.top = `${event.pageY}px`;
+            menu.classList.remove('hidden');
+        }
+
+        function hideContextMenu() {
+            const menu = document.getElementById('map-context-menu');
+            if (menu) menu.classList.add('hidden');
+        }
+
+        function handleContextMenuAction(mode) {
+            hideContextMenu();
+            if (mode === 'threat') {
+                triggerThreatModal(contextMenuLatLng);
+            } else if (mode === 'delete_shape') {
+                if (contextMenuThreat) {
+                    const { pid, sidx } = contextMenuThreat;
+                    if (sidx === null) {
+                        confirmDeleteObj(pid);
+                    } else {
+                        confirmDeleteSec(pid, sidx);
+                    }
+                    contextMenuThreat = null;
+                } else {
+                    deleteShape(contextMenuTargetLayer);
+                }
+            } else if (mode === 'route' || mode === 'area') {
+                validateDrawing(mode, contextMenuLatLng);
+            }
+        }
+
+        map.on('contextmenu', (e) => {
+            const target = e.originalEvent.target;
+            if (target.closest('.leaflet-marker-icon')) return;
+            e.originalEvent.preventDefault();
+            showContextMenu(e.latlng, e.originalEvent);
+        });
+
+        map.on('click', () => {
+            hideContextMenu();
+        });
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('map-context-menu');
+            if (menu && !menu.contains(e.target)) {
+                hideContextMenu();
+            }
+        });
+
+        function openNewMissionModal() {
+            document.getElementById('mission-name-input').value = `${DEFAULT_MISSION_NAME} #${missionCounter}`;
+            document.getElementById('modal-new-mission').classList.remove('hidden');
+        }
+
+        function createMission() {
+            const nameInput = document.getElementById('mission-name-input');
+            const name = nameInput.value.trim();
+            const type = document.getElementById('mission-type-select').value;
+            if (!name) return alert("Вкажіть назву місії");
+            const id = "m_" + Date.now();
+            currentMissionId = id;
+            missions.push({ id, name, type, data: { routes: [], areas: [], database: [] } });
+            missionCounter++;
+            saveMissions();
+            closeModals();
+            updateMissionSelect();
+            handleMissionChange(id);
+        }
+
+        function updateMissionSelect() {
+            const select = document.getElementById('mission-combo-box');
+            select.innerHTML = '<option value="">-- Оберіть місію із списку --</option>';
+            missions.forEach((m, idx) => {
+                const opt = document.createElement('option');
+                opt.value = m.id; opt.innerText = `#${idx + 1} ${m.type}: ${m.name}`;
+                if (m.id === currentMissionId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function handleMissionChange(id) {
+            currentMissionId = id;
+            const routeBtn = document.getElementById('draw-btn-route');
+            const areaBtn = document.getElementById('draw-btn-area');
+            const rulerBtn = document.getElementById('ruler-btn');
+            const deleteBtn = document.getElementById('delete-mission-btn');
+            const sidebarContent = document.getElementById('sidebar-content');
+            if (!id) {
+                routeBtn.classList.add('btn-disabled'); areaBtn.classList.add('btn-disabled');
+                if (rulerBtn) rulerBtn.classList.add('btn-disabled');
+                if (deleteBtn) deleteBtn.classList.add('btn-disabled');
+                clearAllRulerResults();
+                activeLayers.clearLayers(); markersLayer.clearLayers();
+                document.getElementById('header-status').innerHTML = 'Очікування місії...<br>RECO: READY';
+                document.getElementById('mission-combo-box').value = "";
+                if (sidebarContent) {
+                    sidebarContent.innerHTML = '<p class="text-slate-500 italic text-center py-20 text-[9px]">Створіть місію та об\'єкт</p>';
+                }
+                saveMissions();
+                return;
+            }
+            routeBtn.classList.remove('btn-disabled'); areaBtn.classList.remove('btn-disabled');
+            if (rulerBtn) rulerBtn.classList.remove('btn-disabled');
+            if (deleteBtn) deleteBtn.classList.remove('btn-disabled');
+            clearAllRulerResults();
+            const m = missions.find(x => x.id === id);
+            document.getElementById('header-status').innerHTML = `АКТИВНА МІСІЯ: ${m.name}<br>ТИП: ${m.type}`;
+            document.getElementById('mission-combo-box').value = id;
+            if (sidebarContent) {
+                sidebarContent.innerHTML = '<p class="text-slate-500 italic text-center py-20 text-[9px]">Оберіть об\'єкт для перегляду заходів</p>';
+            }
+            activeLayers.clearLayers(); markersLayer.clearLayers();
+            m.data.routes.forEach(c => renderRoute(c));
+            m.data.areas.forEach(c => renderArea(c));
+            renderMarkers();
+            saveMissions();
+        }
+
+        function validateDrawing(mode, startLatLng = null) {
+            if (!currentMissionId) return alert("Спочатку створіть місію!");
+            startDrawing(mode, startLatLng);
+        }
+
+        function startDrawing(mode, startLatLng = null) {
+            if (isRulerMeasuring) stopRulerMeasurement();
+            isDrawing = true; drawingMode = mode;
+            drawPoints = startLatLng ? [startLatLng] : [];
+            if (tempGraphic) map.removeLayer(tempGraphic);
+            tempGraphic = mode === 'route'
+                ? L.polyline(drawPoints, { color: '#22c55e', weight: 3, dashArray: '5, 5' }).addTo(map)
+                : L.polygon(drawPoints, { color: '#3b82f6', weight: 2, dashArray: '5, 5', fillOpacity: 0.2 }).addTo(map);
+            map.doubleClickZoom.disable();
+            document.getElementById('map').style.cursor = 'crosshair';
+            document.getElementById('draw-hint').classList.remove('hidden');
+            updateToolbarActiveStates();
+        }
+
+        map.on('click', (e) => {
+            if (isDrawing) {
+                drawPoints.push(e.latlng);
+                tempGraphic.setLatLngs(drawPoints);
+            } else if (isRulerMeasuring) {
+                rulerPoints.push(e.latlng);
+                if (!rulerGraphic) {
+                    rulerGraphic = L.polyline(rulerPoints, { color: '#eab308', weight: 4, dashArray: '6, 6' }).addTo(map);
+                    rulerTempLine = L.polyline([e.latlng, e.latlng], { color: '#eab308', weight: 3, dashArray: '6, 6', opacity: 0.7 }).addTo(map);
+                } else {
+                    rulerGraphic.setLatLngs(rulerPoints);
+                }
+
+                const totalDist = getRouteLength(rulerPoints);
+                if (rulerActiveTooltip) {
+                    rulerActiveTooltip.setLatLng(e.latlng);
+                    rulerActiveTooltip.setContent(formatLength(totalDist));
+                } else {
+                    rulerActiveTooltip = L.tooltip({
+                        permanent: true,
+                        direction: 'top',
+                        className: 'ruler-length-tooltip'
+                    }).setLatLng(e.latlng).setContent(formatLength(totalDist)).addTo(map);
+                }
+            }
+        });
+
+        map.on('mousemove', (e) => {
+            if (isDrawing && drawPoints.length > 0) {
+                tempGraphic.setLatLngs([...drawPoints, e.latlng]);
+            } else if (isRulerMeasuring && rulerPoints.length > 0 && rulerTempLine) {
+                const lastPt = rulerPoints[rulerPoints.length - 1];
+                rulerTempLine.setLatLngs([lastPt, e.latlng]);
+
+                const tempPoints = [...rulerPoints, e.latlng];
+                const tempDist = getRouteLength(tempPoints);
+                if (rulerActiveTooltip) {
+                    rulerActiveTooltip.setLatLng(e.latlng);
+                    rulerActiveTooltip.setContent(formatLength(tempDist));
+                }
+            }
+        });
+
+        map.on('dblclick', (e) => {
+            if (isDrawing) {
+                if (drawPoints.length < 2) return;
+                const m = missions.find(x => x.id === currentMissionId);
+                if (drawingMode === 'route') { m.data.routes.push(drawPoints); renderRoute(drawPoints); }
+                else { m.data.areas.push(drawPoints); renderArea(drawPoints); }
+                saveMissions();
+                stopDrawing();
+            } else if (isRulerMeasuring) {
+                L.DomEvent.stopPropagation(e);
+                if (rulerPoints.length >= 2) {
+                    finalizeRuler();
+                } else {
+                    stopRulerMeasurement();
+                }
+            }
+        });
+
+        function stopDrawing() { isDrawing = false; map.doubleClickZoom.enable(); document.getElementById('map').style.cursor = ''; document.getElementById('draw-hint').classList.add('hidden'); if (tempGraphic) map.removeLayer(tempGraphic); tempGraphic = null; updateToolbarActiveStates(); }
+
+        function renderRoute(coords) {
+            const hit = L.polyline(coords, { color: 'transparent', weight: 45 }).addTo(activeLayers);
+            L.polyline(coords, { color: '#22c55e', weight: 3, dashArray: '8, 8', interactive: false }).addTo(activeLayers);
+            hit.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+            });
+            hit.on('contextmenu', (e) => {
+                L.DomEvent.stopPropagation(e);
+                e.originalEvent.preventDefault();
+                showContextMenu(e.latlng, e.originalEvent, hit);
+            });
+        }
+
+        function renderArea(coords) {
+            const area = L.polygon(coords, { color: '#10b981', weight: 2, dashArray: '5, 5', fillOpacity: 0.25 }).addTo(activeLayers);
+            area.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+            });
+            area.on('contextmenu', (e) => {
+                L.DomEvent.stopPropagation(e);
+                e.originalEvent.preventDefault();
+                showContextMenu(e.latlng, e.originalEvent, area);
+            });
+        }
+
+        function triggerThreatModal(latlng) { tempLatLng = latlng; document.getElementById('modal-threat').classList.remove('hidden'); toggleThreatTab('primary'); }
+
+        function toggleThreatTab(tab) {
+            const list = document.getElementById('threat-list'); list.innerHTML = '';
+            const isP = tab === 'primary';
+            const src = isP ? PRIMARY_THREATS : SECONDARY_TITLES;
+            src.forEach(t => {
+                const b = document.createElement('button');
+                b.className = "w-full text-left p-2.5 glass-panel border-white/10 hover:bg-emerald-900/40 flex justify-between items-center mb-1 active:scale-95";
+                
+                let tagColorClass = '';
+                if (isP) {
+                    if (t.severity === 'катастрофічно') {
+                        tagColorClass = 'text-red-400 border-red-500/30 bg-red-950/40';
+                    } else if (t.severity === 'критично') {
+                        tagColorClass = 'text-orange-400 border-orange-500/30 bg-orange-950/40';
+                    } else if (t.severity === 'помірно') {
+                        tagColorClass = 'text-yellow-400 border-yellow-500/30 bg-yellow-950/40';
+                    } else {
+                        tagColorClass = 'text-slate-400 border-slate-700 bg-slate-800/40';
+                    }
+                }
+
+                b.innerHTML = isP ? `<span class="text-xs font-bold uppercase">${getThreatIcon(t.name)} ${t.name}</span> <span class="text-[9px] font-black px-2 py-1 rounded border ${tagColorClass}">${t.tag}</span>` : `<span class="text-xs font-bold text-purple-400 uppercase">${getThreatIcon(t)} ${t}</span>`;
+                b.onclick = () => {
+                    const m = missions.find(x => x.id === currentMissionId);
+                    m.data.database.push({ ...(isP ? t : { name: t }), id: Date.now(), latlng: tempLatLng, measures: [], secondaries: [], type: isP ? 'primary' : 'secondary_indep' });
+                    renderMarkers(); closeModals();
+                    saveMissions();
+                };
+                list.appendChild(b);
+            });
+            document.getElementById('tab-primary').style.borderBottomColor = isP ? '#10b981' : 'transparent';
+            document.getElementById('tab-secondary').style.borderBottomColor = !isP ? '#10b981' : 'transparent';
+        }
+
+        function getProbabilityColorStyle(prob) {
+            switch (prob) {
+                case 'Дуже часто': return 'color: #ff3333; font-weight: 900; background-color: #374151;'; // Bright red
+                case 'Висока ймовірність': return 'color: #dc2626; font-weight: 700; background-color: #374151;'; // Red
+                case 'Можливо': return 'color: #f97316; font-weight: 700; background-color: #374151;'; // Orange
+                case 'Рідко': return 'color: #facc15; font-weight: 700; background-color: #374151;'; // Yellow
+                case 'Малоймовірно': return 'color: #60a5fa; font-weight: 700; background-color: #374151;'; // Blue
+                default: return 'color: #cbd5e1; font-weight: bold; background-color: #374151;';
+            }
+        }
+
+        function getProbabilityBadgeHtml(prob) {
+            if (!prob) return '';
+            let color = '';
+            switch (prob) {
+                case 'Дуже часто': color = '#ff3333'; break;
+                case 'Висока ймовірність': color = '#dc2626'; break;
+                case 'Можливо': color = '#f97316'; break;
+                case 'Рідко': color = '#facc15'; break;
+                case 'Малоймовірно': color = '#60a5fa'; break;
+                default: color = '#cbd5e1';
+            }
+            return ` <span style="color: ${color};" class="text-[8px] font-black">[${prob}]</span>`;
+        }
+
+        function renderMarkers() {
+            markersLayer.clearLayers();
+            if (!currentMissionId) return;
+            const m = missions.find(x => x.id === currentMissionId);
+            m.data.database.forEach(item => {
+                const isP = item.type === 'primary';
+                const hasMeasures = item.measures && item.measures.length > 0;
+                const extraClass = hasMeasures ? ' secured' : '';
+                const probBadge = getProbabilityBadgeHtml(item.probability);
+                const closeBtnHtml = item.editing ? `<div class="btn-ui btn-close" style="left:-32px; top:-32px;" onclick="confirmDeleteObj(${item.id})">×</div>` : '';
+
+                let html = `<div class="threat-marker-wrapper">
+                    <div class="diamond ${isP ? 'sev-' + item.severity : 'sec-diamond'}${extraClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)">
+                        <span class="marker-icon">${getThreatIcon(item.name)}</span>
+                    </div>
+                    ${closeBtnHtml}
+                    <div class="label-threat ${isP ? 'text-white' : 'text-purple-400'}${window.amplifiersDisabled ? ' hidden' : ''}">${item.name}${probBadge}</div>
+                    <div class="flex" style="position:absolute; left:0; top:0;">
+                        ${isP ? `<div class="btn-ui btn-s-sec" style="left:20px; top:12px;" onclick="openLinked(${item.id})"><span>+</span></div>` : ''}
+                        <div class="btn-ui btn-ctrl" style="left:${isP ? '42px' : '20px'}; top:12px;" onclick="openControls(${item.id}, null)">+</div>
+                        ${item.measures.length > 0 ? `<div class="btn-ui btn-info" style="left:${isP ? '64px' : '42px'}; top:12px;" onclick="viewSingle(${item.id}, null)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>` : ''}
+                    </div>`;
+                if (isP) {
+                    item.secondaries.forEach((sec, idx) => {
+                        const offset = (idx + 1) * 55;
+                        const secHasMeasures = sec.measures && sec.measures.length > 0;
+                        const secExtraClass = secHasMeasures ? ' secured' : '';
+                        const secProbBadge = getProbabilityBadgeHtml(sec.probability);
+                        const secCloseBtnHtml = sec.editing ? `<div class="btn-ui btn-close" style="left:-25px; top:-25px; width:12px; height:12px;" onclick="confirmDeleteSec(${item.id}, ${idx})">×</div>` : '';
+
+                        html += `<div style="position:absolute; top:-${offset}px; left:0;">
+                            <div class="diamond sec-diamond${secExtraClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})">
+                                <span class="marker-icon">${getThreatIcon(sec.name)}</span>
+                            </div>
+                            ${secCloseBtnHtml}
+                            <div class="label-threat text-purple-300 italic${window.amplifiersDisabled ? ' hidden' : ''}">${sec.name}${secProbBadge}</div>
+                            <div class="flex" style="position:absolute; left:0; top:0;">
+                                 <div class="btn-ui btn-ctrl" style="left:20px; top:12px;" onclick="openControls(${item.id}, ${idx})">+</div>
+                                 ${sec.measures.length > 0 ? `<div class="btn-ui btn-info" style="left:42px; top:12px;" onclick="viewSingle(${item.id}, ${idx})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>` : ''}
+                             </div>
+                        </div>`;
+                    });
+                }
+                html += `</div>`;
+                L.marker(item.latlng, { icon: L.divIcon({ html, className: '', iconSize: [0, 0] }) }).addTo(markersLayer);
+            });
+        }
+
+        function viewSingle(pid, sidx) {
+            const m = missions.find(x => x.id === currentMissionId);
+            const p = m.data.database.find(d => d.id === pid);
+            const target = sidx === null ? p : p.secondaries[sidx];
+            const content = document.getElementById('sidebar-content');
+
+            let html = `<div class="bg-slate-800 p-2 border-l-4 border-emerald-500 mb-2 font-bold text-white uppercase text-[10px]">${getThreatIcon(target.name)} ${target.name}</div>`;
+
+            html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
+                <select onchange="updateSingleThreatProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                    <option value="" style="color: #cbd5e1; background-color: #374151;" ${!target.probability ? 'selected' : ''}>-- Не вказано --</option>
+                    <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${target.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
+                    <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${target.probability === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                    <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${target.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
+                    <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${target.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
+                    <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${target.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
+                </select>
+            </div>`;
+
+            target.measures.forEach(item => {
+                html += `<div class="sidebar-item">● ${item}</div>`;
+            });
+
+            const linkedTools = opsafeDb.identTools ? opsafeDb.identTools.filter(t => t.threatRelations && t.threatRelations.includes(target.name)) : [];
+            if (linkedTools.length > 0) {
+                html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5">Інструменти ідентифікації</div>`;
+                linkedTools.forEach(tool => {
+                    html += `<div class="sidebar-item" style="border-left-color: #7c3aed; border-radius: 0 4px 4px 0; background: rgba(124, 58, 237, 0.05);">🔍 ${tool.name}</div>`;
+                });
+            }
+
+            content.innerHTML = html;
+        }
+
+        function viewCombined(pid) {
+            const m = missions.find(x => x.id === currentMissionId);
+            const item = m.data.database.find(d => d.id === pid);
+            const content = document.getElementById('sidebar-content');
+
+            let html = `<div class="bg-emerald-950/40 p-2 text-center text-[10px] font-black uppercase mb-4 border border-emerald-500/50">ЗВІТ ОБ'ЄКТА</div>`;
+            html += `<div class="sidebar-item font-bold text-red-500" style="border-color:#b91c1c">${getThreatIcon(item.name)} ${item.name}</div>`;
+
+            html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
+                <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(item.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                    <option value="" style="color: #cbd5e1; background-color: #374151;" ${!item.probability ? 'selected' : ''}>-- Не вказано --</option>
+                    <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${item.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
+                    <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${item.probability === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                    <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${item.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
+                    <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${item.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
+                    <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${item.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
+                </select>
+            </div>`;
+
+            item.measures.forEach(item => {
+                html += `<div class="sidebar-item">● ${item}</div>`;
+            });
+
+            const linkedToolsPrimary = opsafeDb.identTools ? opsafeDb.identTools.filter(t => t.threatRelations && t.threatRelations.includes(item.name)) : [];
+            if (linkedToolsPrimary.length > 0) {
+                html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2 mb-2 border-b border-white/5">Інструменти ідентифікації</div>`;
+                linkedToolsPrimary.forEach(tool => {
+                    html += `<div class="sidebar-item" style="border-left-color: #7c3aed; border-radius: 0 4px 4px 0; background: rgba(124, 58, 237, 0.05);">🔍 ${tool.name}</div>`;
+                });
+            }
+
+            item.secondaries.forEach((sec, idx) => {
+                html += `<div class="sidebar-item font-bold text-purple-400" style="border-color:#7c3aed">${getThreatIcon(sec.name)} ${sec.name}</div>`;
+
+                html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                    <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
+                    <select onchange="updateSingleThreatProbability(${pid}, ${idx}, this.value)" style="${getProbabilityColorStyle(sec.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                        <option value="" style="color: #cbd5e1; background-color: #374151;" ${!sec.probability ? 'selected' : ''}>-- Не вказано --</option>
+                        <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${sec.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
+                        <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${sec.probability === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                        <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${sec.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
+                        <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${sec.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
+                        <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${sec.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
+                    </select>
+                </div>`;
+
+                sec.measures.forEach(item => {
+                    html += `<div class="sidebar-item">○ ${item}</div>`;
+                });
+
+                const linkedToolsSec = opsafeDb.identTools ? opsafeDb.identTools.filter(t => t.threatRelations && t.threatRelations.includes(sec.name)) : [];
+                if (linkedToolsSec.length > 0) {
+                    html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2 mb-2 border-b border-white/5">Інструменти ідентифікації</div>`;
+                    linkedToolsSec.forEach(tool => {
+                        html += `<div class="sidebar-item" style="border-left-color: #7c3aed; border-radius: 0 4px 4px 0; background: rgba(124, 58, 237, 0.05);">🔍 ${tool.name}</div>`;
+                    });
+                }
+            });
+            content.innerHTML = html;
+        }
+
+        function updateSingleThreatProbability(pid, sidx, val) {
+            const m = missions.find(x => x.id === currentMissionId);
+            if (!m) return;
+            const parent = m.data.database.find(d => d.id === pid);
+            if (parent) {
+                const target = (sidx === null) ? parent : parent.secondaries[sidx];
+                if (target) {
+                    target.probability = val;
+                    renderMarkers();
+                    saveMissions();
+                    if (sidx === null && parent.type === 'primary') {
+                        viewCombined(pid);
+                    } else {
+                        viewSingle(pid, sidx);
+                    }
+                }
+            }
+        }
+
+        function openControls(pid, sidx) {
+            const m = missions.find(x => x.id === currentMissionId);
+            const p = m.data.database.find(d => d.id === pid);
+            const target = sidx === null ? p : p.secondaries[sidx];
+            document.getElementById('controls-title').innerText = target.name;
+            const area = document.getElementById('controls-selection-area'); area.innerHTML = '';
+            const tIdx = THREAT_NAMES.indexOf(target.name);
+            const valid = ALL_MEASURES.filter(v => v.rel.includes(tIdx));
+            const cats = [...new Set(valid.map(m => m.cat))];
+            cats.forEach(cat => {
+                const box = document.createElement('div'); box.className = "mb-6";
+                box.innerHTML = `<h4 class="text-blue-400 font-black uppercase text-[10px] border-b border-blue-900/30 pb-1 mb-3">${cat}</h4>`;
+                const grid = document.createElement('div'); grid.className = "grid grid-cols-2 lg:grid-cols-4 gap-2";
+                valid.filter(v => v.cat === cat).forEach(me => {
+                    const active = target.measures.includes(me.name);
+                    const b = document.createElement('button');
+                    b.className = `p-2 text-[10px] border font-bold text-left rounded ${active ? 'bg-blue-600 text-white border-blue-400' : 'glass-panel border-white/10 text-slate-400'}`;
+                    b.innerText = me.name;
+                    b.onclick = () => {
+                        if (!active) target.measures.push(me.name);
+                        else target.measures = target.measures.filter(x => x !== me.name);
+                        openControls(pid, sidx);
+                        renderMarkers();
+                        saveMissions();
+                    };
+                    grid.appendChild(b);
+                });
+                box.appendChild(grid); area.appendChild(box);
+            });
+            document.getElementById('modal-controls').classList.remove('hidden');
+        }
+
+        function confirmDeleteObj(id) {
+            if (confirm("Видалити об'єкт?")) {
+                const m = missions.find(x => x.id === currentMissionId);
+                m.data.database = m.data.database.filter(d => d.id !== id);
+                renderMarkers();
+                saveMissions();
+            }
+        }
+        function confirmDeleteSec(pid, idx) {
+            if (confirm("Видалити фактор?")) {
+                const m = missions.find(x => x.id === currentMissionId);
+                const p = m.data.database.find(d => d.id === pid);
+                p.secondaries.splice(idx, 1);
+                renderMarkers();
+                saveMissions();
+            }
+        }
+        function openLinked(pid) {
+            const m = missions.find(x => x.id === currentMissionId);
+            const p = m.data.database.find(d => d.id === pid);
+            const list = document.getElementById('linked-list'); list.innerHTML = '';
+            p.rel.forEach(idx => {
+                const b = document.createElement('button'); b.className = "w-full text-left p-2 glass-panel border-white/10 hover:bg-purple-900 text-[10px] mb-1";
+                b.innerText = SECONDARY_TITLES[idx];
+                b.onclick = () => {
+                    p.secondaries.push({ name: SECONDARY_TITLES[idx], measures: [] });
+                    renderMarkers();
+                    closeModals();
+                    saveMissions();
+                };
+                list.appendChild(b);
+            });
+            document.getElementById('modal-linked').classList.remove('hidden');
+        }
+        function closeModals() { document.querySelectorAll('.fixed').forEach(m => m.classList.add('hidden')); }
+
+        function toggleThreatEdit(pid, sidx) {
+            const m = missions.find(x => x.id === currentMissionId);
+            if (!m) return;
+            const parent = m.data.database.find(d => d.id === pid);
+            if (!parent) return;
+            const target = (sidx === null) ? parent : parent.secondaries[sidx];
+            if (target) {
+                target.editing = !target.editing;
+                renderMarkers();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (currentMissionId) {
+                    const m = missions.find(x => x.id === currentMissionId);
+                    if (m) {
+                        m.data.database.forEach(item => {
+                            item.editing = false;
+                            item.secondaries.forEach(sec => {
+                                sec.editing = false;
+                            });
+                        });
+                        renderMarkers();
+                    }
+                }
+                stopDrawing();
+                stopRulerMeasurement();
+            }
+        });
+
+        // --- RULER MEASUREMENT ENGINE ---
+        let isRulerMeasuring = false;
+        let rulerPoints = [];
+        let rulerGraphic = null;
+        let rulerTempLine = null;
+        let rulerActiveTooltip = null;
+        let rulerResults = [];
+
+        function startRulerMeasurement() {
+            if (!currentMissionId) return alert("Створіть або оберіть місію!");
+            if (isDrawing) stopDrawing();
+
+            if (isRulerMeasuring) {
+                stopRulerMeasurement();
+                return;
+            }
+
+            isRulerMeasuring = true;
+            rulerPoints = [];
+
+            map.doubleClickZoom.disable();
+            document.getElementById('map').style.cursor = 'crosshair';
+
+            const hint = document.getElementById('draw-hint');
+            if (hint) {
+                hint.innerText = "Клікніть для точок вимірювання. Подвійний клік для завершення.";
+                hint.classList.remove('hidden');
+            }
+            updateToolbarActiveStates();
+        }
+
+        function stopRulerMeasurement() {
+            isRulerMeasuring = false;
+            map.doubleClickZoom.enable();
+            document.getElementById('map').style.cursor = '';
+
+            const hint = document.getElementById('draw-hint');
+            if (hint) hint.classList.add('hidden');
+
+            if (rulerGraphic) { map.removeLayer(rulerGraphic); rulerGraphic = null; }
+            if (rulerTempLine) { map.removeLayer(rulerTempLine); rulerTempLine = null; }
+            if (rulerActiveTooltip) { map.removeLayer(rulerActiveTooltip); rulerActiveTooltip = null; }
+            rulerPoints = [];
+            updateToolbarActiveStates();
+        }
+
+        function getRouteLength(coords) {
+            if (!coords || coords.length < 2) return 0;
+            let length = 0;
+            for (let i = 0; i < coords.length - 1; i++) {
+                const p1 = L.latLng(coords[i]);
+                const p2 = L.latLng(coords[i + 1]);
+                length += p1.distanceTo(p2);
+            }
+            return length;
+        }
+
+        function formatLength(meters) {
+            if (meters < 1000) return `${Math.round(meters)} м`;
+            return `${(meters / 1000).toFixed(2)} км`;
+        }
+
+        function finalizeRuler() {
+            if (rulerPoints.length < 2) {
+                stopRulerMeasurement();
+                return;
+            }
+
+            const finalPoints = [...rulerPoints];
+            const totalDist = getRouteLength(finalPoints);
+
+            const line = L.polyline(finalPoints, { color: '#eab308', weight: 4, dashArray: '6, 6' }).addTo(map);
+
+            const lastPt = finalPoints[finalPoints.length - 1];
+            const resultIndex = rulerResults.length;
+            const tooltip = L.tooltip({
+                permanent: true,
+                direction: 'top',
+                className: 'ruler-length-tooltip',
+                interactive: true
+            }).setLatLng(lastPt).setContent(`${formatLength(totalDist)} <span onclick="L.DomEvent.stopPropagation(event); deleteRulerResult(${resultIndex})" style="color:#ef4444; font-weight:900; margin-left:6px; cursor:pointer; font-size:12px; display:inline-block;" title="Видалити вимірювання">×</span>`).addTo(map);
+
+            rulerResults.push({ line, tooltip });
+            stopRulerMeasurement();
+        }
+
+        function deleteRulerResult(idx) {
+            const res = rulerResults[idx];
+            if (res) {
+                if (res.line) map.removeLayer(res.line);
+                if (res.tooltip) map.removeLayer(res.tooltip);
+                rulerResults[idx] = null;
+            }
+        }
+
+        function clearAllRulerResults() {
+            rulerResults.forEach((res, idx) => { deleteRulerResult(idx); });
+            rulerResults = [];
+        }
+
+        function updateToolbarActiveStates() {
+            const routeBtn = document.getElementById('draw-btn-route');
+            const areaBtn = document.getElementById('draw-btn-area');
+            const rulerBtn = document.getElementById('ruler-btn');
+
+            const setActive = (btn, isActive) => {
+                if (!btn) return;
+                if (isActive) {
+                    btn.classList.add('bg-emerald-600/40', 'border-emerald-500', 'text-emerald-300');
+                    btn.classList.remove('bg-slate-900/50', 'border-white/5', 'text-slate-400');
+                } else {
+                    btn.classList.remove('bg-emerald-600/40', 'border-emerald-500', 'text-emerald-300');
+                    btn.classList.add('bg-slate-900/50', 'border-white/5', 'text-slate-400');
+                }
+            };
+
+            setActive(routeBtn, isDrawing && drawingMode === 'route');
+            setActive(areaBtn, isDrawing && drawingMode === 'area');
+            setActive(rulerBtn, isRulerMeasuring);
+        }
+
+        // --- DATABASE SETTINGS INTERFACE ---
+        let currentSettingsTab = 'threats';
+        let editingMeasureIndex = null;
+        let measureFilterText = "";
+        let editingToolIndex = null;
+        let toolFilterText = "";
+
+        function openSettingsModal() {
+            closeModals();
+            document.getElementById('modal-settings').classList.remove('hidden');
+            switchSettingsTab('threats');
+        }
+
+        function switchSettingsTab(tab) {
+            currentSettingsTab = tab;
+            const tabs = ['threats', 'measures', 'tools', 'connections'];
+            
+            const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                              document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+            const activeColor = isEmerald ? 'text-emerald-400 border-emerald-500' : 'text-blue-400 border-blue-500';
+            const activeClassParts = activeColor.split(' ');
+            
+            tabs.forEach(t => {
+                const btn = document.getElementById('settings-tab-' + t);
+                if (!btn) return;
+                if (t === tab) {
+                    btn.classList.add(activeClassParts[0], activeClassParts[1]);
+                    btn.classList.remove('text-slate-400', 'border-transparent');
+                } else {
+                    btn.classList.remove(activeClassParts[0], activeClassParts[1]);
+                    btn.classList.add('text-slate-400', 'border-transparent');
+                }
+            });
+            
+            renderSettingsTabContent();
+        }
+
+        function resetDbToDefault() {
+            if (confirm("Ви дійсно хочете скинути базу даних до початкових значень? Усі ваші зміни буде втрачено!")) {
+                opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
+                saveOpsafeDb();
+                renderSettingsTabContent();
+                renderMarkers();
+                if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+            }
+        }
+
+        function renderSettingsTabContent() {
+            const container = document.getElementById('settings-tab-content');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (currentSettingsTab === 'threats') {
+                renderThreatsSettings(container);
+            } else if (currentSettingsTab === 'measures') {
+                renderMeasuresSettings(container);
+            } else if (currentSettingsTab === 'tools') {
+                renderToolsSettings(container);
+            } else if (currentSettingsTab === 'connections') {
+                renderConnectionsSettings(container);
+            }
+        }
+
+        function renderThreatsSettings(container) {
+            const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400');
+            const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = "grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-[50vh]";
+            
+            const colPrimary = document.createElement('div');
+            colPrimary.className = "flex flex-col h-[55vh] border border-white/5 bg-slate-900/40 p-4 rounded-xl";
+            colPrimary.innerHTML = `
+                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2 shrink-0">
+                    <h4 class="text-white font-bold text-xs uppercase tracking-wider">Основні загрози</h4>
+                    <button onclick="addNewPrimaryThreat()" class="${accentBtn} text-white font-bold text-[10px] px-2 py-1 rounded uppercase tracking-wider">+ Додати</button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-2" id="settings-primary-threats-list"></div>
+            `;
+            
+            const colSecondary = document.createElement('div');
+            colSecondary.className = "flex flex-col h-[55vh] border border-white/5 bg-slate-900/40 p-4 rounded-xl";
+            colSecondary.innerHTML = `
+                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2 shrink-0">
+                    <h4 class="text-white font-bold text-xs uppercase tracking-wider">Вторинні загрози</h4>
+                    <button onclick="addNewSecondaryThreat()" class="${accentBtn} text-white font-bold text-[10px] px-2 py-1 rounded uppercase tracking-wider">+ Додати</button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-2" id="settings-secondary-threats-list"></div>
+            `;
+            
+            wrapper.appendChild(colPrimary);
+            wrapper.appendChild(colSecondary);
+            container.appendChild(wrapper);
+            
+            const listPrimary = colPrimary.querySelector('#settings-primary-threats-list');
+            opsafeDb.primaryThreats.forEach((t, index) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-slate-900/80 p-2.5 rounded border border-white/5 hover:border-white/10";
+                item.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="text-xs font-bold text-white truncate" title="${t.name}">${getThreatIcon(t.name)} ${t.name}</div>
+                        <div class="text-[9px] text-slate-400 uppercase font-mono">Важливість: <span class="${t.severity === 'катастрофічно' ? 'text-red-500' : t.severity === 'критично' ? 'text-orange-500' : 'text-yellow-500'} font-bold">${t.severity}</span></div>
+                    </div>
+                    <div class="flex gap-1.5 shrink-0">
+                        <button onclick="editPrimaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        </button>
+                        <button onclick="deletePrimaryThreat(${index})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
+                    </div>
+                `;
+                listPrimary.appendChild(item);
+            });
+            
+            const listSecondary = colSecondary.querySelector('#settings-secondary-threats-list');
+            opsafeDb.secondaryThreats.forEach((name, index) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-slate-900/80 p-2.5 rounded border border-white/5 hover:border-white/10";
+                item.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="text-xs font-bold text-white truncate" title="${name}">${getThreatIcon(name)} ${name}</div>
+                    </div>
+                    <div class="flex gap-1.5 shrink-0">
+                        <button onclick="editSecondaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        </button>
+                        <button onclick="deleteSecondaryThreat(${index})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
+                    </div>
+                `;
+                listSecondary.appendChild(item);
+            });
+        }
+
+        function addNewPrimaryThreat() {
+            const name = prompt("Введіть назву нової основної загрози:");
+            if (!name) return;
+            const cleaned = name.trim();
+            if (cleaned === "") return;
+            
+            if (opsafeDb.primaryThreats.some(t => t.name.toLowerCase() === cleaned.toLowerCase())) {
+                alert("Така загроза вже існує!");
+                return;
+            }
+            
+            const severity = prompt("Вкажіть рівень важливості (помірно, критично, катастрофічно):", "критично");
+            if (!severity) return;
+            const sCleaned = severity.trim().toLowerCase();
+            
+            opsafeDb.primaryThreats.push({ name: cleaned, severity: sCleaned });
+            opsafeDb.threatConnections.push({ primaryThreat: cleaned, secondaryThreats: [] });
+            
+            saveOpsafeDb();
+            renderSettingsTabContent();
+            renderMarkers();
+        }
+
+        // Check compatibility if missions array exists in window/scope
+        function saveMissionsFallback() {
+            if (typeof saveMissions === 'function') {
+                saveMissions();
+            }
+        }
+
+        function editPrimaryThreat(index) {
+            const t = opsafeDb.primaryThreats[index];
+            const newName = prompt("Введіть нову назву для основної загрози:", t.name);
+            if (!newName) return;
+            const cleaned = newName.trim();
+            if (cleaned === "") return;
+            
+            const newSeverity = prompt("Вкажіть рівень важливості (помірно, критично, катастрофічно):", t.severity);
+            if (!newSeverity) return;
+            const sCleaned = newSeverity.trim().toLowerCase();
+            
+            opsafeDb.threatConnections.forEach(tc => {
+                if (tc.primaryThreat === t.name) {
+                    tc.primaryThreat = cleaned;
+                }
+            });
+            
+            opsafeDb.measures.forEach(m => {
+                m.threatRelations = m.threatRelations.map(n => n === t.name ? cleaned : n);
+            });
+            
+            if (opsafeDb.identTools) {
+                opsafeDb.identTools.forEach(it => {
+                    it.threatRelations = it.threatRelations.map(n => n === t.name ? cleaned : n);
+                });
+            }
+            
+            if (typeof missions !== 'undefined' && Array.isArray(missions)) {
+                missions.forEach(m => {
+                    m.data.database.forEach(d => {
+                        if (d.name === t.name) {
+                            d.name = cleaned;
+                            d.severity = sCleaned;
+                            d.tag = "#" + sCleaned;
+                        }
+                    });
+                });
+            }
+            
+            t.name = cleaned;
+            t.severity = sCleaned;
+            
+            saveOpsafeDb();
+            saveMissionsFallback();
+            renderSettingsTabContent();
+            renderMarkers();
+            if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+        }
+
+        function deletePrimaryThreat(index) {
+            const t = opsafeDb.primaryThreats[index];
+            if (confirm(`Ви дійсно бажаєте видалити загрозу "${t.name}"?`)) {
+                opsafeDb.threatConnections = opsafeDb.threatConnections.filter(tc => tc.primaryThreat !== t.name);
+                
+                opsafeDb.measures.forEach(m => {
+                    m.threatRelations = m.threatRelations.filter(n => n !== t.name);
+                });
+                
+                if (opsafeDb.identTools) {
+                    opsafeDb.identTools.forEach(it => {
+                        it.threatRelations = it.threatRelations.filter(n => n !== t.name);
+                    });
+                }
+                
+                opsafeDb.primaryThreats.splice(index, 1);
+                
+                saveOpsafeDb();
+                renderSettingsTabContent();
+                renderMarkers();
+                if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+            }
+        }
+
+        function addNewSecondaryThreat() {
+            const name = prompt("Введіть назву нової вторинної загрози:");
+            if (!name) return;
+            const cleaned = name.trim();
+            if (cleaned === "") return;
+            
+            if (opsafeDb.secondaryThreats.includes(cleaned)) {
+                alert("Така загроза вже існує!");
+                return;
+            }
+            
+            opsafeDb.secondaryThreats.push(cleaned);
+            
+            saveOpsafeDb();
+            renderSettingsTabContent();
+            renderMarkers();
+        }
+
+        function editSecondaryThreat(index) {
+            const oldName = opsafeDb.secondaryThreats[index];
+            const newName = prompt("Введіть нову назву для вторинної загрози:", oldName);
+            if (!newName) return;
+            const cleaned = newName.trim();
+            if (cleaned === "") return;
+            
+            opsafeDb.threatConnections.forEach(tc => {
+                tc.secondaryThreats = tc.secondaryThreats.map(n => n === oldName ? cleaned : n);
+            });
+            
+            opsafeDb.measures.forEach(m => {
+                m.threatRelations = m.threatRelations.map(n => n === oldName ? cleaned : n);
+            });
+            
+            if (opsafeDb.identTools) {
+                opsafeDb.identTools.forEach(it => {
+                    it.threatRelations = it.threatRelations.map(n => n === oldName ? cleaned : n);
+                });
+            }
+            
+            if (typeof missions !== 'undefined' && Array.isArray(missions)) {
+                missions.forEach(m => {
+                    m.data.database.forEach(d => {
+                        if (d.name === oldName) d.name = cleaned;
+                        d.secondaries.forEach(sec => {
+                            if (sec.name === oldName) sec.name = cleaned;
+                        });
+                    });
+                });
+            }
+            
+            opsafeDb.secondaryThreats[index] = cleaned;
+            
+            saveOpsafeDb();
+            saveMissionsFallback();
+            renderSettingsTabContent();
+            renderMarkers();
+            if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+        }
+
+        function deleteSecondaryThreat(index) {
+            const name = opsafeDb.secondaryThreats[index];
+            if (confirm(`Ви дійсно бажаєте видалити вторинну загрозу "${name}"?`)) {
+                opsafeDb.threatConnections.forEach(tc => {
+                    tc.secondaryThreats = tc.secondaryThreats.filter(n => n !== name);
+                });
+                
+                opsafeDb.measures.forEach(m => {
+                    m.threatRelations = m.threatRelations.filter(n => n !== name);
+                });
+                
+                if (opsafeDb.identTools) {
+                    opsafeDb.identTools.forEach(it => {
+                        it.threatRelations = it.threatRelations.filter(n => n !== name);
+                    });
+                }
+                
+                opsafeDb.secondaryThreats.splice(index, 1);
+                
+                saveOpsafeDb();
+                renderSettingsTabContent();
+                renderMarkers();
+                if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+            }
+        }
+
+        function renderMeasuresSettings(container) {
+            const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                              document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+            const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
+            
+            const splitView = document.createElement('div');
+            splitView.className = "flex flex-col lg:flex-row gap-6 h-full min-h-[50vh]";
+            
+            const listPane = document.createElement('div');
+            listPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh]";
+            listPane.innerHTML = `
+                <div class="flex gap-2 mb-3 shrink-0">
+                    <input type="text" id="measure-search-input" value="${measureFilterText}" placeholder="Пошук заходів..." class="flex-1 bg-slate-900 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-500">
+                    <button onclick="addNewMeasure()" class="${accentBtn} text-white font-bold text-[10px] px-3 py-1.5 rounded uppercase tracking-wider shrink-0">+ Додати</button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-1.5 pr-1" id="settings-measures-list"></div>
+            `;
+            
+            const editPane = document.createElement('div');
+            editPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh] overflow-y-auto";
+            editPane.id = "settings-measure-edit-pane";
+            
+            splitView.appendChild(listPane);
+            splitView.appendChild(editPane);
+            container.appendChild(splitView);
+            
+            const searchInput = listPane.querySelector('#measure-search-input');
+            searchInput.addEventListener('input', (e) => {
+                measureFilterText = e.target.value.toLowerCase();
+                populateMeasuresList(accentBtn);
+            });
+            
+            populateMeasuresList(accentBtn);
+            populateMeasureEditForm();
+        }
+
+        function populateMeasuresList(btnClass) {
+            const listContainer = document.getElementById('settings-measures-list');
+            if (!listContainer) return;
+            listContainer.innerHTML = '';
+            
+            opsafeDb.measures.forEach((m, idx) => {
+                if (measureFilterText && !m.name.toLowerCase().includes(measureFilterText)) return;
+                
+                const item = document.createElement('div');
+                const isActive = editingMeasureIndex === idx;
+                const activeClass = isActive ? 'bg-slate-800 border-emerald-500/50' : 'bg-slate-900/80 border-white/5 hover:bg-slate-900';
+                item.className = `flex justify-between items-center p-2.5 rounded border transition-all cursor-pointer ${activeClass}`;
+                item.onclick = () => {
+                    editingMeasureIndex = idx;
+                    populateMeasuresList(btnClass);
+                    populateMeasureEditForm();
+                };
+                
+                item.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="text-xs font-bold text-white truncate" title="${m.name}">${m.name}</div>
+                        <div class="text-[9px] text-slate-400 uppercase font-mono">${m.category || 'Без категорії'}</div>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button onclick="event.stopPropagation(); deleteMeasure(${idx})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function populateMeasureEditForm() {
+            const editContainer = document.getElementById('settings-measure-edit-pane');
+            if (!editContainer) return;
+            if (editingMeasureIndex === null || editingMeasureIndex >= opsafeDb.measures.length) {
+                editContainer.innerHTML = `
+                    <div class="flex-1 flex items-center justify-center text-slate-500 italic text-xs">
+                        Оберіть захід контролю з лівого списку для редагування або натисніть "+ Додати"
+                    </div>
+                `;
+                return;
+            }
+            
+            const m = opsafeDb.measures[editingMeasureIndex];
+            const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400');
+            const saveBtnClass = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
+            const accentBorder = isEmerald ? 'focus:border-emerald-500' : 'focus:border-blue-500';
+            
+            const activeMissions = (m.missionType || '').split(',').map(x => x.trim()).filter(Boolean);
+            const activeResponses = (m.responseType || '').split(',').map(x => x.trim()).filter(Boolean);
+            const activeStages = (m.planningStage || '').split(',').map(x => x.trim()).filter(Boolean);
+
+            let html = `
+                <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-4 border-b border-white/10 pb-2">Редагування заходу</h4>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Назва заходу</label>
+                        <textarea id="edit-measure-name" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-xs outline-none ${accentBorder} min-h-[60px] resize-y">${m.name}</textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Функціональна категорія</label>
+                            <select id="edit-measure-category" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-xs outline-none ${accentBorder}">
+                                <option value="Тактичні" ${m.category === 'Тактичні' ? 'selected' : ''}>Тактичні</option>
+                                <option value="Інформаційна безпека" ${m.category === 'Інформаційна безпека' ? 'selected' : ''}>Інформаційна безпека</option>
+                                <option value="Інженерні" ${m.category === 'Інженерні' ? 'selected' : ''}>Інженерні</option>
+                                <option value="Технічні" ${m.category === 'Технічні' ? 'selected' : ''}>Технічні</option>
+                                <option value="Ударно-вогневі" ${m.category === 'Ударно-вогневі' ? 'selected' : ''}>Ударно-вогневі</option>
+                                <option value="Розвідувально-інформаційні" ${m.category === 'Розвідувально-інформаційні' ? 'selected' : ''}>Розвідувально-інформаційні</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Категорія впровадження</label>
+                            <select id="edit-measure-impl" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-xs outline-none ${accentBorder}">
+                                <option value="Планувальні" ${m.implementation === 'Планувальні' ? 'selected' : ''}>Планувальні</option>
+                                <option value="Операційні" ${m.implementation === 'Операційні' ? 'selected' : ''}>Операційні</option>
+                                <option value="Регламентні" ${m.implementation === 'Регламентні' ? 'selected' : ''}>Регламентні</option>
+                                <option value="Нагляд та контроль" ${m.implementation === 'Нагляд та контроль' ? 'selected' : ''}>Нагляд та контроль</option>
+                                <option value="Навчання" ${m.implementation === 'Навчання' ? 'selected' : ''}>Навчання</option>
+                                <option value="Координаційні" ${m.implementation === 'Координаційні' ? 'selected' : ''}>Координаційні</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Тип місії</label>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${['рекон', 'маневр', 'позиція'].map(opt => {
+                                    const active = activeMissions.includes(opt);
+                                    const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+                                    return `<button type="button" data-val="${opt}" class="pill-mission px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Тип реагування</label>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${['уникнення ризику', 'зменшення ризику', 'розподіл ризику', 'перенесення ризику', 'прийняття ризику'].map(opt => {
+                                    const active = activeResponses.includes(opt);
+                                    const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+                                    return `<button type="button" data-val="${opt}" class="pill-response px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Етап планування</label>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${['плановий', 'передопераційний', 'операційний'].map(opt => {
+                                    const active = activeStages.includes(opt);
+                                    const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+                                    return `<button type="button" data-val="${opt}" class="pill-stage px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase mb-2 font-bold">Зв'язок з загрозами (активує цей захід для загрози)</label>
+                        <div class="border border-white/5 bg-black/20 rounded-lg p-3 max-h-[160px] overflow-y-auto space-y-2">
+            `;
+            
+            html += `<div class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mb-1.5">Основні загрози:</div>`;
+            opsafeDb.primaryThreats.forEach(t => {
+                const checked = m.threatRelations.includes(t.name) ? 'checked' : '';
+                html += `
+                    <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
+                        <input type="checkbox" name="edit-measure-threat" value="${t.name}" ${checked} class="mt-0.5 accent-emerald-500">
+                        <span>${t.name}</span>
+                    </label>
+                `;
+            });
+            
+            html += `<div class="text-[9px] text-orange-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mt-3 mb-1.5">Вторинні загрози:</div>`;
+            opsafeDb.secondaryThreats.forEach(name => {
+                const checked = m.threatRelations.includes(name) ? 'checked' : '';
+                html += `
+                    <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
+                        <input type="checkbox" name="edit-measure-threat" value="${name}" ${checked} class="mt-0.5 accent-orange-500">
+                        <span>${name}</span>
+                    </label>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 pt-2 border-t border-white/10 shrink-0">
+                        <button onclick="cancelMeasureEdit()" class="flex-1 py-2 text-[10px] uppercase font-bold border border-white/10 text-slate-400 rounded">Скасувати</button>
+                        <button onclick="saveMeasureEdit(${editingMeasureIndex})" class="flex-1 py-2 text-[10px] uppercase font-bold ${saveBtnClass} text-white rounded">Зберегти зміни</button>
+                    </div>
+                </div>
+            `;
+            
+            editContainer.innerHTML = html;
+        }
+
+        function cancelMeasureEdit() {
+            editingMeasureIndex = null;
+            renderSettingsTabContent();
+        }
+
+        function saveMeasureEdit(idx) {
+            const name = document.getElementById('edit-measure-name').value.trim();
+            if (name === "") return alert("Назва заходу не може бути порожньою!");
+            
+            const category = document.getElementById('edit-measure-category').value.trim();
+            const implementation = document.getElementById('edit-measure-impl').value.trim();
+            const missionType = Array.from(document.querySelectorAll('.pill-mission.active-pill')).map(p => p.getAttribute('data-val')).join(', ');
+            const responseType = Array.from(document.querySelectorAll('.pill-response.active-pill')).map(p => p.getAttribute('data-val')).join(', ');
+            const planningStage = Array.from(document.querySelectorAll('.pill-stage.active-pill')).map(p => p.getAttribute('data-val')).join(', ');
+            
+            html += `<div class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mb-1.5">Основні загрози:</div>`;
+            opsafeDb.primaryThreats.forEach(t => {
+                const checked = m.threatRelations.includes(t.name) ? 'checked' : '';
+                html += `
+                    <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
+                        <input type="checkbox" name="edit-measure-threat" value="${t.name}" ${checked} class="mt-0.5 accent-emerald-500">
+                        <span>${t.name}</span>
+                    </label>
+                `;
+            });
+            
+            html += `<div class="text-[9px] text-orange-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mt-3 mb-1.5">Вторинні загрози:</div>`;
+            opsafeDb.secondaryThreats.forEach(name => {
+                const checked = m.threatRelations.includes(name) ? 'checked' : '';
+                html += `
+                    <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
+                        <input type="checkbox" name="edit-measure-threat" value="${name}" ${checked} class="mt-0.5 accent-orange-500">
+                        <span>${name}</span>
+                    </label>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 pt-2 border-t border-white/10 shrink-0">
+                        <button onclick="cancelMeasureEdit()" class="flex-1 py-2 text-[10px] uppercase font-bold border border-white/10 text-slate-400 rounded">Скасувати</button>
+                        <button onclick="saveMeasureEdit(${editingMeasureIndex})" class="flex-1 py-2 text-[10px] uppercase font-bold ${saveBtnClass} text-white rounded">Зберегти зміни</button>
+                    </div>
+                </div>
+            `;
+            
+            editContainer.innerHTML = html;
+        }
+
+        function cancelMeasureEdit() {
+            editingMeasureIndex = null;
+            renderSettingsTabContent();
+        }
+
+        function saveMeasureEdit(idx) {
+            const name = document.getElementById('edit-measure-name').value.trim();
+            if (name === "") return alert("Назва заходу не може бути порожньою!");
+            
+            const category = document.getElementById('edit-measure-category').value.trim();
+            const implementation = document.getElementById('edit-measure-impl').value.trim();
+            const missionType = document.getElementById('edit-measure-mission').value.trim();
+            const responseType = document.getElementById('edit-measure-response').value.trim();
+            const planningStage = document.getElementById('edit-measure-stage').value.trim();
+            
+            const checkBoxes = document.getElementsByName('edit-measure-threat');
+            const threatRelations = [];
+            Array.from(checkBoxes).forEach(cb => {
+                if (cb.checked) threatRelations.push(cb.value);
+            });
+            
+            const m = opsafeDb.measures[idx];
+            const oldName = m.name;
+            
+            if (typeof missions !== 'undefined' && Array.isArray(missions)) {
+                missions.forEach(mission => {
+                    mission.data.database.forEach(d => {
+                        d.measures = d.measures.map(val => val === oldName ? name : val);
+                        d.secondaries.forEach(sec => {
+                            sec.measures = sec.measures.map(val => val === oldName ? name : val);
+                        });
+                    });
+                });
+            }
+            
+            m.name = name;
+            m.category = category;
+            m.implementation = implementation;
+            m.missionType = missionType;
+            m.responseType = responseType;
+            m.planningStage = planningStage;
+            m.threatRelations = threatRelations;
+            
+            saveOpsafeDb();
+            saveMissionsFallback();
+            
+            editingMeasureIndex = null;
+            renderSettingsTabContent();
+            if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+        }
+
+        function addNewMeasure() {
+            const name = prompt("Введіть назву нового заходу контролю:");
+            if (!name) return;
+            const cleaned = name.trim();
+            if (cleaned === "") return;
+            
+            if (opsafeDb.measures.some(m => m.name.toLowerCase() === cleaned.toLowerCase())) {
+                alert("Такий захід контролю вже існує!");
+                return;
+            }
+            
+            opsafeDb.measures.push({
+                name: cleaned,
+                category: "Тактичні",
+                implementation: "Планувальні",
+                missionType: "рекон, маневр, позиція",
+                responseType: "зменшення ризику",
+                planningStage: "плановий",
+                threatRelations: []
+            });
+            
+            editingMeasureIndex = opsafeDb.measures.length - 1;
+            saveOpsafeDb();
+            renderSettingsTabContent();
+        }
+
+        function deleteMeasure(idx) {
+            const m = opsafeDb.measures[idx];
+            if (confirm(`Ви дійсно бажаєте видалити захід "${m.name}"?`)) {
+                if (typeof missions !== 'undefined' && Array.isArray(missions)) {
+                    missions.forEach(mission => {
+                        mission.data.database.forEach(d => {
+                            d.measures = d.measures.filter(val => val !== m.name);
+                            d.secondaries.forEach(sec => {
+                                sec.measures = sec.measures.filter(val => val !== m.name);
+                            });
+                        });
+                    });
+                }
+                
+                opsafeDb.measures.splice(idx, 1);
+                
+                if (editingMeasureIndex === idx) {
+                    editingMeasureIndex = null;
+                } else if (editingMeasureIndex > idx) {
+                    editingMeasureIndex--;
+                }
+                
+                saveOpsafeDb();
+                saveMissionsFallback();
+                renderSettingsTabContent();
+                if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+            }
+        }
+
+        function renderToolsSettings(container) {
+            const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                              document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+            const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
+            
+            const splitView = document.createElement('div');
+            splitView.className = "flex flex-col lg:flex-row gap-6 h-full min-h-[50vh]";
+            
+            const listPane = document.createElement('div');
+            listPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh]";
+            listPane.innerHTML = `
+                <div class="flex gap-2 mb-3 shrink-0">
+                    <input type="text" id="tool-search-input" value="${toolFilterText}" placeholder="Пошук інструментів..." class="flex-1 bg-slate-900 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-500">
+                    <button onclick="addNewTool()" class="${accentBtn} text-white font-bold text-[10px] px-3 py-1.5 rounded uppercase tracking-wider shrink-0">+ Додати</button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-1.5 pr-1" id="settings-tools-list"></div>
+            `;
+            
+            const editPane = document.createElement('div');
+            editPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh] overflow-y-auto";
+            editPane.id = "settings-tool-edit-pane";
+            
+            splitView.appendChild(listPane);
+            splitView.appendChild(editPane);
+            container.appendChild(splitView);
+            
+            const searchInput = listPane.querySelector('#tool-search-input');
+            searchInput.addEventListener('input', (e) => {
+                toolFilterText = e.target.value.toLowerCase();
+                populateToolsList(accentBtn);
+            });
+            
+            populateToolsList(accentBtn);
+            populateToolEditForm();
+        }
+
+        function populateToolsList(btnClass) {
+            const listContainer = document.getElementById('settings-tools-list');
+            if (!listContainer) return;
+            listContainer.innerHTML = '';
+            
+            if (!opsafeDb.identTools) opsafeDb.identTools = [];
+            
+            opsafeDb.identTools.forEach((t, idx) => {
+                if (toolFilterText && !t.name.toLowerCase().includes(toolFilterText)) return;
+                
+                const item = document.createElement('div');
+                const isActive = editingToolIndex === idx;
+                const activeClass = isActive ? 'bg-slate-800 border-emerald-500/50' : 'bg-slate-900/80 border-white/5 hover:bg-slate-900';
+                item.className = `flex justify-between items-center p-2.5 rounded border transition-all cursor-pointer ${activeClass}`;
+                item.onclick = () => {
+                    editingToolIndex = idx;
+                    populateToolsList(btnClass);
+                    populateToolEditForm();
+                };
+                
+                item.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="text-xs font-bold text-white truncate" title="${t.name}">${t.name}</div>
+                        <div class="text-[9px] text-slate-400 uppercase font-mono">Зв'язків: ${t.threatRelations ? t.threatRelations.length : 0}</div>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button onclick="event.stopPropagation(); deleteTool(${idx})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function populateToolEditForm() {
+            const editContainer = document.getElementById('settings-tool-edit-pane');
+            if (!editContainer) return;
+            if (editingToolIndex === null || editingToolIndex >= opsafeDb.identTools.length) {
+                editContainer.innerHTML = `
+                    <div class="flex-1 flex items-center justify-center text-slate-500 italic text-xs">
+                        Оберіть інструмент з лівого списку для редагування або натисніть "+ Додати"
+                    </div>
+                `;
+                return;
+            }
+            
+            const t = opsafeDb.identTools[editingToolIndex];
+            const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400');
+            const saveBtnClass = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
+            const accentBorder = isEmerald ? 'focus:border-emerald-500' : 'focus:border-blue-500';
+            
+            if (!t.threatRelations) t.threatRelations = [];
+            
+            let html = `
+                <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-4 border-b border-white/10 pb-2">Редагування інструменту</h4>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Назва інструменту / шару</label>
+                        <textarea id="edit-tool-name" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-xs outline-none ${accentBorder} min-h-[60px] resize-y">${t.name}</textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase mb-2 font-bold">Зв'язок з загрозами (активує цей шар/інструмент для загрози)</label>
+                        <div class="border border-white/5 bg-black/20 rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
+            `;
+            
+            html += `<div class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mb-1.5">Основні загрози:</div>`;
+            opsafeDb.primaryThreats.forEach(pt => {
+                const checked = t.threatRelations.includes(pt.name) ? 'checked' : '';
+                html += `
+                    <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
+                        <input type="checkbox" name="edit-tool-threat" value="${pt.name}" ${checked} class="mt-0.5 accent-emerald-500">
+                        <span>${pt.name}</span>
+                    </label>
+                `;
+            });
+            
+            html += `<div class="text-[9px] text-orange-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mt-3 mb-1.5">Вторинні загрози:</div>`;
+            opsafeDb.secondaryThreats.forEach(stName => {
+                const checked = t.threatRelations.includes(stName) ? 'checked' : '';
+                html += `
+                    <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
+                        <input type="checkbox" name="edit-tool-threat" value="${stName}" ${checked} class="mt-0.5 accent-orange-500">
+                        <span>${stName}</span>
+                    </label>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 pt-2 border-t border-white/10 shrink-0">
+                        <button onclick="cancelToolEdit()" class="flex-1 py-2 text-[10px] uppercase font-bold border border-white/10 text-slate-400 rounded">Скасувати</button>
+                        <button onclick="saveToolEdit(${editingToolIndex})" class="flex-1 py-2 text-[10px] uppercase font-bold ${saveBtnClass} text-white rounded">Зберегти зміни</button>
+                    </div>
+                </div>
+            `;
+            
+            editContainer.innerHTML = html;
+        }
+
+        function cancelToolEdit() {
+            editingToolIndex = null;
+            renderSettingsTabContent();
+        }
+
+        function saveToolEdit(idx) {
+            const name = document.getElementById('edit-tool-name').value.trim();
+            if (name === "") return alert("Назва інструменту не може бути порожньою!");
+            
+            const checkBoxes = document.getElementsByName('edit-tool-threat');
+            const threatRelations = [];
+            Array.from(checkBoxes).forEach(cb => {
+                if (cb.checked) threatRelations.push(cb.value);
+            });
+            
+            const t = opsafeDb.identTools[idx];
+            t.name = name;
+            t.threatRelations = threatRelations;
+            
+            saveOpsafeDb();
+            editingToolIndex = null;
+            renderSettingsTabContent();
+            if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+        }
+
+        function addNewTool() {
+            const name = prompt("Введіть назву нового інструменту / шару:");
+            if (!name) return;
+            const cleaned = name.trim();
+            if (cleaned === "") return;
+            
+            if (!opsafeDb.identTools) opsafeDb.identTools = [];
+            
+            if (opsafeDb.identTools.some(t => t.name.toLowerCase() === cleaned.toLowerCase())) {
+                alert("Такий інструмент вже існує!");
+                return;
+            }
+            
+            opsafeDb.identTools.push({
+                name: cleaned,
+                threatRelations: []
+            });
+            
+            editingToolIndex = opsafeDb.identTools.length - 1;
+            saveOpsafeDb();
+            renderSettingsTabContent();
+        }
+
+        function deleteTool(idx) {
+            if (confirm("Ви дійсно хочете видалити цей інструмент?")) {
+                opsafeDb.identTools.splice(idx, 1);
+                if (editingToolIndex === idx) {
+                    editingToolIndex = null;
+                } else if (editingToolIndex > idx) {
+                    editingToolIndex--;
+                }
+                saveOpsafeDb();
+                renderSettingsTabContent();
+                if (currentMissionId && typeof handleMissionChange === 'function') handleMissionChange(currentMissionId);
+            }
+        }
+
+        function renderConnectionsSettings(container) {
+            const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                              document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+            const accentColorClass = isEmerald ? 'accent-emerald-500' : 'accent-blue-500';
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = "space-y-4 max-h-[55vh] overflow-y-auto pr-2";
+            
+            opsafeDb.primaryThreats.forEach(pt => {
+                let conn = opsafeDb.threatConnections.find(tc => tc.primaryThreat === pt.name);
+                if (!conn) {
+                    conn = { primaryThreat: pt.name, secondaryThreats: [] };
+                    opsafeDb.threatConnections.push(conn);
+                }
+                
+                const ptCard = document.createElement('div');
+                const borderClass = isEmerald ? 'border-emerald-950/20 bg-slate-900/40' : 'border-blue-950/20 bg-slate-900/40';
+                ptCard.className = `border p-4 rounded-xl ${borderClass}`;
+                ptCard.innerHTML = `
+                    <h5 class="text-white font-bold text-xs uppercase tracking-wider mb-3 pb-1.5 border-b border-white/5 flex justify-between items-center">
+                        <span>${pt.name}</span>
+                        <span class="text-[8.5px] px-2 py-0.5 bg-black/40 text-slate-400 font-mono tracking-tight lowercase">зв'язано вторинних: ${conn.secondaryThreats.length}</span>
+                    </h5>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        ${opsafeDb.secondaryThreats.map(st => {
+                            const checked = conn.secondaryThreats.includes(st) ? 'checked' : '';
+                            return `
+                                <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none bg-black/10 p-1.5 rounded hover:bg-black/25 transition-colors">
+                                    <input type="checkbox" onchange="toggleThreatConnection('${pt.name}', '${st}', this.checked)" ${checked} class="mt-0.5 ${accentColorClass}">
+                                    <span>${st}</span>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                wrapper.appendChild(ptCard);
+            });
+            
+            container.appendChild(wrapper);
+        }
+
+        function toggleThreatConnection(primaryName, secondaryName, isChecked) {
+            let conn = opsafeDb.threatConnections.find(tc => tc.primaryThreat === primaryName);
+            if (!conn) {
+                conn = { primaryThreat: primaryName, secondaryThreats: [] };
+                opsafeDb.threatConnections.push(conn);
+            }
+            
+            if (isChecked) {
+                if (!conn.secondaryThreats.includes(secondaryName)) {
+                    conn.secondaryThreats.push(secondaryName);
+                }
+            } else {
+                conn.secondaryThreats = conn.secondaryThreats.filter(n => n !== secondaryName);
+            }
+            
+            if (typeof missions !== 'undefined' && Array.isArray(missions)) {
+                missions.forEach(mission => {
+                    mission.data.database.forEach(d => {
+                        if (d.name === primaryName) {
+                            const secondaryNames = conn.secondaryThreats;
+                            const allSecondaryNames = opsafeDb.secondaryThreats;
+                            d.rel = secondaryNames.map(name => allSecondaryNames.indexOf(name)).filter(idx => idx !== -1);
+                        }
+                    });
+                });
+            }
+            
+            saveOpsafeDb();
+            saveMissionsFallback();
+            renderMarkers();
+        }
+
+        // --- DEEPSTATE MAP FRONTLINE LOADING ---
+        function styleFrontlineFeature(feature) {
+            const geomType = feature.geometry ? feature.geometry.type : null;
+            const name = (feature.properties && feature.properties.name) ? feature.properties.name : "";
+
+            if (geomType === 'LineString' || geomType === 'MultiLineString') {
+                return {
+                    color: '#ef4444',
+                    weight: 4.5,
+                    dashArray: '5, 5',
+                    opacity: 1.0
+                };
+            }
+
+            if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
+                if (name === "" || name.includes('Окуповано') || name.includes('Occupied') || name.includes('Crimea') || name.includes('ОРДЛО') || name.includes('Крим')) {
+                    return {
+                        fillColor: '#dc2626',
+                        fillOpacity: 0.28,
+                        color: '#b91c1c',
+                        weight: 1.5,
+                        opacity: 0.6
+                    };
+                }
+                if (name.includes('Звільнено') || name.includes('Liberated') || name.includes('De-occupied')) {
+                    return {
+                        fillColor: '#22c55e',
+                        fillOpacity: 0.1,
+                        color: '#16a34a',
+                        weight: 1,
+                        opacity: 0.3
+                    };
+                }
+                return {
+                    fillColor: '#eab308',
+                    fillOpacity: 0.15,
+                    color: '#ca8a04',
+                    weight: 1,
+                    opacity: 0.4,
+                    dashArray: '3, 3'
+                };
+            }
+
+            return {
+                color: '#707070',
+                weight: 1,
+                opacity: 0.5
+            };
+        }
+
+        async function loadDeepStateFrontline() {
+            const statusEl = document.getElementById('header-status');
+            statusEl.innerHTML = "Очікування...<br>ЗАВАНТАЖЕННЯ ЛБЗ...";
+
+            try {
+                const apiRes = await fetch('https://api.github.com/repos/cyterat/deepstate-map-data/contents/data');
+                if (!apiRes.ok) {
+                    throw new Error(`GitHub API returned status ${apiRes.status}`);
+                }
+
+                const files = await apiRes.json();
+                if (!Array.isArray(files) || files.length === 0) {
+                    throw new Error("No files returned from GitHub contents API");
+                }
+
+                const geojsonFiles = files.filter(f => f.name.startsWith('deepstatemap_data_') && f.name.endsWith('.geojson'));
+                if (geojsonFiles.length === 0) {
+                    throw new Error("No matching geojson files found in repository");
+                }
+
+                geojsonFiles.sort((a, b) => a.name.localeCompare(b.name));
+                const latestFile = geojsonFiles[geojsonFiles.length - 1];
+                const dateMatch = latestFile.name.match(/deepstatemap_data_(\d{4})(\d{2})(\d{2})\.geojson/);
+                const displayDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : latestFile.name;
+
+                const geojsonRes = await fetch(latestFile.download_url);
+                if (!geojsonRes.ok) {
+                    throw new Error(`Failed to download GeoJSON from ${latestFile.download_url}`);
+                }
+
+                const geojsonData = await geojsonRes.json();
+                frontlineLayer.clearLayers();
+                L.geoJSON(geojsonData, {
+                    style: styleFrontlineFeature,
+                    onEachFeature: (feature, layer) => {
+                        if (feature.properties && feature.properties.name) {
+                            layer.bindTooltip(feature.properties.name, { sticky: true, className: 'frontline-feature-tooltip' });
+                        }
+                    }
+                }).addTo(frontlineLayer);
+
+                statusEl.innerHTML = `Очікування...<br>ЛБЗ: ЗАВАНТАЖЕНО (${displayDate})`;
+            } catch (err) {
+                console.error("Error loading DeepState frontline via API:", err);
+
+                // Fallback
+                console.log("Attempting date-guessing fallback...");
+                const dates = [];
+                for (let i = 0; i < 5; i++) {
+                    const d = new Date();
+                    d.setUTCDate(d.getUTCDate() - i);
+                    const yyyy = d.getUTCFullYear();
+                    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getUTCDate()).padStart(2, '0');
+                    dates.push(`${yyyy}${mm}${dd}`);
+                }
+
+                let geojsonData = null;
+                let loadedDate = null;
+
+                for (const date of dates) {
+                    const url = `https://raw.githubusercontent.com/cyterat/deepstate-map-data/main/data/deepstatemap_data_${date}.geojson`;
+                    try {
+                        const res = await fetch(url);
+                        if (res.ok) {
+                            geojsonData = await res.json();
+                            loadedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+                            break;
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                if (geojsonData) {
+                    try {
+                        frontlineLayer.clearLayers();
+                        L.geoJSON(geojsonData, {
+                            style: styleFrontlineFeature,
+                            onEachFeature: (feature, layer) => {
+                                if (feature.properties && feature.properties.name) {
+                                    layer.bindTooltip(feature.properties.name, { sticky: true, className: 'frontline-feature-tooltip' });
+                                }
+                            }
+                        }).addTo(frontlineLayer);
+
+                        statusEl.innerHTML = `Очікування...<br>ЛБЗ: ЗАВАНТАЖЕНО (${loadedDate})`;
+                        return;
+                    } catch (innerErr) {
+                        console.error("Error rendering fallback frontline:", innerErr);
+                    }
+                }
+
+                statusEl.innerHTML = "Очікування...<br><span class='text-red-500'>ПОМИЛКА ЛБЗ</span>";
+            }
+        }
+
+        async function loadBaseRoutes() {
+            try {
+                let kmlText = '';
+                try {
+                    const res = await fetch('res/logistika.kml');
+                    if (res.ok) {
+                        kmlText = await res.text();
+                    }
+                } catch (fetchErr) {
+                    console.warn("Fetch failed, attempting fallback to window.logistikaKml:", fetchErr);
+                }
+
+                if (!kmlText && window.logistikaKml) {
+                    kmlText = window.logistikaKml;
+                }
+
+                if (!kmlText) {
+                    throw new Error("Could not load KML data from fetch or fallback");
+                }
+
+                const parser = new DOMParser();
+                const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
+
+                const parserError = kmlDoc.querySelector('parsererror');
+                if (parserError) {
+                    throw new Error(`KML parsing error: ${parserError.textContent}`);
+                }
+
+                const placemarks = kmlDoc.getElementsByTagName('Placemark');
+                baseRoutesLayer.clearLayers();
+
+                for (let i = 0; i < placemarks.length; i++) {
+                    const placemark = placemarks[i];
+                    const nameEl = placemark.getElementsByTagName('name')[0];
+                    const name = nameEl ? nameEl.textContent.trim() : '';
+
+                    const dataElements = placemark.getElementsByTagName('Data');
+                    let comment = '';
+                    for (let k = 0; k < dataElements.length; k++) {
+                        if (dataElements[k].getAttribute('name') === 'comments') {
+                            const valEl = dataElements[k].getElementsByTagName('value')[0];
+                            if (valEl) {
+                                comment = valEl.textContent.trim();
+                            }
+                            break;
+                        }
+                    }
+
+                    const lineStrings = placemark.getElementsByTagName('LineString');
+                    for (let j = 0; j < lineStrings.length; j++) {
+                        const coordsEl = lineStrings[j].getElementsByTagName('coordinates')[0];
+                        if (coordsEl) {
+                            const coordsText = coordsEl.textContent.trim();
+                            const pts = coordsText.split(/\s+/).map(str => {
+                                const parts = str.split(',');
+                                if (parts.length >= 2) {
+                                    const lon = parseFloat(parts[0]);
+                                    const lat = parseFloat(parts[1]);
+                                    if (!isNaN(lat) && !isNaN(lon)) {
+                                        return [lat, lon];
+                                    }
+                                }
+                                return null;
+                            }).filter(pt => pt !== null);
+
+                            if (pts.length >= 2) {
+                                const poly = L.polyline(pts, {
+                                    color: '#a855f7',
+                                    weight: 3.0,
+                                    dashArray: '6, 6',
+                                    opacity: 0.85
+                                }).addTo(baseRoutesLayer);
+
+                                poly.on('click', (e) => {
+                                    L.DomEvent.stopPropagation(e);
+                                });
+
+                                let tooltipText = '';
+                                if (name) {
+                                    tooltipText += `<strong style="display:block; margin-bottom: 2px;">${name}</strong>`;
+                                }
+                                if (comment) {
+                                    tooltipText += `<span style="font-size: 10px; color: #cbd5e1; white-space: normal; display: block; max-width: 200px;">${comment}</span>`;
+                                }
+
+                                if (tooltipText) {
+                                    poly.bindTooltip(tooltipText, {
+                                        sticky: true,
+                                        className: 'base-route-tooltip'
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading or parsing base routes KML:", err);
+            }
+        }
+
+        // Initialize frontline and base routes
+        loadDeepStateFrontline();
+        loadBaseRoutes();
+
+        // Initialize missions on page load
+        loadMissions();
+        updateMissionSelect();
+        handleMissionChange(currentMissionId);
+    </script>
+</body>
+
+</html>
