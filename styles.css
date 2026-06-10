@@ -56,8 +56,8 @@ body {
 }
 
 .diamond {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     transform: translate(-50%, -50%) rotate(45deg);
     position: absolute;
     left: 0;
@@ -67,6 +67,9 @@ body {
     cursor: pointer;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
     transition: transform 0.15s ease, filter 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .diamond:hover {
@@ -82,10 +85,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
-    font-size: 11px;
-    line-height: 1;
+    width: 24px;
+    height: 24px;
     pointer-events: none;
     user-select: none;
 }
@@ -111,8 +112,8 @@ body {
 .sec-diamond {
     background: #f97316;
     border-color: #fed7aa;
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
     box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
 }
 
@@ -131,8 +132,8 @@ body {
 }
 
 .marker-icon .threat-icon-img {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     margin-right: 0;
     display: block;
 }
@@ -284,7 +285,7 @@ body {
 }
 
 /* Geoman Vertex Handle Styling - Smaller & Interactive */
-.leaflet-marker-icon.leaflet-pm-draggable {
+.leaflet-marker-icon.leaflet-pm-draggable:not(.threat-div-icon) {
     width: 5px !important;
     height: 5px !important;
     margin-left: -2.5px !important;
@@ -296,12 +297,12 @@ body {
     transition: transform 0.1s ease !important;
 }
 
-.leaflet-marker-icon.leaflet-pm-draggable:hover {
+.leaflet-marker-icon.leaflet-pm-draggable:not(.threat-div-icon):hover {
     transform: scale(1.6) !important;
 }
 
 /* Make ghost (intermediate) vertex markers even smaller and less prominent */
-.leaflet-marker-icon.leaflet-pm-draggable.leaflet-pm-ghost-marker {
+.leaflet-marker-icon.leaflet-pm-draggable.leaflet-pm-ghost-marker:not(.threat-div-icon) {
     width: 4px !important;
     height: 4px !important;
     margin-left: -2px !important;

@@ -1098,7 +1098,7 @@ function renderRoute(coords, index) {
             <div class="btn-ui btn-close" style="left:-22px; top:-22px;" onclick="confirmDeleteRoute(${index})">×</div>
         </div>`;
         deleteMarker = L.marker(flat[0], {
-            icon: L.divIcon({ html: deleteMarkerHtml, className: '', iconSize: [0, 0] })
+            icon: L.divIcon({ html: deleteMarkerHtml, className: 'threat-div-icon', iconSize: [0, 0] })
         });
         if (poly.pm.enabled()) {
             deleteMarker.addTo(activeLayers);
@@ -1177,7 +1177,7 @@ function renderArea(coords, index) {
             <div class="btn-ui btn-close" style="left:-22px; top:-22px;" onclick="confirmDeleteArea(${index})">×</div>
         </div>`;
         deleteMarker = L.marker(flat[0], {
-            icon: L.divIcon({ html: deleteMarkerHtml, className: '', iconSize: [0, 0] })
+            icon: L.divIcon({ html: deleteMarkerHtml, className: 'threat-div-icon', iconSize: [0, 0] })
         });
         if (area.pm.enabled()) {
             deleteMarker.addTo(activeLayers);
@@ -1324,7 +1324,6 @@ function renderMarkers() {
 
         let html = `<div class="threat-marker-wrapper">
             <div class="diamond ${diamondClass}${extraClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, null, event)">
-                <span class="marker-icon">${getThreatIcon(item.name)}</span>
             </div>
             ${closeBtnHtml}
             <div class="label-threat ${isP ? 'text-white' : 'text-orange-400'}${window.amplifiersDisabled ? ' hidden' : ''}">${item.name}${probBadge}</div>
@@ -1344,7 +1343,6 @@ function renderMarkers() {
 
                 html += `<div style="position:absolute; top:-${offset}px; left:0;">
                     <div class="diamond sec-diamond${secExtraClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, ${idx}, event)">
-                        <span class="marker-icon">${getThreatIcon(sec.name)}</span>
                     </div>
                     ${secCloseBtnHtml}
                     <div class="label-threat text-orange-300 italic${window.amplifiersDisabled ? ' hidden' : ''}">${sec.name}${secProbBadge}</div>
@@ -1358,7 +1356,7 @@ function renderMarkers() {
         html += `</div>`;
 
         const marker = L.marker(item.latlng, {
-            icon: L.divIcon({ html, className: '', iconSize: [0, 0] }),
+            icon: L.divIcon({ html, className: 'threat-div-icon', iconSize: [0, 0] }),
             draggable: true
         }).addTo(markersLayer);
 
