@@ -1473,6 +1473,14 @@ function renderMarkers() {
         const sevMarkerBadge = getSeverityMarkerBadgeHtml(item.severity);
         const probMarkerBadge = getProbabilityMarkerBadgeHtml(item.probability);
 
+        // Severity-based label colour for primary threats
+        let sevLabelColor = 'text-white';
+        if (isP) {
+            if (item.severity === 'катастрофічно') sevLabelColor = 'text-red-400';
+            else if (item.severity === 'критично')    sevLabelColor = 'text-orange-400';
+            else if (item.severity === 'помірно')     sevLabelColor = 'text-yellow-400';
+        }
+
         let html = `<div class="threat-marker-wrapper">
             <div class="diamond ${diamondClass}${extraClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, null, event)">
                 <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
@@ -1480,7 +1488,7 @@ function renderMarkers() {
             ${sevMarkerBadge}
             ${probMarkerBadge}
             ${closeBtnHtml}
-            <div class="label-threat ${isP ? 'text-white' : 'text-orange-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${item.name}${probBadge}</div>
+            <div class="label-threat ${isP ? sevLabelColor : 'text-orange-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${item.shortName || item.name}</div>
             <div class="flex" style="position:absolute; left:0; top:0;">
                 ${isP ? `<div class="btn-ui btn-s-sec" style="left:20px; top:12px;" onclick="openLinked(${item.id})"><span>+</span></div>` : ''}
                 <div class="btn-ui btn-ctrl" style="left:${isP ? '42px' : '20px'}; top:12px;" onclick="openControls(${item.id}, null)">+</div>
@@ -1488,7 +1496,7 @@ function renderMarkers() {
             </div>`;
 
         if (isP) {
-            item.secondaries.forEach((sec, idx) => {
+                item.secondaries.forEach((sec, idx) => {
                 const offset = (idx + 1) * 55;
                 const secHasMeasures = sec.measures && sec.measures.length > 0;
                 const secExtraClass = secHasMeasures ? ' secured' : '';
@@ -1498,6 +1506,12 @@ function renderMarkers() {
                 const secSevMarkerBadge = getSeverityMarkerBadgeHtml(sec.severity);
                 const secProbMarkerBadge = getProbabilityMarkerBadgeHtml(sec.probability);
 
+                // Resolve shortName for secondary threat label
+                const secEntry = opsafeDb && opsafeDb.secondaryThreats
+                    ? opsafeDb.secondaryThreats.find(e => getSecThreatName(e) === sec.name)
+                    : null;
+                const secDisplayName = (secEntry && getSecThreatShortName(secEntry)) || sec.shortName || sec.name;
+
                 html += `<div style="position:absolute; top:-${offset}px; left:0;">
                     <div class="diamond sec-diamond${secExtraClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, ${idx}, event)">
                         <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
@@ -1505,7 +1519,7 @@ function renderMarkers() {
                     ${secSevMarkerBadge}
                     ${secProbMarkerBadge}
                     ${secCloseBtnHtml}
-                    <div class="label-threat text-orange-300 italic${window.amplifiersEnabled ? '' : ' hidden'}">${sec.name}${secProbBadge}</div>
+                    <div class="label-threat text-orange-300${window.amplifiersEnabled ? '' : ' hidden'}">${secDisplayName}</div>
                     <div class="flex" style="position:absolute; left:0; top:0;">
                         <div class="btn-ui btn-ctrl" style="left:20px; top:12px;" onclick="openControls(${item.id}, ${idx})">+</div>
                         ${sec.measures.length > 0 ? `<div class="btn-ui btn-info" style="left:42px; top:12px;" onclick="viewSingle(${item.id}, ${idx})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>` : ''}
@@ -2253,6 +2267,14 @@ let measureFilterText = "";
 let editingToolIndex = null;
 let toolFilterText = "";
 
+// --- SECONDARY THREAT HELPERS (supports both legacy string format and object format) ---
+function getSecThreatName(t) {
+    return (t && typeof t === 'object') ? (t.name || '') : (t || '');
+}
+function getSecThreatShortName(t) {
+    return (t && typeof t === 'object') ? (t.shortName || '') : '';
+}
+
 function openSettingsModal() {
     closeModals();
     document.getElementById('modal-settings').classList.remove('hidden');
@@ -2354,11 +2376,18 @@ function renderThreatsSettings(container) {
         } else if (t.severity === 'помірно') {
             severityColorClass = 'text-yellow-500';
         }
+
+        const shortNameDisplay = t.shortName
+            ? `<span class="text-[9px] text-slate-400 font-mono">Скорочення: <span class="text-slate-300 font-semibold">${t.shortName}</span></span>`
+            : `<span class="text-[9px] text-slate-600 font-mono italic">Скорочення: не задано</span>`;
         
         item.innerHTML = `
             <div class="flex-1 min-w-0 pr-2">
                 <div class="text-xs font-bold text-white truncate" title="${t.name}">${getThreatIcon(t.name)} ${t.name}</div>
-                <div class="text-[9px] text-slate-400 uppercase font-mono">Тяжкість: <span class="${severityColorClass} font-bold">${t.severity}</span></div>
+                <div class="flex items-center gap-3 mt-0.5">
+                    <div class="text-[9px] text-slate-400 uppercase font-mono">Тяжкість: <span class="${severityColorClass} font-bold">${t.severity}</span></div>
+                    ${shortNameDisplay}
+                </div>
             </div>
             <div class="flex gap-1.5 shrink-0">
                 <button onclick="editPrimaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
@@ -2373,12 +2402,18 @@ function renderThreatsSettings(container) {
     });
     
     const listSecondary = colSecondary.querySelector('#settings-secondary-threats-list');
-    opsafeDb.secondaryThreats.forEach((name, index) => {
+    opsafeDb.secondaryThreats.forEach((entry, index) => {
+        const tName = getSecThreatName(entry);
+        const tShortName = getSecThreatShortName(entry);
         const item = document.createElement('div');
         item.className = "flex justify-between items-center bg-slate-900/80 p-2.5 rounded border border-white/5 hover:border-white/10";
+        const secShortDisplay = tShortName
+            ? `<span class="text-[9px] text-slate-400 font-mono">Скорочення: <span class="text-slate-300 font-semibold">${tShortName}</span></span>`
+            : `<span class="text-[9px] text-slate-600 font-mono italic">Скорочення: не задано</span>`;
         item.innerHTML = `
             <div class="flex-1 min-w-0 pr-2">
-                <div class="text-xs font-bold text-white truncate" title="${name}">${getThreatIcon(name)} ${name}</div>
+                <div class="text-xs font-bold text-white truncate" title="${tName}">${getThreatIcon(tName)} ${tName}</div>
+                <div class="mt-0.5">${secShortDisplay}</div>
             </div>
             <div class="flex gap-1.5 shrink-0">
                 <button onclick="editSecondaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
@@ -2446,6 +2481,10 @@ function addNewPrimaryThreat() {
             <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" placeholder="Введіть назву загрози...">
         </div>
         <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Скорочена назва (shortName)</label>
+            <input type="text" id="threat-shortname-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" placeholder="Напр.: ДРГ, КАБ, Арт. ураження...">
+        </div>
+        <div>
             <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Рівень тяжкості</label>
             <select id="threat-severity-select" class="custom-select">
                 <option value="помірно">Помірно</option>
@@ -2461,6 +2500,7 @@ function addNewPrimaryThreat() {
         confirmText: "Додати",
         onConfirm: (modal) => {
             const nameInput = modal.querySelector('#threat-name-input');
+            const shortNameInput = modal.querySelector('#threat-shortname-input');
             const severitySelect = modal.querySelector('#threat-severity-select');
             
             const name = nameInput.value.trim();
@@ -2474,9 +2514,10 @@ function addNewPrimaryThreat() {
                 return false;
             }
             
+            const shortName = shortNameInput.value.trim();
             const severity = severitySelect.value;
             
-            opsafeDb.primaryThreats.push({ name, severity });
+            opsafeDb.primaryThreats.push({ name, shortName, severity });
             opsafeDb.threatConnections.push({ primaryThreat: name, secondaryThreats: [] });
             
             saveOpsafeDb();
@@ -2496,6 +2537,10 @@ function editPrimaryThreat(index) {
             <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" value="${t.name}">
         </div>
         <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Скорочена назва (shortName)</label>
+            <input type="text" id="threat-shortname-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" value="${t.shortName || ''}" placeholder="Напр.: ДРГ, КАБ, Арт. ураження...">
+        </div>
+        <div>
             <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Рівень тяжкості</label>
             <select id="threat-severity-select" class="custom-select">
                 <option value="помірно" ${t.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
@@ -2511,6 +2556,7 @@ function editPrimaryThreat(index) {
         confirmText: "Зберегти",
         onConfirm: (modal) => {
             const nameInput = modal.querySelector('#threat-name-input');
+            const shortNameInput = modal.querySelector('#threat-shortname-input');
             const severitySelect = modal.querySelector('#threat-severity-select');
             
             const newName = nameInput.value.trim();
@@ -2524,6 +2570,7 @@ function editPrimaryThreat(index) {
                 return false;
             }
             
+            const newShortName = shortNameInput.value.trim();
             const newSeverity = severitySelect.value;
             const oldName = t.name;
             
@@ -2547,6 +2594,7 @@ function editPrimaryThreat(index) {
                 m.data.database.forEach(d => {
                     if (d.name === oldName) {
                         d.name = newName;
+                        d.shortName = newShortName;
                         d.severity = newSeverity;
                         d.tag = "#" + newSeverity;
                     }
@@ -2554,6 +2602,7 @@ function editPrimaryThreat(index) {
             });
             
             t.name = newName;
+            t.shortName = newShortName;
             t.severity = newSeverity;
             
             saveOpsafeDb();
@@ -2611,6 +2660,10 @@ function addNewSecondaryThreat() {
             <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва вторинної загрози</label>
             <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" placeholder="Введіть назву вторинної загрози...">
         </div>
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Скорочена назва (shortName)</label>
+            <input type="text" id="threat-shortname-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" placeholder="Напр.: Спостереження, Завади...">
+        </div>
     `;
     
     showCustomModal({
@@ -2619,18 +2672,20 @@ function addNewSecondaryThreat() {
         confirmText: "Додати",
         onConfirm: (modal) => {
             const nameInput = modal.querySelector('#threat-name-input');
+            const shortNameInput = modal.querySelector('#threat-shortname-input');
             const name = nameInput.value.trim();
             if (!name) {
                 alert("Назва не може бути порожньою!");
                 return false;
             }
             
-            if (opsafeDb.secondaryThreats.some(t => t.toLowerCase() === name.toLowerCase())) {
+            if (opsafeDb.secondaryThreats.some(t => getSecThreatName(t).toLowerCase() === name.toLowerCase())) {
                 alert("Така загроза вже існує!");
                 return false;
             }
             
-            opsafeDb.secondaryThreats.push(name);
+            const shortName = shortNameInput.value.trim();
+            opsafeDb.secondaryThreats.push({ name, shortName });
             
             saveOpsafeDb();
             renderSettingsTabContent();
@@ -2641,12 +2696,18 @@ function addNewSecondaryThreat() {
 }
 
 function editSecondaryThreat(index) {
-    const oldName = opsafeDb.secondaryThreats[index];
+    const entry = opsafeDb.secondaryThreats[index];
+    const oldName = getSecThreatName(entry);
+    const oldShortName = getSecThreatShortName(entry);
     
     const htmlContent = `
         <div>
             <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва вторинної загрози</label>
             <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" value="${oldName}">
+        </div>
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Скорочена назва (shortName)</label>
+            <input type="text" id="threat-shortname-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" value="${oldShortName}" placeholder="Напр.: Спостереження, Завади...">
         </div>
     `;
     
@@ -2656,17 +2717,20 @@ function editSecondaryThreat(index) {
         confirmText: "Зберегти",
         onConfirm: (modal) => {
             const nameInput = modal.querySelector('#threat-name-input');
+            const shortNameInput = modal.querySelector('#threat-shortname-input');
             const newName = nameInput.value.trim();
             if (!newName) {
                 alert("Назва не може бути порожньою!");
                 return false;
             }
             
-            if (newName.toLowerCase() !== oldName.toLowerCase() && opsafeDb.secondaryThreats.some(x => x.toLowerCase() === newName.toLowerCase())) {
+            if (newName.toLowerCase() !== oldName.toLowerCase() && opsafeDb.secondaryThreats.some(x => getSecThreatName(x).toLowerCase() === newName.toLowerCase())) {
                 alert("Така загроза вже існує!");
                 return false;
             }
             
+            const newShortName = shortNameInput.value.trim();
+
             opsafeDb.threatConnections.forEach(tc => {
                 tc.secondaryThreats = tc.secondaryThreats.map(n => n === oldName ? newName : n);
             });
@@ -2690,7 +2754,8 @@ function editSecondaryThreat(index) {
                 });
             });
             
-            opsafeDb.secondaryThreats[index] = newName;
+            // Store as object (migrates legacy string entries automatically)
+            opsafeDb.secondaryThreats[index] = { name: newName, shortName: newShortName };
             
             saveOpsafeDb();
             saveMissions();
@@ -2703,7 +2768,8 @@ function editSecondaryThreat(index) {
 }
 
 function deleteSecondaryThreat(index) {
-    const name = opsafeDb.secondaryThreats[index];
+    const entry = opsafeDb.secondaryThreats[index];
+    const name = getSecThreatName(entry);
     
     const htmlContent = `
         <div class="text-center py-2">
@@ -2916,7 +2982,8 @@ function populateMeasureEditForm() {
     });
     
     html += `<div class="text-[9px] text-orange-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mt-3 mb-1.5">Вторинні загрози:</div>`;
-    opsafeDb.secondaryThreats.forEach(name => {
+    opsafeDb.secondaryThreats.forEach(entry => {
+        const name = getSecThreatName(entry);
         const checked = m.threatRelations.includes(name) ? 'checked' : '';
         html += `
             <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
@@ -3157,7 +3224,8 @@ function populateToolEditForm() {
     });
     
     html += `<div class="text-[9px] text-orange-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mt-3 mb-1.5">Вторинні загрози:</div>`;
-    opsafeDb.secondaryThreats.forEach(stName => {
+    opsafeDb.secondaryThreats.forEach(entry => {
+        const stName = getSecThreatName(entry);
         const checked = t.threatRelations.includes(stName) ? 'checked' : '';
         html += `
             <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none">
@@ -3267,7 +3335,8 @@ function renderConnectionsSettings(container) {
                 <span class="text-[8.5px] px-2 py-0.5 bg-black/40 text-slate-400 font-mono tracking-tight lowercase">зв'язано вторинних: ${conn.secondaryThreats.length}</span>
             </h5>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                ${opsafeDb.secondaryThreats.map(st => {
+                ${opsafeDb.secondaryThreats.map(entry => {
+                    const st = getSecThreatName(entry);
                     const checked = conn.secondaryThreats.includes(st) ? 'checked' : '';
                     return `
                         <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none bg-black/10 p-1.5 rounded hover:bg-black/25 transition-colors">
@@ -3303,7 +3372,7 @@ function toggleThreatConnection(primaryName, secondaryName, isChecked) {
         mission.data.database.forEach(d => {
             if (d.name === primaryName) {
                 const secondaryNames = conn.secondaryThreats;
-                const allSecondaryNames = opsafeDb.secondaryThreats;
+                const allSecondaryNames = opsafeDb.secondaryThreats.map(e => getSecThreatName(e));
                 d.rel = secondaryNames.map(name => allSecondaryNames.indexOf(name)).filter(idx => idx !== -1);
             }
         });
