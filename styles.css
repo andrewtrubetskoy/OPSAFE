@@ -395,3 +395,12 @@ summary::-webkit-details-marker {
 summary {
     list-style: none !important;
 }
+
+/* Custom Layer Control Spacing & styling */
+.leaflet-control-layers-overlays label {
+    margin: 4px 0 !important;
+}
+.leaflet-control-layers-separator {
+    margin: 4px -10px 4px -6px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}

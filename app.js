@@ -25,7 +25,9 @@ const layerControl = L.control.layers(null, {
     "Лінія зіткнення (DeepState)": frontlineLayer
 }, { position: 'topright', collapsed: false }).addTo(map);
 
-// Inject "Без підписів" checkbox into layer control panel
+window.amplifiersEnabled = true;
+
+// Inject "Ампліфікатори" checkbox into layer control panel
 function injectCheckboxIntoLayerControl(control) {
     const container = control.getContainer();
     if (!container) return;
@@ -37,33 +39,42 @@ function injectCheckboxIntoLayerControl(control) {
     
     const separator = document.createElement('div');
     separator.className = 'leaflet-control-layers-separator';
-    separator.style.margin = '6px 0';
-    separator.style.borderTop = '1px solid rgba(255,255,255,0.1)';
-    overlaysList.appendChild(separator);
     
     const label = document.createElement('label');
-    label.style.display = 'flex';
-    label.style.alignItems = 'center';
-    label.style.gap = '6px';
-    label.style.marginTop = '6px';
-    label.style.cursor = 'pointer';
-    label.className = 'select-none text-[11px] font-bold text-slate-300 hover:text-white';
+    const div = document.createElement('div');
     
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.className = 'accent-emerald-500';
-    checkbox.checked = window.amplifiersDisabled;
-    checkbox.style.cursor = 'pointer';
+    checkbox.className = 'leaflet-control-layers-selector';
+    checkbox.checked = window.amplifiersEnabled;
     checkbox.onchange = (e) => {
         toggleAmplifiers(e.target.checked);
     };
     
     const span = document.createElement('span');
-    span.innerText = 'Без підписів';
+    span.innerText = ' Ампліфікатори';
     
-    label.appendChild(checkbox);
-    label.appendChild(span);
-    overlaysList.appendChild(label);
+    div.appendChild(checkbox);
+    div.appendChild(span);
+    label.appendChild(div);
+    
+    // Find frontline label if it exists to swap their positions
+    const labels = Array.from(overlaysList.querySelectorAll('label'));
+    let frontlineLabel = null;
+    for (const lbl of labels) {
+        if (lbl.innerText.includes('Лінія зіткнення')) {
+            frontlineLabel = lbl;
+            break;
+        }
+    }
+    
+    if (frontlineLabel) {
+        overlaysList.insertBefore(label, frontlineLabel);
+        overlaysList.insertBefore(separator, frontlineLabel);
+    } else {
+        overlaysList.appendChild(separator);
+        overlaysList.appendChild(label);
+    }
 }
 
 injectCheckboxIntoLayerControl(layerControl);
@@ -74,13 +85,12 @@ let contextMenuTargetLayer = null;
 let contextMenuThreat = null;
 let isPlacingThreat = false;
 
-window.amplifiersDisabled = false;
-function toggleAmplifiers(disabled) {
-    window.amplifiersDisabled = disabled;
+function toggleAmplifiers(enabled) {
+    window.amplifiersEnabled = enabled;
     const labels = document.querySelectorAll('.label-threat');
     labels.forEach(lbl => {
-        if (disabled) lbl.classList.add('hidden');
-        else lbl.classList.remove('hidden');
+        if (enabled) lbl.classList.remove('hidden');
+        else lbl.classList.add('hidden');
     });
 }
 
@@ -284,25 +294,49 @@ function handleContextMenuAction(mode) {
 }
 
 function confirmDeleteRoute(index) {
-    if (confirm("Ви дійсно бажаєте видалити цей маршрут?")) {
-        const m = missions.find(x => x.id === currentMissionId);
-        if (m) {
-            m.data.routes.splice(index, 1);
-            saveMissions();
-            handleMissionChange(currentMissionId);
+    showCustomModal({
+        title: "Видалити маршрут",
+        htmlContent: `
+            <div class="text-center py-2">
+                <p class="text-sm">Ви дійсно бажаєте видалити цей маршрут?</p>
+                <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+            </div>
+        `,
+        confirmText: "Видалити",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            const m = missions.find(x => x.id === currentMissionId);
+            if (m) {
+                m.data.routes.splice(index, 1);
+                saveMissions();
+                handleMissionChange(currentMissionId);
+            }
+            return true;
         }
-    }
+    });
 }
 
 function confirmDeleteArea(index) {
-    if (confirm("Ви дійсно бажаєте видалити цей район позицій?")) {
-        const m = missions.find(x => x.id === currentMissionId);
-        if (m) {
-            m.data.areas.splice(index, 1);
-            saveMissions();
-            handleMissionChange(currentMissionId);
+    showCustomModal({
+        title: "Видалити район позицій",
+        htmlContent: `
+            <div class="text-center py-2">
+                <p class="text-sm">Ви дійсно бажаєте видалити цей район позицій?</p>
+                <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+            </div>
+        `,
+        confirmText: "Видалити",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            const m = missions.find(x => x.id === currentMissionId);
+            if (m) {
+                m.data.areas.splice(index, 1);
+                saveMissions();
+                handleMissionChange(currentMissionId);
+            }
+            return true;
         }
-    }
+    });
 }
 
 function deleteShape(layer) {
@@ -313,33 +347,57 @@ function deleteShape(layer) {
     const layerCoords = getFlatLatLngs(layer);
 
     if (layer instanceof L.Polygon) {
-        if (confirm("Ви дійсно бажаєте видалити цей район позицій?")) {
-            m.data.areas = m.data.areas.filter(areaCoords => {
-                const flat = areaCoords.map(c => L.latLng(c));
-                if (flat.length !== layerCoords.length) return true;
-                for (let i = 0; i < flat.length; i++) {
-                    if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
-                }
-                return false;
-            });
-            activeLayers.removeLayer(layer);
-            saveMissions();
-            handleMissionChange(currentMissionId);
-        }
+        showCustomModal({
+            title: "Видалити район позицій",
+            htmlContent: `
+                <div class="text-center py-2">
+                    <p class="text-sm">Ви дійсно бажаєте видалити цей район позицій?</p>
+                    <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+                </div>
+            `,
+            confirmText: "Видалити",
+            confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+            onConfirm: () => {
+                m.data.areas = m.data.areas.filter(areaCoords => {
+                    const flat = areaCoords.map(c => L.latLng(c));
+                    if (flat.length !== layerCoords.length) return true;
+                    for (let i = 0; i < flat.length; i++) {
+                        if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
+                    }
+                    return false;
+                });
+                activeLayers.removeLayer(layer);
+                saveMissions();
+                handleMissionChange(currentMissionId);
+                return true;
+            }
+        });
     } else if (layer instanceof L.Polyline) {
-        if (confirm("Ви дійсно бажаєте видалити цей маршрут?")) {
-            m.data.routes = m.data.routes.filter(routeCoords => {
-                const flat = routeCoords.map(c => L.latLng(c));
-                if (flat.length !== layerCoords.length) return true;
-                for (let i = 0; i < flat.length; i++) {
-                    if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
-                }
-                return false;
-            });
-            activeLayers.removeLayer(layer);
-            saveMissions();
-            handleMissionChange(currentMissionId);
-        }
+        showCustomModal({
+            title: "Видалити маршрут",
+            htmlContent: `
+                <div class="text-center py-2">
+                    <p class="text-sm">Ви дійсно бажаєте видалити цей маршрут?</p>
+                    <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+                </div>
+            `,
+            confirmText: "Видалити",
+            confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+            onConfirm: () => {
+                m.data.routes = m.data.routes.filter(routeCoords => {
+                    const flat = routeCoords.map(c => L.latLng(c));
+                    if (flat.length !== layerCoords.length) return true;
+                    for (let i = 0; i < flat.length; i++) {
+                        if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
+                    }
+                    return false;
+                });
+                activeLayers.removeLayer(layer);
+                saveMissions();
+                handleMissionChange(currentMissionId);
+                return true;
+            }
+        });
     }
 }
 
@@ -430,7 +488,7 @@ function initDefaultMission() {
 }
 
 function openNewMissionModal() {
-    document.getElementById('mission-name-input').value = `${DEFAULT_MISSION_NAME} #${missionCounter}`;
+    document.getElementById('mission-name-input').value = DEFAULT_MISSION_NAME;
     document.getElementById('modal-new-mission').classList.remove('hidden');
 }
 
@@ -842,16 +900,28 @@ function showSelectionDeleteDialog() {
         return;
     }
 
-    const message = `Виділено об'єктів:
-- Маршрутів: ${selectedObjects.routes.length}
-- Районів позицій: ${selectedObjects.areas.length}
-- Загроз: ${selectedObjects.threats.length}
+    const htmlContent = `
+        <div class="text-center py-2">
+            <p class="text-sm">Ви дійсно бажаєте видалити всі виділені об'єкти (${totalCount} шт.)?</p>
+            <div class="my-3 text-left bg-slate-900/50 border border-white/5 rounded-lg p-3 max-w-[240px] mx-auto space-y-1 text-xs text-slate-300">
+                <div class="flex justify-between"><span>Маршрути:</span> <span class="font-bold text-slate-100">${selectedObjects.routes.length}</span></div>
+                <div class="flex justify-between"><span>Райони позицій:</span> <span class="font-bold text-slate-100">${selectedObjects.areas.length}</span></div>
+                <div class="flex justify-between"><span>Загрози:</span> <span class="font-bold text-slate-100">${selectedObjects.threats.length}</span></div>
+            </div>
+            <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+        </div>
+    `;
 
-Ви дійсно бажаєте видалити всі ці об'єкти (${totalCount} шт.)?`;
-
-    if (confirm(message)) {
-        deleteSelectedObjects();
-    }
+    showCustomModal({
+        title: "Видалити виділені об'єкти",
+        htmlContent: htmlContent,
+        confirmText: "Видалити",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            deleteSelectedObjects();
+            return true;
+        }
+    });
 }
 
 function deleteSelectedObjects() {
@@ -1315,6 +1385,15 @@ function getProbabilityColorStyle(prob) {
     }
 }
 
+function getSeverityColorStyle(sev) {
+    switch (sev) {
+        case 'катастрофічно': return 'color: #ef4444; font-weight: 900; background-color: #374151;'; // Red
+        case 'критично': return 'color: #f97316; font-weight: 700; background-color: #374151;'; // Orange
+        case 'помірно': return 'color: #eab308; font-weight: 700; background-color: #374151;'; // Yellow
+        default: return 'color: #cbd5e1; font-weight: bold; background-color: #374151;';
+    }
+}
+
 function getProbabilityBadgeHtml(prob) {
     if (!prob) return '';
     let color = '';
@@ -1348,7 +1427,7 @@ function renderMarkers() {
                 <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
             </div>
             ${closeBtnHtml}
-            <div class="label-threat ${isP ? 'text-white' : 'text-orange-400'}${window.amplifiersDisabled ? ' hidden' : ''}">${item.name}${probBadge}</div>
+            <div class="label-threat ${isP ? 'text-white' : 'text-orange-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${item.name}${probBadge}</div>
             <div class="flex" style="position:absolute; left:0; top:0;">
                 ${isP ? `<div class="btn-ui btn-s-sec" style="left:20px; top:12px;" onclick="openLinked(${item.id})"><span>+</span></div>` : ''}
                 <div class="btn-ui btn-ctrl" style="left:${isP ? '42px' : '20px'}; top:12px;" onclick="openControls(${item.id}, null)">+</div>
@@ -1368,7 +1447,7 @@ function renderMarkers() {
                         <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
                     </div>
                     ${secCloseBtnHtml}
-                    <div class="label-threat text-orange-300 italic${window.amplifiersDisabled ? ' hidden' : ''}">${sec.name}${secProbBadge}</div>
+                    <div class="label-threat text-orange-300 italic${window.amplifiersEnabled ? '' : ' hidden'}">${sec.name}${secProbBadge}</div>
                     <div class="flex" style="position:absolute; left:0; top:0;">
                         <div class="btn-ui btn-ctrl" style="left:20px; top:12px;" onclick="openControls(${item.id}, ${idx})">+</div>
                         ${sec.measures.length > 0 ? `<div class="btn-ui btn-info" style="left:42px; top:12px;" onclick="viewSingle(${item.id}, ${idx})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>` : ''}
@@ -1546,6 +1625,17 @@ function viewSingle(pid, sidx) {
         </select>
     </div>`;
 
+    if (sidx === null && target.type === 'primary') {
+        html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+            <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
+            <select onchange="updateSingleThreatSeverity(${pid}, this.value)" style="${getSeverityColorStyle(target.severity)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${target.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
+                <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${target.severity === 'критично' ? 'selected' : ''}>Критично</option>
+                <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${target.severity === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
+            </select>
+        </div>`;
+    }
+
     target.measures.forEach(item => {
         html += `<div class="sidebar-item">● ${item}</div>`;
     });
@@ -1606,6 +1696,15 @@ function viewCombined(pid) {
             <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${item.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
             <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${item.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
             <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${item.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
+        </select>
+    </div>`;
+
+    html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+        <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
+        <select onchange="updateSingleThreatSeverity(${pid}, this.value)" style="${getSeverityColorStyle(item.severity)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${item.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
+            <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${item.severity === 'критично' ? 'selected' : ''}>Критично</option>
+            <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${item.severity === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
         </select>
     </div>`;
 
@@ -1698,23 +1797,80 @@ function updateSingleThreatProbability(pid, sidx, val) {
     }
 }
 
-function confirmDeleteObj(id) {
-    if (confirm("Видалити загрозу?")) {
-        const m = missions.find(x => x.id === currentMissionId);
-        m.data.database = m.data.database.filter(d => d.id !== id);
-        renderMarkers();
+function updateSingleThreatSeverity(pid, val) {
+    const m = missions.find(x => x.id === currentMissionId);
+    if (!m) return;
+    const parent = m.data.database.find(d => d.id === pid);
+    if (parent) {
+        parent.severity = val;
+        parent.tag = "#" + val;
         saveMissions();
+        renderMarkers();
+        
+        // Refresh active sidebar view
+        const sidebar = document.getElementById('sidebar-content');
+        if (sidebar && sidebar.innerHTML.includes("ЗВІТ ОБ'ЄКТА")) {
+            viewCombined(pid);
+        } else {
+            viewSingle(pid, null);
+        }
     }
 }
 
+function confirmDeleteObj(id) {
+    const m = missions.find(x => x.id === currentMissionId);
+    const item = m ? m.data.database.find(d => d.id === id) : null;
+    const name = item ? item.name : "загрозу";
+    
+    showCustomModal({
+        title: "Видалити загрозу",
+        htmlContent: `
+            <div class="text-center py-2">
+                <p class="text-sm">Ви дійсно бажаєте видалити загрозу <strong>"${name}"</strong> з цієї місії?</p>
+                <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+            </div>
+        `,
+        confirmText: "Видалити",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            const m = missions.find(x => x.id === currentMissionId);
+            m.data.database = m.data.database.filter(d => d.id !== id);
+            renderMarkers();
+            saveMissions();
+            closeModals();
+            return true;
+        }
+    });
+}
+
 function confirmDeleteSec(pid, idx) {
-    if (confirm("Видалити загрозу?")) {
-        const m = missions.find(x => x.id === currentMissionId);
-        const p = m.data.database.find(d => d.id === pid);
-        p.secondaries.splice(idx, 1);
-        renderMarkers();
-        saveMissions();
-    }
+    const m = missions.find(x => x.id === currentMissionId);
+    const p = m ? m.data.database.find(d => d.id === pid) : null;
+    const sec = p && p.secondaries ? p.secondaries[idx] : null;
+    const name = sec ? sec.name : "вторинну загрозу";
+    
+    showCustomModal({
+        title: "Видалити вторинну загрозу",
+        htmlContent: `
+            <div class="text-center py-2">
+                <p class="text-sm">Ви дійсно бажаєте видалити вторинну загрозу <strong>"${name}"</strong> з цієї місії?</p>
+                <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+            </div>
+        `,
+        confirmText: "Видалити",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            const m = missions.find(x => x.id === currentMissionId);
+            const p = m.data.database.find(d => d.id === pid);
+            if (p && p.secondaries) {
+                p.secondaries.splice(idx, 1);
+            }
+            renderMarkers();
+            saveMissions();
+            closeModals();
+            return true;
+        }
+    });
 }
 
 function closeModals() {
@@ -2144,7 +2300,7 @@ function renderThreatsSettings(container) {
         item.innerHTML = `
             <div class="flex-1 min-w-0 pr-2">
                 <div class="text-xs font-bold text-white truncate" title="${t.name}">${getThreatIcon(t.name)} ${t.name}</div>
-                <div class="text-[9px] text-slate-400 uppercase font-mono">Важливість: <span class="${severityColorClass} font-bold">${t.severity}</span></div>
+                <div class="text-[9px] text-slate-400 uppercase font-mono">Тяжкість: <span class="${severityColorClass} font-bold">${t.severity}</span></div>
             </div>
             <div class="flex gap-1.5 shrink-0">
                 <button onclick="editPrimaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
@@ -2179,181 +2335,354 @@ function renderThreatsSettings(container) {
     });
 }
 
+function showCustomModal({ title, htmlContent, onConfirm, onCancel, confirmText = 'Зберегти', cancelText = 'Скасувати', confirmBtnClass = 'bg-emerald-600 hover:bg-emerald-500 text-white' }) {
+    const existing = document.getElementById('custom-dynamic-modal');
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-dynamic-modal';
+    overlay.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-[5000] p-4';
+    
+    overlay.innerHTML = `
+        <div class="glass-panel border-emerald-500 w-full max-w-md rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex justify-between items-center">
+                <h3 class="text-emerald-400 font-black uppercase text-xs tracking-wider">${title}</h3>
+                <button id="custom-modal-close-btn" class="text-white text-2xl font-light hover:text-red-500 transition-colors leading-none">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 text-slate-300 text-xs">
+                ${htmlContent}
+            </div>
+            <div class="p-4 bg-black/40 flex gap-3 border-t border-white/5">
+                <button id="custom-modal-cancel-btn" class="flex-1 py-2 text-[10px] uppercase font-bold border border-white/10 hover:bg-white/5 transition-colors text-slate-400 rounded">${cancelText}</button>
+                <button id="custom-modal-confirm-btn" class="flex-1 py-2 text-[10px] uppercase font-bold rounded shadow-lg active:scale-95 transition-transform ${confirmBtnClass}">${confirmText}</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    const close = () => {
+        overlay.remove();
+        if (onCancel) onCancel();
+    };
+    
+    overlay.querySelector('#custom-modal-close-btn').onclick = close;
+    overlay.querySelector('#custom-modal-cancel-btn').onclick = close;
+    
+    overlay.querySelector('#custom-modal-confirm-btn').onclick = () => {
+        if (onConfirm) {
+            const shouldClose = onConfirm(overlay);
+            if (shouldClose !== false) {
+                overlay.remove();
+            }
+        } else {
+            overlay.remove();
+        }
+    };
+}
+
 function addNewPrimaryThreat() {
-    const name = prompt("Введіть назву нової основної загрози:");
-    if (!name) return;
-    const cleaned = name.trim();
-    if (cleaned === "") return;
+    const htmlContent = `
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва загрози</label>
+            <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" placeholder="Введіть назву загрози...">
+        </div>
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Рівень тяжкості</label>
+            <select id="threat-severity-select" class="custom-select">
+                <option value="помірно">Помірно</option>
+                <option value="критично" selected>Критично</option>
+                <option value="катастрофічно">Катастрофічно</option>
+            </select>
+        </div>
+    `;
     
-    if (opsafeDb.primaryThreats.some(t => t.name.toLowerCase() === cleaned.toLowerCase())) {
-        alert("Така загроза вже існує!");
-        return;
-    }
-    
-    const severity = prompt("Вкажіть рівень важливості (помірно, критично, катастрофічно):", "критично");
-    if (!severity) return;
-    const sCleaned = severity.trim().toLowerCase();
-    
-    opsafeDb.primaryThreats.push({ name: cleaned, severity: sCleaned });
-    opsafeDb.threatConnections.push({ primaryThreat: cleaned, secondaryThreats: [] });
-    
-    saveOpsafeDb();
-    renderSettingsTabContent();
-    renderMarkers();
+    showCustomModal({
+        title: "Нова основна загроза",
+        htmlContent: htmlContent,
+        confirmText: "Додати",
+        onConfirm: (modal) => {
+            const nameInput = modal.querySelector('#threat-name-input');
+            const severitySelect = modal.querySelector('#threat-severity-select');
+            
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert("Назва не може бути порожньою!");
+                return false;
+            }
+            
+            if (opsafeDb.primaryThreats.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                alert("Така загроза вже існує!");
+                return false;
+            }
+            
+            const severity = severitySelect.value;
+            
+            opsafeDb.primaryThreats.push({ name, severity });
+            opsafeDb.threatConnections.push({ primaryThreat: name, secondaryThreats: [] });
+            
+            saveOpsafeDb();
+            renderSettingsTabContent();
+            renderMarkers();
+            return true;
+        }
+    });
 }
 
 function editPrimaryThreat(index) {
     const t = opsafeDb.primaryThreats[index];
-    const newName = prompt("Введіть нову назву для основної загрози:", t.name);
-    if (!newName) return;
-    const cleaned = newName.trim();
-    if (cleaned === "") return;
     
-    const newSeverity = prompt("Вкажіть рівень важливості (помірно, критично, катастрофічно):", t.severity);
-    if (!newSeverity) return;
-    const sCleaned = newSeverity.trim().toLowerCase();
+    const htmlContent = `
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва загрози</label>
+            <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" value="${t.name}">
+        </div>
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Рівень тяжкості</label>
+            <select id="threat-severity-select" class="custom-select">
+                <option value="помірно" ${t.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
+                <option value="критично" ${t.severity === 'критично' ? 'selected' : ''}>Критично</option>
+                <option value="катастрофічно" ${t.severity === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
+            </select>
+        </div>
+    `;
     
-    opsafeDb.threatConnections.forEach(tc => {
-        if (tc.primaryThreat === t.name) {
-            tc.primaryThreat = cleaned;
+    showCustomModal({
+        title: "Редагувати основну загрозу",
+        htmlContent: htmlContent,
+        confirmText: "Зберегти",
+        onConfirm: (modal) => {
+            const nameInput = modal.querySelector('#threat-name-input');
+            const severitySelect = modal.querySelector('#threat-severity-select');
+            
+            const newName = nameInput.value.trim();
+            if (!newName) {
+                alert("Назва не може бути порожньою!");
+                return false;
+            }
+            
+            if (newName.toLowerCase() !== t.name.toLowerCase() && opsafeDb.primaryThreats.some(x => x.name.toLowerCase() === newName.toLowerCase())) {
+                alert("Така загроза вже існує!");
+                return false;
+            }
+            
+            const newSeverity = severitySelect.value;
+            const oldName = t.name;
+            
+            opsafeDb.threatConnections.forEach(tc => {
+                if (tc.primaryThreat === oldName) {
+                    tc.primaryThreat = newName;
+                }
+            });
+            
+            opsafeDb.measures.forEach(m => {
+                m.threatRelations = m.threatRelations.map(n => n === oldName ? newName : n);
+            });
+            
+            if (opsafeDb.identTools) {
+                opsafeDb.identTools.forEach(it => {
+                    it.threatRelations = it.threatRelations.map(n => n === oldName ? newName : n);
+                });
+            }
+            
+            missions.forEach(m => {
+                m.data.database.forEach(d => {
+                    if (d.name === oldName) {
+                        d.name = newName;
+                        d.severity = newSeverity;
+                        d.tag = "#" + newSeverity;
+                    }
+                });
+            });
+            
+            t.name = newName;
+            t.severity = newSeverity;
+            
+            saveOpsafeDb();
+            saveMissions();
+            renderSettingsTabContent();
+            renderMarkers();
+            if (currentMissionId) handleMissionChange(currentMissionId);
+            return true;
         }
     });
-    
-    opsafeDb.measures.forEach(m => {
-        m.threatRelations = m.threatRelations.map(n => n === t.name ? cleaned : n);
-    });
-    
-    if (opsafeDb.identTools) {
-        opsafeDb.identTools.forEach(it => {
-            it.threatRelations = it.threatRelations.map(n => n === t.name ? cleaned : n);
-        });
-    }
-    
-    missions.forEach(m => {
-        m.data.database.forEach(d => {
-            if (d.name === t.name) {
-                d.name = cleaned;
-                d.severity = sCleaned;
-                d.tag = "#" + sCleaned;
-            }
-        });
-    });
-    
-    t.name = cleaned;
-    t.severity = sCleaned;
-    
-    saveOpsafeDb();
-    saveMissions();
-    renderSettingsTabContent();
-    renderMarkers();
-    if (currentMissionId) handleMissionChange(currentMissionId);
 }
 
 function deletePrimaryThreat(index) {
     const t = opsafeDb.primaryThreats[index];
-    if (confirm(`Ви дійсно бажаєте видалити загрозу "${t.name}"?`)) {
-        opsafeDb.threatConnections = opsafeDb.threatConnections.filter(tc => tc.primaryThreat !== t.name);
-        
-        opsafeDb.measures.forEach(m => {
-            m.threatRelations = m.threatRelations.filter(n => n !== t.name);
-        });
-        
-        if (opsafeDb.identTools) {
-            opsafeDb.identTools.forEach(it => {
-                it.threatRelations = it.threatRelations.filter(n => n !== t.name);
+    
+    const htmlContent = `
+        <div class="text-center py-2">
+            <p class="text-sm">Ви дійсно бажаєте видалити основну загрозу <strong>"${t.name}"</strong>?</p>
+            <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+        </div>
+    `;
+    
+    showCustomModal({
+        title: "Видалити загрозу",
+        htmlContent: htmlContent,
+        confirmText: "Видалити",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            opsafeDb.threatConnections = opsafeDb.threatConnections.filter(tc => tc.primaryThreat !== t.name);
+            
+            opsafeDb.measures.forEach(m => {
+                m.threatRelations = m.threatRelations.filter(n => n !== t.name);
             });
+            
+            if (opsafeDb.identTools) {
+                opsafeDb.identTools.forEach(it => {
+                    it.threatRelations = it.threatRelations.filter(n => n !== t.name);
+                });
+            }
+            
+            opsafeDb.primaryThreats.splice(index, 1);
+            
+            saveOpsafeDb();
+            renderSettingsTabContent();
+            renderMarkers();
+            if (currentMissionId) handleMissionChange(currentMissionId);
+            return true;
         }
-        
-        opsafeDb.primaryThreats.splice(index, 1);
-        
-        saveOpsafeDb();
-        renderSettingsTabContent();
-        renderMarkers();
-        if (currentMissionId) handleMissionChange(currentMissionId);
-    }
+    });
 }
 
 function addNewSecondaryThreat() {
-    const name = prompt("Введіть назву нової вторинної загрози:");
-    if (!name) return;
-    const cleaned = name.trim();
-    if (cleaned === "") return;
+    const htmlContent = `
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва вторинної загрози</label>
+            <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" placeholder="Введіть назву вторинної загрози...">
+        </div>
+    `;
     
-    if (opsafeDb.secondaryThreats.includes(cleaned)) {
-        alert("Така загроза вже існує!");
-        return;
-    }
-    
-    opsafeDb.secondaryThreats.push(cleaned);
-    
-    saveOpsafeDb();
-    renderSettingsTabContent();
-    renderMarkers();
+    showCustomModal({
+        title: "Нова вторинна загроза",
+        htmlContent: htmlContent,
+        confirmText: "Додати",
+        onConfirm: (modal) => {
+            const nameInput = modal.querySelector('#threat-name-input');
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert("Назва не може бути порожньою!");
+                return false;
+            }
+            
+            if (opsafeDb.secondaryThreats.some(t => t.toLowerCase() === name.toLowerCase())) {
+                alert("Така загроза вже існує!");
+                return false;
+            }
+            
+            opsafeDb.secondaryThreats.push(name);
+            
+            saveOpsafeDb();
+            renderSettingsTabContent();
+            renderMarkers();
+            return true;
+        }
+    });
 }
 
 function editSecondaryThreat(index) {
     const oldName = opsafeDb.secondaryThreats[index];
-    const newName = prompt("Введіть нову назву для вторинної загрози:", oldName);
-    if (!newName) return;
-    const cleaned = newName.trim();
-    if (cleaned === "") return;
     
-    opsafeDb.threatConnections.forEach(tc => {
-        tc.secondaryThreats = tc.secondaryThreats.map(n => n === oldName ? cleaned : n);
-    });
+    const htmlContent = `
+        <div>
+            <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва вторинної загрози</label>
+            <input type="text" id="threat-name-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" value="${oldName}">
+        </div>
+    `;
     
-    opsafeDb.measures.forEach(m => {
-        m.threatRelations = m.threatRelations.map(n => n === oldName ? cleaned : n);
-    });
-    
-    if (opsafeDb.identTools) {
-        opsafeDb.identTools.forEach(it => {
-            it.threatRelations = it.threatRelations.map(n => n === oldName ? cleaned : n);
-        });
-    }
-    
-    missions.forEach(m => {
-        m.data.database.forEach(d => {
-            if (d.name === oldName) d.name = cleaned;
-            d.secondaries.forEach(sec => {
-                if (sec.name === oldName) sec.name = cleaned;
+    showCustomModal({
+        title: "Редагувати вторинну загрозу",
+        htmlContent: htmlContent,
+        confirmText: "Зберегти",
+        onConfirm: (modal) => {
+            const nameInput = modal.querySelector('#threat-name-input');
+            const newName = nameInput.value.trim();
+            if (!newName) {
+                alert("Назва не може бути порожньою!");
+                return false;
+            }
+            
+            if (newName.toLowerCase() !== oldName.toLowerCase() && opsafeDb.secondaryThreats.some(x => x.toLowerCase() === newName.toLowerCase())) {
+                alert("Така загроза вже існує!");
+                return false;
+            }
+            
+            opsafeDb.threatConnections.forEach(tc => {
+                tc.secondaryThreats = tc.secondaryThreats.map(n => n === oldName ? newName : n);
             });
-        });
+            
+            opsafeDb.measures.forEach(m => {
+                m.threatRelations = m.threatRelations.map(n => n === oldName ? newName : n);
+            });
+            
+            if (opsafeDb.identTools) {
+                opsafeDb.identTools.forEach(it => {
+                    it.threatRelations = it.threatRelations.map(n => n === oldName ? newName : n);
+                });
+            }
+            
+            missions.forEach(m => {
+                m.data.database.forEach(d => {
+                    if (d.name === oldName) d.name = newName;
+                    d.secondaries.forEach(sec => {
+                        if (sec.name === oldName) sec.name = newName;
+                    });
+                });
+            });
+            
+            opsafeDb.secondaryThreats[index] = newName;
+            
+            saveOpsafeDb();
+            saveMissions();
+            renderSettingsTabContent();
+            renderMarkers();
+            if (currentMissionId) handleMissionChange(currentMissionId);
+            return true;
+        }
     });
-    
-    opsafeDb.secondaryThreats[index] = cleaned;
-    
-    saveOpsafeDb();
-    saveMissions();
-    renderSettingsTabContent();
-    renderMarkers();
-    if (currentMissionId) handleMissionChange(currentMissionId);
 }
 
 function deleteSecondaryThreat(index) {
     const name = opsafeDb.secondaryThreats[index];
-    if (confirm(`Ви дійсно бажаєте видалити вторинну загрозу "${name}"?`)) {
-        opsafeDb.threatConnections.forEach(tc => {
-            tc.secondaryThreats = tc.secondaryThreats.filter(n => n !== name);
-        });
-        
-        opsafeDb.measures.forEach(m => {
-            m.threatRelations = m.threatRelations.filter(n => n !== name);
-        });
-        
-        if (opsafeDb.identTools) {
-            opsafeDb.identTools.forEach(it => {
-                it.threatRelations = it.threatRelations.filter(n => n !== name);
+    
+    const htmlContent = `
+        <div class="text-center py-2">
+            <p class="text-sm">Ви дійсно бажаєте видалити вторинну загрозу <strong>"${name}"</strong>?</p>
+            <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+        </div>
+    `;
+    
+    showCustomModal({
+        title: "Видалити вторинну загрозу",
+        htmlContent: htmlContent,
+        confirmText: "Видалити",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            opsafeDb.threatConnections.forEach(tc => {
+                tc.secondaryThreats = tc.secondaryThreats.filter(n => n !== name);
             });
+            
+            opsafeDb.measures.forEach(m => {
+                m.threatRelations = m.threatRelations.filter(n => n !== name);
+            });
+            
+            if (opsafeDb.identTools) {
+                opsafeDb.identTools.forEach(it => {
+                    it.threatRelations = it.threatRelations.filter(n => n !== name);
+                });
+            }
+            
+            opsafeDb.secondaryThreats.splice(index, 1);
+            
+            saveOpsafeDb();
+            renderSettingsTabContent();
+            renderMarkers();
+            if (currentMissionId) handleMissionChange(currentMissionId);
+            return true;
         }
-        
-        opsafeDb.secondaryThreats.splice(index, 1);
-        
-        saveOpsafeDb();
-        renderSettingsTabContent();
-        renderMarkers();
-        if (currentMissionId) handleMissionChange(currentMissionId);
-    }
+    });
 }
 
 function renderMeasuresSettings(container) {
