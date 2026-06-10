@@ -8,45 +8,74 @@ const DEFAULT_OPSAFE_DB = {
   "primaryThreats": [
     {
       "name": "Дистанційне мінування (ПТМ, ППМ)",
+      "shortName": "Мін. ПТМ/ППМ",
       "severity": "критично"
     },
     {
       "name": "Дистанційне мінування (FPV ждуни)",
+      "shortName": "Мін. FPV",
       "severity": "критично"
     },
     {
       "name": "Ураження FPV \\ баражуючий боєприпас",
+      "shortName": "Ураження FPV",
       "severity": "критично"
     },
     {
       "name": "Ураження скидом (малі та великі бомбери)",
+      "shortName": "Ураження скидом",
       "severity": "критично"
     },
     {
       "name": "Ураження КАБ",
+      "shortName": "КАБ",
       "severity": "катастрофічно"
     },
     {
       "name": "Ураження артилерією",
+      "shortName": "Арт. ураження",
       "severity": "критично"
     },
     {
       "name": "ДРГ",
+      "shortName": "ДРГ",
       "severity": "критично"
     },
     {
       "name": "Фільтрація піхоти",
+      "shortName": "Фільтрація",
       "severity": "помірно"
     }
   ],
   "secondaryThreats": [
-    "Активне спостереження",
-    "Завади на маршруті",
-    "Обізнаність противника, активний маршрут",
-    "Обізнаність противника про позицію БпЛА",
-    "Розташування поряд інших позицій СОУ",
-    "Розташування позиції в населеному пункті",
-    "Популярний, відомий район позицій"
+    {
+      "name": "Активне спостереження",
+      "shortName": "Спостереження"
+    },
+    {
+      "name": "Завади на маршруті",
+      "shortName": "Завади"
+    },
+    {
+      "name": "Обізнаність противника, активний маршрут",
+      "shortName": "Маршрут розкритий"
+    },
+    {
+      "name": "Обізнаність противника про позицію БпЛА",
+      "shortName": "Позиція розкрита"
+    },
+    {
+      "name": "Розташування поряд інших позицій СОУ",
+      "shortName": "Сусіди СОУ"
+    },
+    {
+      "name": "Розташування позиції в населеному пункті",
+      "shortName": "В нас. пункті"
+    },
+    {
+      "name": "Популярний, відомий район позицій",
+      "shortName": "Відомий район"
+    }
   ],
   "measures": [
     {
@@ -1251,141 +1280,148 @@ const DEFAULT_OPSAFE_DB = {
 };
 
 function loadOpsafeDb() {
-    const saved = localStorage.getItem('opsafe_db');
-    if (saved) {
-        try {
-            opsafeDb = JSON.parse(saved);
-        } catch(e) {
-            console.error("Error loading opsafe_db from localStorage:", e);
-            opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
-        }
-    } else {
-        opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
+  const saved = localStorage.getItem('opsafe_db');
+  if (saved) {
+    try {
+      opsafeDb = JSON.parse(saved);
+    } catch (e) {
+      console.error("Error loading opsafe_db from localStorage:", e);
+      opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
     }
+  } else {
+    opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
+  }
 
-    // Strict structure validation to prevent empty settings screen
-    if (!opsafeDb || typeof opsafeDb !== 'object' || !opsafeDb.primaryThreats || !opsafeDb.secondaryThreats || !opsafeDb.measures || !opsafeDb.threatConnections) {
-        console.warn("opsafeDb structure is invalid, resetting to default...");
-        opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
-    }
+  // Strict structure validation to prevent empty settings screen
+  if (!opsafeDb || typeof opsafeDb !== 'object' || !opsafeDb.primaryThreats || !opsafeDb.secondaryThreats || !opsafeDb.measures || !opsafeDb.threatConnections) {
+    console.warn("opsafeDb structure is invalid, resetting to default...");
+    opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
+  }
 
-    window.opsafeDb = opsafeDb;
-    window.DEFAULT_OPSAFE_DB = DEFAULT_OPSAFE_DB;
+  window.opsafeDb = opsafeDb;
+  window.DEFAULT_OPSAFE_DB = DEFAULT_OPSAFE_DB;
 }
 
 function saveOpsafeDb() {
-    localStorage.setItem('opsafe_db', JSON.stringify(opsafeDb));
-    window.opsafeDb = opsafeDb;
+  localStorage.setItem('opsafe_db', JSON.stringify(opsafeDb));
+  window.opsafeDb = opsafeDb;
 }
 
 // Initialize database
 loadOpsafeDb();
 
+// Helper to normalize secondary threat entries (supports both legacy string and object {name, shortName} formats)
+function _getSecName(t) {
+  return (t && typeof t === 'object') ? (t.name || '') : (t || '');
+}
+
 // Backward compatibility layer
 Object.defineProperty(window, 'THREAT_NAMES', {
-    get: function() {
-        if (!opsafeDb) return [];
-        const primaryNames = opsafeDb.primaryThreats.map(t => t.name);
-        const secondaryNames = opsafeDb.secondaryThreats;
-        return [...primaryNames, ...secondaryNames];
-    },
-    configurable: true
+  get: function () {
+    if (!opsafeDb) return [];
+    const primaryNames = opsafeDb.primaryThreats.map(t => t.name);
+    const secondaryNames = opsafeDb.secondaryThreats.map(t => _getSecName(t));
+    return [...primaryNames, ...secondaryNames];
+  },
+  configurable: true
 });
 
 Object.defineProperty(window, 'PRIMARY_THREATS', {
-    get: function() {
-        if (!opsafeDb) return [];
-        return opsafeDb.primaryThreats.map(t => {
-            const conn = opsafeDb.threatConnections.find(tc => tc.primaryThreat === t.name);
-            const secondaryNames = conn ? conn.secondaryThreats : [];
-            const allSecondaryNames = opsafeDb.secondaryThreats;
-            const relIndices = secondaryNames.map(name => allSecondaryNames.indexOf(name)).filter(idx => idx !== -1);
-            return {
-                name: t.name,
-                tag: "#" + t.severity,
-                severity: t.severity,
-                rel: relIndices
-            };
-        });
-    },
-    configurable: true
+  get: function () {
+    if (!opsafeDb) return [];
+    return opsafeDb.primaryThreats.map(t => {
+      const conn = opsafeDb.threatConnections.find(tc => tc.primaryThreat === t.name);
+      const secondaryNames = conn ? conn.secondaryThreats : [];
+      const allSecondaryNames = opsafeDb.secondaryThreats.map(e => _getSecName(e));
+      const relIndices = secondaryNames.map(name => allSecondaryNames.indexOf(name)).filter(idx => idx !== -1);
+      return {
+        name: t.name,
+        shortName: t.shortName || '',
+        tag: "#" + t.severity,
+        severity: t.severity,
+        rel: relIndices
+      };
+    });
+  },
+  configurable: true
 });
 
 Object.defineProperty(window, 'SECONDARY_TITLES', {
-    get: function() {
-        if (!opsafeDb) return [];
-        return opsafeDb.secondaryThreats;
-    },
-    configurable: true
+  get: function () {
+    if (!opsafeDb) return [];
+    // Always return plain name strings for backward compatibility
+    return opsafeDb.secondaryThreats.map(t => _getSecName(t));
+  },
+  configurable: true
 });
 
 Object.defineProperty(window, 'ALL_MEASURES', {
-    get: function() {
-        if (!opsafeDb) return [];
-        const threatNames = window.THREAT_NAMES;
-        return opsafeDb.measures.map(m => {
-            const relIndices = m.threatRelations.map(name => threatNames.indexOf(name)).filter(idx => idx !== -1);
-            return {
-                name: m.name,
-                cat: m.category,
-                impl: m.implementation || 'Планувальні',
-                rel: relIndices
-            };
-        });
-    },
-    configurable: true
+  get: function () {
+    if (!opsafeDb) return [];
+    const threatNames = window.THREAT_NAMES;
+    return opsafeDb.measures.map(m => {
+      const relIndices = m.threatRelations.map(name => threatNames.indexOf(name)).filter(idx => idx !== -1);
+      return {
+        name: m.name,
+        cat: m.category,
+        impl: m.implementation || 'Планувальні',
+        rel: relIndices
+      };
+    });
+  },
+  configurable: true
 });
 
 // --- THREAT ICONS DICTIONARY & UTILITIES ---
 const THREAT_ICONS = {
-    "Дистанційне мінування (ПТМ, ППМ)": '<img src="res/icons/MINE.png" class="threat-icon-img" />',
-    "Дистанційне мінування (FPV ждуни)": '<img src="res/icons/JDUN.png" class="threat-icon-img" />',
-    "Ураження FPV \\ баражуючий боєприпас": '<img src="res/icons/FPV.png" class="threat-icon-img" />',
-    "Ураження FPV \\\\ баражуючий боєприпас": '<img src="res/icons/FPV.png" class="threat-icon-img" />',
-    "Ураження FPV \\\\\\\\ баражуючий боєприпас": '<img src="res/icons/FPV.png" class="threat-icon-img" />',
-    "Ураження скидом (малі та великі бомбери)": '<img src="res/icons/BOMBER.png" class="threat-icon-img" />',
-    "Ураження КАБ": '<img src="res/icons/KAB.png" class="threat-icon-img" />',
-    "Ураження артилерією": '<img src="res/icons/ART.png" class="threat-icon-img" />',
-    "ДРГ": '<img src="res/icons/DRG.png" class="threat-icon-img" />',
-    "Фільтрація піхоти": '<img src="res/icons/INF.png" class="threat-icon-img" />',
-    "Активне спостереження": '<img src="res/icons/SPY.png" class="threat-icon-img" />',
-    "Завади на маршруті": '<img src="res/icons/BARRIER.png" class="threat-icon-img" />',
-    "Обізнаність противника, активний маршрут": '<img src="res/icons/ROUTE.png" class="threat-icon-img" />',
-    "Обізнаність противника про позицію БпЛА": '<img src="res/icons/POSITION.png" class="threat-icon-img" />',
-    "Розташування поряд інших позицій СОУ": '<img src="res/icons/CROUD.png" class="threat-icon-img" />',
-    "Розташування позиції в населеному пункті": '<img src="res/icons/CITY.png" class="threat-icon-img" />',
-    "Популярний, відомий район позицій": '<img src="res/icons/FAVOTITE.png" class="threat-icon-img" />'
+  "Дистанційне мінування (ПТМ, ППМ)": '<img src="res/icons/MINE.png" class="threat-icon-img" />',
+  "Дистанційне мінування (FPV ждуни)": '<img src="res/icons/JDUN.png" class="threat-icon-img" />',
+  "Ураження FPV \\ баражуючий боєприпас": '<img src="res/icons/FPV.png" class="threat-icon-img" />',
+  "Ураження FPV \\\\ баражуючий боєприпас": '<img src="res/icons/FPV.png" class="threat-icon-img" />',
+  "Ураження FPV \\\\\\\\ баражуючий боєприпас": '<img src="res/icons/FPV.png" class="threat-icon-img" />',
+  "Ураження скидом (малі та великі бомбери)": '<img src="res/icons/BOMBER.png" class="threat-icon-img" />',
+  "Ураження КАБ": '<img src="res/icons/KAB.png" class="threat-icon-img" />',
+  "Ураження артилерією": '<img src="res/icons/ART.png" class="threat-icon-img" />',
+  "ДРГ": '<img src="res/icons/DRG.png" class="threat-icon-img" />',
+  "Фільтрація піхоти": '<img src="res/icons/INF.png" class="threat-icon-img" />',
+  "Активне спостереження": '<img src="res/icons/SPY.png" class="threat-icon-img" />',
+  "Завади на маршруті": '<img src="res/icons/BARRIER.png" class="threat-icon-img" />',
+  "Обізнаність противника, активний маршрут": '<img src="res/icons/ROUTE.png" class="threat-icon-img" />',
+  "Обізнаність противника про позицію БпЛА": '<img src="res/icons/POSITION.png" class="threat-icon-img" />',
+  "Розташування поряд інших позицій СОУ": '<img src="res/icons/CROUD.png" class="threat-icon-img" />',
+  "Розташування позиції в населеному пункті": '<img src="res/icons/CITY.png" class="threat-icon-img" />',
+  "Популярний, відомий район позицій": '<img src="res/icons/FAVOTITE.png" class="threat-icon-img" />'
 };
 
 function getThreatIcon(name) {
-    if (!name) return '<img src="res/icons/POSITION.png" class="threat-icon-img" alt="⚠️" />';
-    const cleanName = name.replace(/\\+/g, '\\').trim();
-    for (const key in THREAT_ICONS) {
-        const cleanKey = key.replace(/\\+/g, '\\').trim();
-        if (cleanKey === cleanName || cleanName.includes(cleanKey) || cleanKey.includes(cleanName)) {
-            return THREAT_ICONS[key];
-        }
+  if (!name) return '<img src="res/icons/POSITION.png" class="threat-icon-img" alt="⚠️" />';
+  const cleanName = name.replace(/\\+/g, '\\').trim();
+  for (const key in THREAT_ICONS) {
+    const cleanKey = key.replace(/\\+/g, '\\').trim();
+    if (cleanKey === cleanName || cleanName.includes(cleanKey) || cleanKey.includes(cleanName)) {
+      return THREAT_ICONS[key];
     }
-    // Dynamic fallbacks
-    if (cleanName.includes("мінування") || cleanName.includes("мін")) {
-        return '<img src="res/icons/MINE.png" class="threat-icon-img" />';
-    }
-    if (cleanName.includes("FPV") || cleanName.includes("дрон") || cleanName.includes("боєприпас")) {
-        return '<img src="res/icons/FPV.png" class="threat-icon-img" />';
-    }
-    if (cleanName.includes("КАБ") || cleanName.includes("бомб")) {
-        return '<img src="res/icons/KAB.png" class="threat-icon-img" />';
-    }
-    if (cleanName.includes("артилері") || cleanName.includes("удар")) {
-        return '<img src="res/icons/ART.png" class="threat-icon-img" />';
-    }
-    if (cleanName.includes("ДРГ")) {
-        return '<img src="res/icons/DRG.png" class="threat-icon-img" />';
-    }
-    if (cleanName.includes("піхот") || cleanName.includes("Фільтр")) {
-        return '<img src="res/icons/INF.png" class="threat-icon-img" />';
-    }
-    return '<img src="res/icons/POSITION.png" class="threat-icon-img" alt="⚠️" />';
+  }
+  // Dynamic fallbacks
+  if (cleanName.includes("мінування") || cleanName.includes("мін")) {
+    return '<img src="res/icons/MINE.png" class="threat-icon-img" />';
+  }
+  if (cleanName.includes("FPV") || cleanName.includes("дрон") || cleanName.includes("боєприпас")) {
+    return '<img src="res/icons/FPV.png" class="threat-icon-img" />';
+  }
+  if (cleanName.includes("КАБ") || cleanName.includes("бомб")) {
+    return '<img src="res/icons/KAB.png" class="threat-icon-img" />';
+  }
+  if (cleanName.includes("артилері") || cleanName.includes("удар")) {
+    return '<img src="res/icons/ART.png" class="threat-icon-img" />';
+  }
+  if (cleanName.includes("ДРГ")) {
+    return '<img src="res/icons/DRG.png" class="threat-icon-img" />';
+  }
+  if (cleanName.includes("піхот") || cleanName.includes("Фільтр")) {
+    return '<img src="res/icons/INF.png" class="threat-icon-img" />';
+  }
+  return '<img src="res/icons/POSITION.png" class="threat-icon-img" alt="⚠️" />';
 }
 
 window.THREAT_ICONS = THREAT_ICONS;
