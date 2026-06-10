@@ -5,6 +5,21 @@ const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
 
 console.log("APP.JS STARTING. Database opsafeDb active:", typeof opsafeDb !== 'undefined');
 
+// Dynamic style override to bypass CSS cache issues and remove leaflet-div-icon white background/border
+const styleOverride = document.createElement('style');
+styleOverride.innerHTML = `
+  .leaflet-marker-icon, .leaflet-div-icon, .threat-div-icon {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  .leaflet-marker-shadow {
+    display: none !important;
+  }
+`;
+document.head.appendChild(styleOverride);
+
 
 // --- MAP ENGINE ---
 const map = L.map('map', { center: [47.749631, 35.919113], zoom: 11, zoomControl: false });
@@ -1253,8 +1268,24 @@ function toggleThreatTab(tab) {
     src.forEach(t => {
         const b = document.createElement('button');
         b.className = "w-full text-left p-2.5 glass-panel border-white/10 hover:bg-emerald-900/40 flex justify-between items-center mb-1 active:scale-95";
+        
+        let tagHtml = '';
+        if (isP) {
+            let tagStyle = '';
+            if (t.severity === 'катастрофічно') {
+                tagStyle = 'color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(185, 28, 28, 0.25);';
+            } else if (t.severity === 'критично') {
+                tagStyle = 'color: #fca5a5; border: 1px solid rgba(252, 165, 165, 0.3); background: rgba(127, 29, 29, 0.25);';
+            } else if (t.severity === 'помірно') {
+                tagStyle = 'color: #fde68a; border: 1px solid rgba(250, 204, 21, 0.3); background: rgba(113, 63, 18, 0.25);';
+            } else {
+                tagStyle = 'color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.2); background: rgba(51, 65, 85, 0.25);';
+            }
+            tagHtml = `<span class="text-[9px] font-black px-2 py-0.5 rounded border" style="${tagStyle}">${t.tag}</span>`;
+        }
+
         b.innerHTML = isP
-            ? `<span class="text-xs font-bold uppercase">${getThreatIcon(t.name)} ${t.name}</span> <span class="text-[9px] font-black opacity-50 px-2 py-1 bg-black/40 rounded">${t.tag}</span>`
+            ? `<span class="text-xs font-bold uppercase">${getThreatIcon(t.name)} ${t.name}</span> ${tagHtml}`
             : `<span class="text-xs font-bold text-orange-400 uppercase">${getThreatIcon(t)} ${t}</span>`;
 
         b.onclick = () => {
@@ -1360,6 +1391,20 @@ function renderMarkers() {
             draggable: true
         }).addTo(markersLayer);
 
+        setTimeout(() => {
+            const pane = document.querySelector('.leaflet-marker-pane');
+            if (pane) {
+                console.log("=== LEAFLET MARKER PANE INSPECTION ===");
+                Array.from(pane.children).forEach((child, idx) => {
+                    console.log(`Marker #${idx}:`, {
+                        classes: child.className,
+                        style: child.style.cssText,
+                        html: child.innerHTML
+                    });
+                });
+            }
+        }, 200);
+
         marker.on('dragend', () => {
             const newLatLng = marker.getLatLng();
             item.latlng = { lat: newLatLng.lat, lng: newLatLng.lng };
@@ -1452,10 +1497,24 @@ function viewSingle(pid, sidx) {
 
     const linkedTools = opsafeDb.identTools ? opsafeDb.identTools.filter(t => t.threatRelations && t.threatRelations.includes(target.name)) : [];
     if (linkedTools.length > 0) {
-        html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5">Інструменти ідентифікації</div>`;
+        html += `<details class="group mt-4 mb-2">
+            <summary class="bg-slate-800/60 hover:bg-slate-800/80 px-2.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-white uppercase tracking-widest border-b border-white/5 cursor-pointer list-none flex items-center justify-between transition-colors select-none">
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-3 h-3 text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <span>Інструменти ідентифікації</span>
+                </span>
+                <svg class="w-2.5 h-2.5 transform group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
+            <div class="mt-1.5 space-y-1">`;
         linkedTools.forEach(tool => {
-            html += `<div class="sidebar-item" style="border-left-color: #6366f1; border-radius: 0 4px 4px 0; background: rgba(99, 102, 241, 0.05);">🔍 ${tool.name}</div>`;
+            html += `<div class="sidebar-item" style="border-left-color: #6366f1; border-radius: 0 4px 4px 0; background: rgba(99, 102, 241, 0.05); margin-bottom: 4px;">🔍 ${tool.name}</div>`;
         });
+        html += `</div></details>`;
     }
 
     content.innerHTML = html;
@@ -1467,7 +1526,21 @@ function viewCombined(pid) {
     const content = document.getElementById('sidebar-content');
 
     let html = `<div class="bg-emerald-950/40 p-2 text-center text-[10px] font-black uppercase mb-4 border border-emerald-500/50">ЗВІТ ОБ'ЄКТА</div>`;
-    html += `<div class="sidebar-item font-bold text-red-500" style="border-color:#b91c1c; border-left-width:4px; margin-bottom: 2px;">${getThreatIcon(item.name)} ${item.name}</div>`;
+    
+    let primaryColor = '#7f1d1d';
+    let textClass = 'text-red-400';
+    if (item.severity === 'катастрофічно') {
+        primaryColor = '#b91c1c';
+        textClass = 'text-red-500 font-extrabold';
+    } else if (item.severity === 'критично') {
+        primaryColor = '#7f1d1d';
+        textClass = 'text-red-400';
+    } else if (item.severity === 'помірно') {
+        primaryColor = '#713f12';
+        textClass = 'text-yellow-500';
+    }
+    
+    html += `<div class="sidebar-item font-bold ${textClass}" style="border-color:${primaryColor}; border-left-width:4px; margin-bottom: 2px;">${getThreatIcon(item.name)} ${item.name}</div>`;
 
     html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
@@ -1487,10 +1560,24 @@ function viewCombined(pid) {
 
     const linkedToolsPrimary = opsafeDb.identTools ? opsafeDb.identTools.filter(t => t.threatRelations && t.threatRelations.includes(item.name)) : [];
     if (linkedToolsPrimary.length > 0) {
-        html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2 mb-2 border-b border-white/5">Інструменти ідентифікації</div>`;
+        html += `<details class="group mt-2 mb-2">
+            <summary class="bg-slate-800/60 hover:bg-slate-800/80 px-2.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-white uppercase tracking-widest border-b border-white/5 cursor-pointer list-none flex items-center justify-between transition-colors select-none">
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-3 h-3 text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <span>Інструменти ідентифікації</span>
+                </span>
+                <svg class="w-2.5 h-2.5 transform group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
+            <div class="mt-1.5 space-y-1">`;
         linkedToolsPrimary.forEach(tool => {
-            html += `<div class="sidebar-item" style="border-left-color: #6366f1; border-radius: 0 4px 4px 0; background: rgba(99, 102, 241, 0.05);">🔍 ${tool.name}</div>`;
+            html += `<div class="sidebar-item" style="border-left-color: #6366f1; border-radius: 0 4px 4px 0; background: rgba(99, 102, 241, 0.05); margin-bottom: 4px;">🔍 ${tool.name}</div>`;
         });
+        html += `</div></details>`;
     }
 
     item.secondaries.forEach((sec, idx) => {
@@ -1514,10 +1601,24 @@ function viewCombined(pid) {
 
         const linkedToolsSec = opsafeDb.identTools ? opsafeDb.identTools.filter(t => t.threatRelations && t.threatRelations.includes(sec.name)) : [];
         if (linkedToolsSec.length > 0) {
-            html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2 mb-2 border-b border-white/5">Інструменти ідентифікації</div>`;
+            html += `<details class="group mt-2 mb-2">
+                <summary class="bg-slate-800/60 hover:bg-slate-800/80 px-2.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-white uppercase tracking-widest border-b border-white/5 cursor-pointer list-none flex items-center justify-between transition-colors select-none">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-3 h-3 text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <span>Інструменти ідентифікації</span>
+                    </span>
+                    <svg class="w-2.5 h-2.5 transform group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </summary>
+                <div class="mt-1.5 space-y-1">`;
             linkedToolsSec.forEach(tool => {
-                html += `<div class="sidebar-item" style="border-left-color: #6366f1; border-radius: 0 4px 4px 0; background: rgba(99, 102, 241, 0.05);">🔍 ${tool.name}</div>`;
+                html += `<div class="sidebar-item" style="border-left-color: #6366f1; border-radius: 0 4px 4px 0; background: rgba(99, 102, 241, 0.05); margin-bottom: 4px;">🔍 ${tool.name}</div>`;
             });
+            html += `</div></details>`;
         }
     });
     content.innerHTML = html;
@@ -1975,10 +2076,20 @@ function renderThreatsSettings(container) {
     opsafeDb.primaryThreats.forEach((t, index) => {
         const item = document.createElement('div');
         item.className = "flex justify-between items-center bg-slate-900/80 p-2.5 rounded border border-white/5 hover:border-white/10";
+        
+        let severityColorClass = 'text-yellow-500';
+        if (t.severity === 'катастрофічно') {
+            severityColorClass = 'text-red-500 font-extrabold';
+        } else if (t.severity === 'критично') {
+            severityColorClass = 'text-red-700';
+        } else if (t.severity === 'помірно') {
+            severityColorClass = 'text-yellow-500';
+        }
+        
         item.innerHTML = `
             <div class="flex-1 min-w-0 pr-2">
                 <div class="text-xs font-bold text-white truncate" title="${t.name}">${getThreatIcon(t.name)} ${t.name}</div>
-                <div class="text-[9px] text-slate-400 uppercase font-mono">Важливість: <span class="${t.severity === 'катастрофічно' ? 'text-red-500' : t.severity === 'критично' ? 'text-orange-500' : 'text-yellow-500'} font-bold">${t.severity}</span></div>
+                <div class="text-[9px] text-slate-400 uppercase font-mono">Важливість: <span class="${severityColorClass} font-bold">${t.severity}</span></div>
             </div>
             <div class="flex gap-1.5 shrink-0">
                 <button onclick="editPrimaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
