@@ -75,17 +75,17 @@
             border: 2px solid white;
             z-index: 10;
             cursor: pointer;
-        }
-
-        .marker-icon {
-            position: absolute;
-            top: 0;
-            left: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            height: 100%;
+        }
+
+        .threat-marker-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 75%;
+            height: 75%;
             transform: rotate(-45deg);
             font-size: 11px;
             line-height: 1;
@@ -129,9 +129,9 @@
             filter: invert(1);
         }
 
-        .marker-icon .threat-icon-img {
-            width: 16px;
-            height: 16px;
+        .threat-marker-icon .threat-icon-img {
+            width: 100%;
+            height: 100%;
             margin-right: 0;
             display: block;
         }
@@ -1115,7 +1115,7 @@
 
                 let html = `<div class="threat-marker-wrapper">
                     <div class="diamond ${isP ? 'sev-' + item.severity : 'sec-diamond'}${extraClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)">
-                        <span class="marker-icon">${getThreatIcon(item.name)}</span>
+                        <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
                     </div>
                     ${closeBtnHtml}
                     <div class="label-threat ${isP ? 'text-white' : 'text-purple-400'}${window.amplifiersDisabled ? ' hidden' : ''}">${item.name}${probBadge}</div>
@@ -1134,19 +1134,28 @@
 
                         html += `<div style="position:absolute; top:-${offset}px; left:0;">
                             <div class="diamond sec-diamond${secExtraClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})">
-                                <span class="marker-icon">${getThreatIcon(sec.name)}</span>
+                                <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
                             </div>
                             ${secCloseBtnHtml}
                             <div class="label-threat text-purple-300 italic${window.amplifiersDisabled ? ' hidden' : ''}">${sec.name}${secProbBadge}</div>
                             <div class="flex" style="position:absolute; left:0; top:0;">
                                  <div class="btn-ui btn-ctrl" style="left:20px; top:12px;" onclick="openControls(${item.id}, ${idx})">+</div>
-                                 ${sec.measures.length > 0 ? `<div class="btn-ui btn-info" style="left:42px; top:12px;" onclick="viewSingle(${item.id}, ${idx})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>` : ''}
+                                 ${sec.measures.length > 0 ? `<div class="btn-ui btn-info" style="left:42px; top:12px;" onclick="viewSingle(${item.id}, [idx])"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>` : ''}
                              </div>
                         </div>`;
                     });
                 }
                 html += `</div>`;
-                L.marker(item.latlng, { icon: L.divIcon({ html, className: '', iconSize: [0, 0] }) }).addTo(markersLayer);
+                const marker = L.marker(item.latlng, {
+                    icon: L.divIcon({ html, className: '', iconSize: [0, 0] }),
+                    draggable: true
+                }).addTo(markersLayer);
+
+                marker.on('dragend', () => {
+                    const newLatLng = marker.getLatLng();
+                    item.latlng = { lat: newLatLng.lat, lng: newLatLng.lng };
+                    saveMissions();
+                });
             });
         }
 

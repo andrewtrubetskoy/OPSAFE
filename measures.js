@@ -1328,6 +1328,7 @@ Object.defineProperty(window, 'ALL_MEASURES', {
             return {
                 name: m.name,
                 cat: m.category,
+                impl: m.implementation || 'Планувальні',
                 rel: relIndices
             };
         });

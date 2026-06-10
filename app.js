@@ -1355,6 +1355,7 @@ function renderMarkers() {
 
         let html = `<div class="threat-marker-wrapper">
             <div class="diamond ${diamondClass}${extraClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, null, event)">
+                <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
             </div>
             ${closeBtnHtml}
             <div class="label-threat ${isP ? 'text-white' : 'text-orange-400'}${window.amplifiersDisabled ? ' hidden' : ''}">${item.name}${probBadge}</div>
@@ -1374,6 +1375,7 @@ function renderMarkers() {
 
                 html += `<div style="position:absolute; top:-${offset}px; left:0;">
                     <div class="diamond sec-diamond${secExtraClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, ${idx}, event)">
+                        <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
                     </div>
                     ${secCloseBtnHtml}
                     <div class="label-threat text-orange-300 italic${window.amplifiersDisabled ? ' hidden' : ''}">${sec.name}${secProbBadge}</div>
@@ -1438,36 +1440,99 @@ function openControls(pid, sidx) {
     // Фільтрація по індексу загрози
     const tIdx = THREAT_NAMES.indexOf(target.name);
     const valid = ALL_MEASURES.filter(v => v.rel.includes(tIdx));
-    const cats = [...new Set(valid.map(v => v.cat))];
 
-    cats.forEach(cat => {
+    const groups = [
+        {
+            name: "Координаційні",
+            selectable: true,
+            info: "",
+            badge: ""
+        },
+        {
+            name: "Планувальні",
+            selectable: true,
+            info: "",
+            badge: ""
+        },
+        {
+            name: "Нагляд та контроль",
+            selectable: true,
+            info: "",
+            badge: ""
+        },
+        {
+            name: "Навчання",
+            selectable: true,
+            info: "",
+            badge: ""
+        },
+        {
+            name: "Регламентні",
+            selectable: false,
+            info: "такий захід контролю визначається регламентом",
+            badge: "інформаційний"
+        },
+        {
+            name: "Операційні",
+            selectable: false,
+            info: "такий захід контролю може бути застосований розрахунком, оператор просто має про це знати",
+            badge: "інформаційний"
+        }
+    ];
+
+    groups.forEach(g => {
+        const measuresInGroup = valid.filter(v => v.impl === g.name);
+        if (measuresInGroup.length === 0) return; // Пропускаємо порожні групи
+
         const box = document.createElement('div');
         box.className = "mb-6";
-        box.innerHTML = `<h4 class="text-emerald-400 font-black uppercase text-[10px] border-b border-emerald-950/30 pb-1 mb-3">${cat}</h4>`;
+
+        let headerHtml = `<div class="flex items-center flex-wrap gap-2 mb-1 border-b border-white/5 pb-1">
+            <h4 class="text-emerald-400 font-black uppercase text-[10px] tracking-wider">${g.name}</h4>`;
+        if (g.badge) {
+            const badgeColor = g.badge === 'інформаційний' ? 'bg-sky-950/60 border-sky-500/30 text-sky-400' : 'bg-slate-900/60 border-slate-700/50 text-slate-400';
+            headerHtml += `<span class="px-1.5 py-0.5 ${badgeColor} border text-[8px] font-black uppercase rounded select-none tracking-widest">${g.badge}</span>`;
+        }
+        headerHtml += `</div>`;
+        if (g.info) {
+            headerHtml += `<div class="text-[9.5px] text-slate-500 italic mb-3 font-semibold" style="margin-top:-2px;">* ${g.info}</div>`;
+        } else {
+            headerHtml += `<div class="mb-3"></div>`;
+        }
+        box.innerHTML = headerHtml;
 
         const grid = document.createElement('div');
-        grid.className = "grid grid-cols-2 lg:grid-cols-4 gap-2";
+        grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2";
 
-        valid.filter(v => v.cat === cat).forEach(me => {
-            const active = target.measures.includes(me.name);
-            const b = document.createElement('button');
-            b.className = `p-2 text-[10px] border font-bold text-left rounded transition-colors duration-150 ${active ? 'bg-emerald-600 text-white border-emerald-400' : 'glass-panel border-white/10 text-slate-400 hover:bg-slate-800'}`;
-            b.innerText = me.name;
-            b.onclick = () => {
-                if (!active) {
-                    target.measures.push(me.name);
-                } else {
-                    target.measures = target.measures.filter(x => x !== me.name);
-                }
-                openControls(pid, sidx); // Reload modal list
-                renderMarkers();
-                saveMissions();
-            };
-            grid.appendChild(b);
+        measuresInGroup.forEach(me => {
+            if (g.selectable) {
+                const active = target.measures.includes(me.name);
+                const b = document.createElement('button');
+                b.className = `p-2.5 text-[10px] border font-bold text-left rounded transition-all duration-150 active:scale-95 ${active ? 'bg-emerald-600 text-white border-emerald-400 shadow-md' : 'glass-panel border-white/10 text-slate-400 hover:bg-slate-800'}`;
+                b.innerText = me.name;
+                b.onclick = () => {
+                    if (!active) {
+                        target.measures.push(me.name);
+                    } else {
+                        target.measures = target.measures.filter(x => x !== me.name);
+                    }
+                    openControls(pid, sidx); // Перезавантажуємо модальне вікно
+                    renderMarkers();
+                    saveMissions();
+                };
+                grid.appendChild(b);
+            } else {
+                const card = document.createElement('div');
+                card.className = "p-2.5 text-[10px] border border-white/5 text-slate-400 bg-slate-900/40 rounded font-medium text-left flex items-start gap-2 select-none";
+                card.innerHTML = `<span class="text-slate-600 font-bold shrink-0">●</span> <span class="leading-relaxed">${me.name}</span>`;
+                grid.appendChild(card);
+            }
         });
+
         box.appendChild(grid);
         area.appendChild(box);
     });
+
     document.getElementById('modal-controls').classList.remove('hidden');
 }
 
