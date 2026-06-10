@@ -87,10 +87,13 @@ let isPlacingThreat = false;
 
 function toggleAmplifiers(enabled) {
     window.amplifiersEnabled = enabled;
-    const labels = document.querySelectorAll('.label-threat');
-    labels.forEach(lbl => {
-        if (enabled) lbl.classList.remove('hidden');
-        else lbl.classList.add('hidden');
+    const selectors = ['.label-threat', '.badge-severity', '.badge-probability'];
+    selectors.forEach(sel => {
+        const elements = document.querySelectorAll(sel);
+        elements.forEach(el => {
+            if (enabled) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        });
     });
 }
 
@@ -1408,6 +1411,51 @@ function getProbabilityBadgeHtml(prob) {
     return ` <span style="color: ${color};" class="text-[8px] font-black">[${prob}]</span>`;
 }
 
+function getSeverityMarkerBadgeHtml(sev) {
+    if (!sev) return '';
+    let style = '';
+    switch (sev) {
+        case 'катастрофічно':
+            style = 'color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(185, 28, 28, 0.85);';
+            break;
+        case 'критично':
+            style = 'color: #fca5a5; border: 1px solid rgba(252, 165, 165, 0.3); background: rgba(127, 29, 29, 0.85);';
+            break;
+        case 'помірно':
+            style = 'color: #fde68a; border: 1px solid rgba(250, 204, 21, 0.3); background: rgba(113, 63, 18, 0.85);';
+            break;
+        default:
+            style = 'color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.2); background: rgba(51, 65, 85, 0.85);';
+    }
+    const labelText = sev.charAt(0).toUpperCase() + sev.slice(1);
+    return `<div class="badge-severity${window.amplifiersEnabled ? '' : ' hidden'}" style="${style}">${labelText}</div>`;
+}
+
+function getProbabilityMarkerBadgeHtml(prob) {
+    if (!prob) return '';
+    let style = '';
+    switch (prob) {
+        case 'Дуже часто':
+            style = 'color: #ff5555; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(127, 29, 29, 0.85);';
+            break;
+        case 'Висока ймовірність':
+            style = 'color: #ff6b6b; border: 1px solid rgba(220, 38, 38, 0.4); background: rgba(127, 29, 29, 0.75);';
+            break;
+        case 'Можливо':
+            style = 'color: #f97316; border: 1px solid rgba(249, 115, 22, 0.4); background: rgba(124, 45, 18, 0.75);';
+            break;
+        case 'Рідко':
+            style = 'color: #facc15; border: 1px solid rgba(250, 204, 21, 0.4); background: rgba(113, 63, 18, 0.75);';
+            break;
+        case 'Малоймовірно':
+            style = 'color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4); background: rgba(30, 58, 138, 0.75);';
+            break;
+        default:
+            style = 'color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.2); background: rgba(51, 65, 85, 0.75);';
+    }
+    return `<div class="badge-probability${window.amplifiersEnabled ? '' : ' hidden'}" style="${style}">${prob}</div>`;
+}
+
 function renderMarkers() {
     markersLayer.clearLayers();
     if (!currentMissionId) return;
@@ -1422,10 +1470,15 @@ function renderMarkers() {
         const probBadge = getProbabilityBadgeHtml(item.probability);
         const closeBtnHtml = item.editing ? `<div class="btn-ui btn-close" style="left:-28px; top:-28px;" onclick="confirmDeleteObj(${item.id})">×</div>` : '';
 
+        const sevMarkerBadge = getSeverityMarkerBadgeHtml(item.severity);
+        const probMarkerBadge = getProbabilityMarkerBadgeHtml(item.probability);
+
         let html = `<div class="threat-marker-wrapper">
             <div class="diamond ${diamondClass}${extraClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, null, event)">
                 <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
             </div>
+            ${sevMarkerBadge}
+            ${probMarkerBadge}
             ${closeBtnHtml}
             <div class="label-threat ${isP ? 'text-white' : 'text-orange-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${item.name}${probBadge}</div>
             <div class="flex" style="position:absolute; left:0; top:0;">
@@ -1442,10 +1495,15 @@ function renderMarkers() {
                 const secProbBadge = getProbabilityBadgeHtml(sec.probability);
                 const secCloseBtnHtml = sec.editing ? `<div class="btn-ui btn-close" style="left:-25px; top:-25px; width:12px; height:12px;" onclick="confirmDeleteSec(${item.id}, ${idx})">×</div>` : '';
 
+                const secSevMarkerBadge = getSeverityMarkerBadgeHtml(sec.severity);
+                const secProbMarkerBadge = getProbabilityMarkerBadgeHtml(sec.probability);
+
                 html += `<div style="position:absolute; top:-${offset}px; left:0;">
                     <div class="diamond sec-diamond${secExtraClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, ${idx}, event)">
                         <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
                     </div>
+                    ${secSevMarkerBadge}
+                    ${secProbMarkerBadge}
                     ${secCloseBtnHtml}
                     <div class="label-threat text-orange-300 italic${window.amplifiersEnabled ? '' : ' hidden'}">${sec.name}${secProbBadge}</div>
                     <div class="flex" style="position:absolute; left:0; top:0;">

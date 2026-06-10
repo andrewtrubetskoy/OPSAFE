@@ -217,6 +217,43 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.badge-severity {
+    position: absolute;
+    right: 22px;
+    bottom: 4px;
+    white-space: nowrap;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    padding: 1px 4px;
+    border-radius: 3px;
+    pointer-events: none;
+    line-height: 1.1;
+    z-index: 15;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.badge-probability {
+    position: absolute;
+    right: 22px;
+    top: 4px;
+    white-space: nowrap;
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    padding: 1px 4px;
+    border-radius: 3px;
+    pointer-events: none;
+    line-height: 1.1;
+    z-index: 15;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.diamond.sec-diamond ~ .badge-severity,
+.diamond.sec-diamond ~ .badge-probability {
+    right: 17px;
+}
+
 /* Sidebar Item List Styling */
 .sidebar-item {
     border-left: 3px solid #10b981;
