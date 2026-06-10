@@ -283,7 +283,7 @@ body {
 }
 
 /* Geoman Vertex Handle Styling - Smaller & Interactive */
-.leaflet-marker-icon.leaflet-pm-draggable:not(.threat-div-icon) {
+.leaflet-marker-icon.leaflet-pm-draggable {
     width: 5px !important;
     height: 5px !important;
     margin-left: -2.5px !important;
@@ -295,12 +295,12 @@ body {
     transition: transform 0.1s ease !important;
 }
 
-.leaflet-marker-icon.leaflet-pm-draggable:not(.threat-div-icon):hover {
+.leaflet-marker-icon.leaflet-pm-draggable:hover {
     transform: scale(1.6) !important;
 }
 
 /* Make ghost (intermediate) vertex markers even smaller and less prominent */
-.leaflet-marker-icon.leaflet-pm-draggable.leaflet-pm-ghost-marker:not(.threat-div-icon) {
+.leaflet-marker-icon.leaflet-pm-draggable.leaflet-pm-ghost-marker {
     width: 4px !important;
     height: 4px !important;
     margin-left: -2px !important;
@@ -385,20 +385,6 @@ body {
     pointer-events: auto !important;
 }
 .ruler-length-tooltip::before {
-    display: none !important;
-}
-
-/* Reset Leaflet default divIcon style (white background and gray border) and hide shadows */
-.leaflet-marker-icon,
-.leaflet-div-icon,
-.threat-div-icon {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-
-.leaflet-marker-shadow {
     display: none !important;
 }
 

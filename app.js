@@ -5,21 +5,6 @@ const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
 
 console.log("APP.JS STARTING. Database opsafeDb active:", typeof opsafeDb !== 'undefined');
 
-// Dynamic style override to bypass CSS cache issues and remove leaflet-div-icon white background/border
-const styleOverride = document.createElement('style');
-styleOverride.innerHTML = `
-  .leaflet-marker-icon, .leaflet-div-icon, .threat-div-icon {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
-  .leaflet-marker-shadow {
-    display: none !important;
-  }
-`;
-document.head.appendChild(styleOverride);
-
 
 // --- MAP ENGINE ---
 const map = L.map('map', { center: [47.749631, 35.919113], zoom: 11, zoomControl: false });
@@ -545,6 +530,11 @@ function handleMissionChange(id) {
         sidebarContent.innerHTML = '<p class="text-slate-500 italic text-center py-20 text-[9px]">Оберіть об\'єкт для перегляду заходів</p>';
     }
 
+    activeLayers.eachLayer((layer) => {
+        if (layer.pm && layer.pm.enabled()) {
+            layer.pm.disable();
+        }
+    });
     activeLayers.clearLayers();
     markersLayer.clearLayers();
     m.data.routes.forEach((c, index) => renderRoute(c, index));
@@ -1091,7 +1081,6 @@ function findNearestLayer(latlng, thresholdPx = 45) {
 function renderRoute(coords, index) {
     const poly = L.polyline(coords, { color: '#22c55e', weight: 5, dashArray: '8, 8' }).addTo(activeLayers);
 
-    // Stop click propagation to prevent map click handler from disabling edit mode
     poly.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
     });
@@ -1113,7 +1102,7 @@ function renderRoute(coords, index) {
             <div class="btn-ui btn-close" style="left:-22px; top:-22px;" onclick="confirmDeleteRoute(${index})">×</div>
         </div>`;
         deleteMarker = L.marker(flat[0], {
-            icon: L.divIcon({ html: deleteMarkerHtml, className: 'threat-div-icon', iconSize: [0, 0] })
+            icon: L.divIcon({ html: deleteMarkerHtml, className: '', iconSize: [0, 0] })
         });
         if (poly.pm.enabled()) {
             deleteMarker.addTo(activeLayers);
@@ -1178,6 +1167,7 @@ function renderRoute(coords, index) {
 
 function renderArea(coords, index) {
     const area = L.polygon(coords, { color: '#10b981', weight: 2, dashArray: '5, 5', fillOpacity: 0.25 }).addTo(activeLayers);
+    area.areaIndex = index;
 
     // Stop click propagation to prevent map click handler from disabling edit mode
     area.on('click', (e) => {
@@ -1192,7 +1182,7 @@ function renderArea(coords, index) {
             <div class="btn-ui btn-close" style="left:-22px; top:-22px;" onclick="confirmDeleteArea(${index})">×</div>
         </div>`;
         deleteMarker = L.marker(flat[0], {
-            icon: L.divIcon({ html: deleteMarkerHtml, className: 'threat-div-icon', iconSize: [0, 0] })
+            icon: L.divIcon({ html: deleteMarkerHtml, className: '', iconSize: [0, 0] })
         });
         if (area.pm.enabled()) {
             deleteMarker.addTo(activeLayers);
