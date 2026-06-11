@@ -3806,8 +3806,47 @@ function renderRiskMatrixSettings(container) {
 }
 
 // ================= RISK MANAGEMENT CARD =================
+function showRiskCardWarning(issues) {
+    // Remove any existing warning modal
+    const existing = document.getElementById('modal-risk-warning');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'modal-risk-warning';
+    overlay.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-[6000] p-4';
+    overlay.style.animation = 'fadeIn 0.2s ease';
+
+    overlay.innerHTML = `
+        <div class="glass-panel border border-red-500/50 w-full max-w-lg rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="animation: slideUp 0.25s ease">
+            <div class="p-4 bg-red-950/40 border-b border-red-500/30 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <h3 class="text-red-400 font-black uppercase text-xs tracking-wider">Попередження</h3>
+                </div>
+                <button onclick="document.getElementById('modal-risk-warning').remove()" class="text-white text-2xl font-light hover:text-red-500 transition-colors leading-none">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-slate-200 text-sm font-bold">У місії є загрози з невизначеними параметрами:</p>
+                <div class="bg-slate-900/60 border border-white/5 rounded-lg p-4 space-y-2 max-h-[40vh] overflow-y-auto">
+                    ${issues.map(issue => `<p class="text-red-300 text-xs flex items-start gap-2"><span class="text-red-500 mt-0.5">⚠</span><span>${issue.replace(/^• /, '')}</span></p>`).join('')}
+                </div>
+                <p class="text-slate-400 text-xs italic">Спочатку необхідно врегулювати ці проблеми на мапі.</p>
+            </div>
+            <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end">
+                <button onclick="document.getElementById('modal-risk-warning').remove()" class="px-6 py-2 text-xs uppercase font-bold bg-red-900/60 hover:bg-red-800 border border-red-700/30 text-red-200 rounded transition-colors tracking-wider">Зрозуміло</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 function openRiskManagementCard() {
-    if (!currentMissionId) return alert("Оберіть місію для відкриття картки ризиків");
+    if (!currentMissionId) { showRiskCardWarning(['Оберіть місію для відкриття картки ризиків']); return; }
     const m = missions.find(x => x.id === currentMissionId);
     if (!m) return;
 
@@ -3826,7 +3865,7 @@ function openRiskManagementCard() {
     }
 
     if (issues.length > 0) {
-        alert("Попередження! У місії є загрози з невизначеними параметрами:\n\n" + issues.join("\n") + "\n\nСпочатку необхідно врегулювати ці проблеми на мапі.");
+        showRiskCardWarning(issues);
         return;
     }
 
@@ -3869,12 +3908,12 @@ function renderRiskCardThreatsTable(m) {
             let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
             const resRiskCode = item.residualRisk || 'ND';
             const ctrls = (item.report || []).map(c => `\u2022 ${c.name}`).join('<br>') || '<span class="text-gray-400 italic">\u2014</span>';
-            html += `<tr><td class="border border-gray-400 p-1 text-center font-bold text-xs">1.${counter}</td><td class="border border-gray-400 p-1 text-xs">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getRiskBg(riskCode)}">${riskCode}</span></td><td class="border border-gray-400 p-1 text-[10px]">${ctrls}</td><td class="border border-gray-400 p-1 text-xs"><div class="text-[9px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
-            if (item.secondaries) item.secondaries.forEach((sec,si) => { const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND'; const sc=(sec.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>'; html+=`<tr class="bg-gray-50"><td class="border border-gray-400 p-1 text-center text-[10px] text-gray-500">\u21b3${counter}.${si+1}</td><td class="border border-gray-400 p-1 pl-3 text-[11px] italic text-gray-700">${sec.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-[10px]" style="background:${getProbBg(sp)}">${sp}</span></td><td class="border border-gray-400 p-1 text-[10px]">${sc}</td><td class="border border-gray-400 p-1 text-xs"><div class="text-[9px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs"></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-[10px]" style="background:${getProbBg(srp)}">${srp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`; });
+            html += `<tr><td class="border border-gray-400 p-1 text-center font-bold text-sm">1.${counter}</td><td class="border border-gray-400 p-1 text-sm">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(riskCode)}">${riskCode}</span></td><td class="border border-gray-400 p-1 text-xs">${ctrls}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            if (item.secondaries) item.secondaries.forEach((sec,si) => { const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND'; const sc=(sec.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>'; html+=`<tr class="bg-gray-50"><td class="border border-gray-400 p-1 text-center text-xs text-gray-500">\u21b3${counter}.${si+1}</td><td class="border border-gray-400 p-1 pl-3 text-xs italic text-gray-700">${sec.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(sp)}">${sp}</span></td><td class="border border-gray-400 p-1 text-xs">${sc}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm"></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(srp)}">${srp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`; });
             counter++;
         } else if (item.type === 'secondary_indep') {
             const p=item.probability||'ND'; const rp=item.residualProbability||'ND'; const c=(item.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>';
-            html+=`<tr><td class="border border-gray-400 p-1 text-center font-bold text-[10px] text-orange-700">Інд.${counter}</td><td class="border border-gray-400 p-1 text-xs text-orange-800">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(p)}">${p}</span></td><td class="border border-gray-400 p-1 text-[10px]">${c}</td><td class="border border-gray-400 p-1 text-xs"><div class="text-[9px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(rp)}">${rp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            html+=`<tr><td class="border border-gray-400 p-1 text-center font-bold text-xs text-orange-700">Інд.${counter}</td><td class="border border-gray-400 p-1 text-sm text-orange-800">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getProbBg(p)}">${p}</span></td><td class="border border-gray-400 p-1 text-xs">${c}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getProbBg(rp)}">${rp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
             counter++;
         }
     });
