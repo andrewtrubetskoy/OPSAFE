@@ -1745,7 +1745,7 @@ function renderMarkers() {
 
         if (isP) {
                 item.secondaries.forEach((sec, idx) => {
-                const offset = 68.25 + (idx * 58.5); // first offset is 68.25 (+5%), subsequent gap is 58.5 (-10%)
+                const offset = 78.98 + (idx * 58.5); // first offset is 78.98 (+another 3%), subsequent gap is 58.5
                 const secHasMeasures = sec.measures && sec.measures.length > 0;
                 const secExtraClass = '';
                 const secCloseBtnHtml = sec.editing ? `<div class="btn-ui btn-close" style="left:-25px; top:-25px; width:12px; height:12px;" onclick="confirmDeleteSec(${item.id}, ${idx})">×</div>` : '';
