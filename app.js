@@ -1,5 +1,5 @@
 let missions = [];
-let riskCardDirty = false;
+window.initialRiskCardState = null;
 window.markRiskCardDirty = function() { console.log("markRiskCardDirty called"); riskCardDirty = true; };
 let currentMissionId = null;
 let missionCounter = 1;
@@ -3919,7 +3919,7 @@ function openRiskManagementCard() {
     renderRiskCardThreatsTable(m);
     document.getElementById('modal-risk-card').classList.remove('hidden');
         autoFillRiskCardSettlements();
-    riskCardDirty = false;
+    window.initialRiskCardState = window.getRiskCardState();
     const modal = document.getElementById('modal-risk-card');
     modal.removeEventListener('input', window.markRiskCardDirty);
     modal.removeEventListener('change', window.markRiskCardDirty);
@@ -4078,7 +4078,7 @@ function saveRiskCard() {
         }
     });
 
-    riskCardDirty = false;
+    window.initialRiskCardState = window.getRiskCardState();
     
     // Save settlements
     document.querySelectorAll('.rc-settlement').forEach(inp => {
@@ -4102,8 +4102,41 @@ function saveRiskCard() {
     if (btn) { const o=btn.innerText; btn.innerText='Збережено!'; btn.classList.add('bg-green-600'); setTimeout(()=>{ btn.innerText=o; btn.classList.remove('bg-green-600'); }, 2000); }
 }
 
+window.getRiskCardState = function() {
+    return JSON.stringify({
+        desc: document.getElementById('rc-mission-desc')?.value || '',
+        date: document.getElementById('rc-mission-date')?.value || '',
+        prep: {
+            name: document.getElementById('rc-prep-name')?.value || '',
+            callsign: document.getElementById('rc-prep-callsign')?.value || '',
+            role: document.getElementById('rc-prep-role')?.value || '',
+            phone: document.getElementById('rc-prep-phone')?.value || '',
+            unit: document.getElementById('rc-prep-unit')?.value || ''
+        },
+        appr: {
+            name: document.getElementById('rc-appr-name')?.value || '',
+            callsign: document.getElementById('rc-appr-callsign')?.value || '',
+            role: document.getElementById('rc-appr-role')?.value || '',
+            phone: document.getElementById('rc-appr-phone')?.value || '',
+            unit: document.getElementById('rc-appr-unit')?.value || ''
+        },
+        risk: document.getElementById('rc-overall-risk-select')?.value || '',
+        events: Array.from(document.getElementById('rc-events-tbody')?.querySelectorAll('tr') || []).map(row => ({
+            name: row.querySelector('.rc-event-name')?.value || '',
+            date: row.querySelector('.rc-event-date')?.value || '',
+            desc: row.querySelector('.rc-event-desc')?.value || ''
+        })),
+        apd: document.getElementById('rc-apd')?.value || '',
+        comments: document.getElementById('rc-comments')?.value || '',
+        who: Array.from(document.querySelectorAll('.rc-who-input')).map(inp => inp.value || ''),
+        checks: Array.from(document.querySelectorAll('.rc-check-input')).map(inp => inp.checked),
+        settlements: Array.from(document.querySelectorAll('.rc-settlement')).map(inp => inp.value || '')
+    });
+};
+
 function closeRiskCard() {
-    if (riskCardDirty) {
+    const isDirty = window.initialRiskCardState !== window.getRiskCardState();
+    if (isDirty) {
         const existing = document.getElementById('modal-risk-confirm');
         if (existing) existing.remove();
 
@@ -4130,7 +4163,6 @@ function closeRiskCard() {
                     <p class="text-slate-400 text-xs">Бажаєте зберегти ці зміни перед закриттям форми?</p>
                 </div>
                 <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end gap-3 flex-wrap">
-                    <button onclick="document.getElementById('modal-risk-confirm').remove()" class="px-4 py-2 rounded bg-slate-700 hover:bg-slate-600 text-xs uppercase font-bold tracking-wider transition-colors">Скасувати закриття</button>
                     <button onclick="closeRiskCardWithoutSaving()" class="px-4 py-2 rounded bg-red-900/60 hover:bg-red-800 border border-red-700/30 text-red-200 text-xs uppercase font-bold tracking-wider transition-colors">Закрити БЕЗ збереження</button>
                     <button onclick="saveAndCloseRiskCard()" class="px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs uppercase font-bold tracking-wider transition-colors">Зберегти і закрити</button>
                 </div>
@@ -4179,6 +4211,8 @@ window.updateRcOverallRiskStyle = function(val) {
         display.innerHTML = '<span class="text-sm text-gray-500">-- Оберіть рівень ризику --</span><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
     }
 };
+
+
 
 
 
