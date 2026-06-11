@@ -1,4 +1,4 @@
-let missions = [];
+﻿let missions = [];
 window.initialRiskCardState = null;
 window.markRiskCardDirty = function() { console.log("markRiskCardDirty called"); riskCardDirty = true; };
 let currentMissionId = null;
@@ -1789,7 +1789,15 @@ function openControls(pid, sidx) {
     ];
 
     groups.forEach(g => {
-        const measuresInGroup = valid.filter(v => v.impl === g.name);
+        const catOrder = [
+            'Тактичні', 'Інженерні', 'Технічні', 'Інформаційна безпека', 'Ударно-вогневі',
+            'Розвідувально-інформаційні', 'Індивідуального захисту', 'Маскувальні',
+            'Навчальні', 'Імітаційні', 'Дезінформація'
+        ];
+        const measuresInGroup = valid.filter(v => v.impl === g.name).sort((a, b) => {
+            let oA = catOrder.indexOf(a.cat); let oB = catOrder.indexOf(b.cat);
+            return (oA === -1 ? 999 : oA) - (oB === -1 ? 999 : oB);
+        });
         if (measuresInGroup.length === 0) return; // Пропускаємо порожні групи
 
         const box = document.createElement('div');
@@ -1813,11 +1821,25 @@ function openControls(pid, sidx) {
         grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2";
 
         measuresInGroup.forEach(me => {
+            const catColors = {
+                'Тактичні': { a: 'text-orange-200', i: 'text-orange-400' },
+                'Інженерні': { a: 'text-yellow-200', i: 'text-yellow-400' },
+                'Технічні': { a: 'text-sky-200', i: 'text-sky-400' },
+                'Інформаційна безпека': { a: 'text-lime-200', i: 'text-lime-400' },
+                'Ударно-вогневі': { a: 'text-red-300', i: 'text-red-500' },
+                'Розвідувально-інформаційні': { a: 'text-blue-300', i: 'text-blue-500' },
+                'Індивідуального захисту': { a: 'text-fuchsia-200', i: 'text-fuchsia-400' },
+                'Маскувальні': { a: 'text-green-300', i: 'text-green-500' },
+                'Навчальні': { a: 'text-amber-100', i: 'text-amber-200' },
+                'Імітаційні': { a: 'text-red-200', i: 'text-red-400' },
+                'Дезінформація': { a: 'text-pink-200', i: 'text-pink-400' }
+            }[me.cat || ''] || { a: 'text-emerald-200', i: 'text-slate-500' };
             if (g.selectable) {
                 const active = target.measures.includes(me.name);
                 const b = document.createElement('button');
                 b.className = `p-2.5 text-[10px] border font-bold text-left rounded transition-all duration-150 active:scale-95 ${active ? 'bg-emerald-600 text-white border-emerald-400 shadow-md' : 'glass-panel border-white/10 text-slate-400 hover:bg-slate-800'}`;
-                b.innerText = me.name;
+                const col = active ? catColors.a : catColors.i;
+                b.innerHTML = `<div class="mb-1">${me.name}</div><div class="text-[8.5px] uppercase tracking-wider font-extrabold ${col}">${me.cat || 'Без категорії'}</div>`;
                 b.onclick = () => {
                     if (!active) {
                         target.measures.push(me.name);
@@ -1832,7 +1854,7 @@ function openControls(pid, sidx) {
             } else {
                 const card = document.createElement('div');
                 card.className = "p-2.5 text-[10px] border border-white/5 text-slate-400 bg-slate-900/40 rounded font-medium text-left flex items-start gap-2 select-none";
-                card.innerHTML = `<span class="text-slate-600 font-bold shrink-0">●</span> <span class="leading-relaxed">${me.name}</span>`;
+                card.innerHTML = `<span class="text-slate-600 font-bold shrink-0 mt-0.5">●</span> <div class="flex flex-col"><span class="leading-relaxed">${me.name}</span><span class="text-[8.5px] uppercase tracking-wider font-extrabold ${catColors.i} mt-1">${me.cat || 'Без категорії'}</span></div>`;
                 grid.appendChild(card);
             }
         });
@@ -4352,6 +4374,10 @@ window.updateRcOverallRiskStyle = function(val) {
         display.innerHTML = '<span class="text-sm text-gray-500">-- Оберіть рівень ризику --</span><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
     }
 };
+
+
+
+
 
 
 
