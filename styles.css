@@ -547,19 +547,104 @@ summary {
 }
 
 /* RISK CARD MODAL AND PRINT STYLES */
-.risk-card-table th, .risk-card-table td {
-    border-color: #9ca3af !important; /* gray-400 */
-}
-.risk-card-table input[type="text"], .risk-card-table input[type="date"], .risk-card-table input[type="datetime-local"], .risk-card-table textarea {
-    color: #000 !important;
-}
-.risk-card-table select {
-    color: #000 !important;
-    background-color: transparent !important;
-}
-.risk-card-table select option {
-    color: #000 !important;
-    background-color: #fff !important;
+@media screen {
+    /* Set borders for the table and its sub-borders to glass-style border */
+    .risk-card-table, 
+    .risk-card-table th, 
+    .risk-card-table td,
+    .risk-card-table div {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* Section Headings (.bg-gray-100) -> emerald highlight */
+    #modal-risk-card .bg-gray-100 {
+        background-color: rgba(16, 185, 129, 0.15) !important;
+        color: #34d399 !important;
+    }
+    
+    /* Label Headers/cells (.bg-gray-50) -> dark slate highlight */
+    #modal-risk-card .bg-gray-50 {
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        color: #94a3b8 !important;
+    }
+    
+    /* Text color inside table cell values */
+    .risk-card-table td {
+        color: #cbd5e1 !important;
+    }
+    
+    /* Inputs inside tables (text, date, datetime-local) */
+    .risk-card-table input[type="text"], 
+    .risk-card-table input[type="date"], 
+    .risk-card-table input[type="datetime-local"] {
+        color: #ffffff !important;
+        background-color: transparent !important;
+        outline: none !important;
+    }
+    
+    /* Hover/Focus inline bottom borders for text inputs */
+    .risk-card-table input[type="text"]:focus {
+        border-bottom-color: rgba(16, 185, 129, 0.5) !important;
+    }
+    
+    /* Checkboxes and radio buttons -> emerald accent color */
+    .risk-card-table input[type="checkbox"],
+    .risk-card-table input[type="radio"] {
+        accent-color: #10b981 !important;
+        cursor: pointer;
+    }
+    
+    /* Textareas -> dark panel background with subtle border */
+    .risk-card-table textarea {
+        color: #f8fafc !important;
+        background-color: rgba(15, 23, 42, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 4px;
+        padding: 6px 10px !important;
+        outline: none !important;
+        width: 100% !important;
+    }
+    
+    .risk-card-table textarea:focus {
+        border-color: rgba(16, 185, 129, 0.5) !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+    }
+    
+    /* Select element defaults just in case */
+    .risk-card-table select {
+        color: #ffffff !important;
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 4px;
+        outline: none !important;
+    }
+    .risk-card-table select option {
+        color: #ffffff !important;
+        background-color: #0f172a !important;
+    }
+
+    /* Overall risk radio list labels styling */
+    #rc-overall-risk label {
+        color: #cbd5e1 !important;
+        transition: color 0.15s;
+    }
+    #rc-overall-risk label:hover {
+        color: #ffffff !important;
+    }
+
+    /* Specific text color overrides for screen contrast */
+    #modal-risk-card .text-orange-700 {
+        color: #f97316 !important; /* orange-500 */
+    }
+    #modal-risk-card .text-orange-800 {
+        color: #fdba74 !important; /* orange-300 */
+    }
+    #modal-risk-card .text-gray-700 {
+        color: #cbd5e1 !important; /* slate-300 */
+    }
+    #modal-risk-card .text-gray-500 {
+        color: #94a3b8 !important; /* slate-400 */
+    }
 }
 
 @media print {
@@ -568,6 +653,7 @@ summary {
     }
     #modal-risk-card, #modal-risk-card * {
         visibility: visible !important;
+        color: #000000 !important;
     }
     #modal-risk-card {
         position: absolute !important;
@@ -576,21 +662,53 @@ summary {
         width: 100% !important;
         height: auto !important;
         overflow: visible !important;
-        background: white !important;
+        background: #ffffff !important;
         display: block !important;
     }
     .risk-card-panel {
         border: none !important;
         box-shadow: none !important;
-        background: white !important;
+        background: #ffffff !important;
+        color: #000000 !important;
         max-width: none !important;
     }
     .risk-card-content {
         padding: 0 !important;
         overflow: visible !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    .risk-card-table {
+        color: #000000 !important;
+        background: #ffffff !important;
+    }
+    .risk-card-table th, 
+    .risk-card-table td,
+    .risk-card-table div {
+        border-color: #9ca3af !important; /* clear gray borders for printing */
+        color: #000000 !important;
+        background: transparent !important;
+    }
+    #modal-risk-card .bg-gray-100 {
+        background-color: #f3f4f6 !important;
+        color: #000000 !important;
+    }
+    #modal-risk-card .bg-gray-50 {
+        background-color: #f9fafb !important;
+        color: #000000 !important;
+    }
+    .risk-card-table input[type="text"],
+    .risk-card-table input[type="date"],
+    .risk-card-table input[type="datetime-local"] {
+        color: #000000 !important;
+        background-color: transparent !important;
     }
     .risk-card-table textarea {
+        color: #000000 !important;
+        background-color: transparent !important;
+        border: 1px solid #9ca3af !important;
         resize: none !important;
         overflow: visible !important;
+        width: 100% !important;
     }
 }

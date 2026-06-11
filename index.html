@@ -294,9 +294,9 @@
 
     <!-- МОДАЛКА КАРТКИ РИЗИКІВ -->
     <div id="modal-risk-card" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[5000] p-4">
-        <div class="glass-panel risk-card-panel border-emerald-500 w-full max-w-6xl rounded-2xl flex flex-col h-[95vh] shadow-2xl overflow-hidden bg-white text-black print:p-0 print:border-none print:shadow-none print:bg-transparent">
+        <div class="glass-panel risk-card-panel border-emerald-500 w-full max-w-6xl rounded-2xl flex flex-col h-[95vh] shadow-2xl overflow-hidden text-slate-200 print:p-0 print:border-none print:shadow-none print:bg-transparent">
             <!-- Header for Screen (Hidden in print) -->
-            <div class="p-4 bg-emerald-950/90 border-b border-emerald-500/30 flex justify-between items-center print:hidden">
+            <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex justify-between items-center print:hidden">
                 <div class="flex items-center gap-4">
                     <h3 class="text-emerald-400 font-black uppercase text-sm tracking-wider">Картка планового управління ризиками</h3>
                     <button onclick="printRiskCard()" class="bg-emerald-700/80 hover:bg-emerald-600 border border-emerald-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors flex items-center gap-1">
@@ -315,8 +315,8 @@
             </div>
             
             <!-- Scrollable Content -->
-            <div class="flex-1 overflow-y-auto p-8 print:overflow-visible print:p-0 risk-card-content bg-white" id="risk-card-container">
-                <h2 class="font-bold text-lg mb-4 text-center">Додаток 1 (Картка планового управління ризиками)</h2>
+            <div class="flex-1 overflow-y-auto p-8 print:overflow-visible print:p-0 risk-card-content" id="risk-card-container">
+                <h2 class="font-bold text-emerald-400 text-lg mb-4 text-center uppercase tracking-wider print:text-black">Додаток 1 (Картка планового управління ризиками)</h2>
                 
                 <table class="risk-card-table w-full border-collapse text-xs">
                     <thead>
