@@ -3894,6 +3894,31 @@ function openRiskManagementCard() {
     document.getElementById('rc-comments').value = rc.comments || '';
     renderRiskCardThreatsTable(m);
     document.getElementById('modal-risk-card').classList.remove('hidden');
+    autoFillRiskCardSettlements();
+}
+
+async function autoFillRiskCardSettlements() {
+    const inputs = Array.from(document.querySelectorAll('.rc-settlement')).filter(inp => !inp.value && inp.dataset.lat && inp.dataset.lng);
+    for (const inp of inputs) {
+        if (inp.value) continue; // might have been edited by user while waiting
+        try {
+            inp.placeholder = 'Пошук...';
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${inp.dataset.lat}&lon=${inp.dataset.lng}`);
+            const data = await res.json();
+            let name = '';
+            if (data && data.address) {
+                name = data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.municipality || data.name || '';
+            }
+            if (name) {
+                inp.value = name;
+            } else {
+                inp.placeholder = 'Не знайдено';
+            }
+        } catch(e) {
+            inp.placeholder = 'Помилка API';
+        }
+        await new Promise(r => setTimeout(r, 1100)); // Rate limit 1 req/sec
+    }
 }
 
 function renderRiskCardThreatsTable(m) {
@@ -3904,16 +3929,24 @@ function renderRiskCardThreatsTable(m) {
     const getProbBg = c => ({ F:'#ff3333', L:'#f97316', O:'#eab308', U:'#38bdf8' }[c] || '#e2e8f0');
     let html = '', counter = 1;
     m.data.database.forEach(item => {
+        const lat = item.latlng ? item.latlng.lat : '';
+        const lng = item.latlng ? item.latlng.lng : '';
         if (item.type === 'primary') {
             let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
             const resRiskCode = item.residualRisk || 'ND';
             const ctrls = (item.report || []).map(c => `\u2022 ${c.name}`).join('<br>') || '<span class="text-gray-400 italic">\u2014</span>';
-            html += `<tr><td class="border border-gray-400 p-1 text-center font-bold text-sm">1.${counter}</td><td class="border border-gray-400 p-1 text-sm">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(riskCode)}">${riskCode}</span></td><td class="border border-gray-400 p-1 text-xs">${ctrls}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
-            if (item.secondaries) item.secondaries.forEach((sec,si) => { const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND'; const sc=(sec.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>'; html+=`<tr class="bg-gray-50"><td class="border border-gray-400 p-1 text-center text-xs text-gray-500">\u21b3${counter}.${si+1}</td><td class="border border-gray-400 p-1 pl-3 text-xs italic text-gray-700">${sec.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(sp)}">${sp}</span></td><td class="border border-gray-400 p-1 text-xs">${sc}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm"></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(srp)}">${srp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`; });
+            const stHtml = `1.${counter}<br><input type="text" class="rc-settlement w-full bg-transparent border-b border-dashed border-gray-400 outline-none text-center text-xs mt-1 font-normal" placeholder="н.п." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}">`;
+            html += `<tr><td class="border border-gray-400 p-1 text-center font-bold text-sm align-top w-24">${stHtml}</td><td class="border border-gray-400 p-1 text-sm">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(riskCode)}">${riskCode}</span></td><td class="border border-gray-400 p-1 text-xs">${ctrls}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            if (item.secondaries) item.secondaries.forEach((sec,si) => { 
+                const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND'; const sc=(sec.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>'; 
+                const sstHtml = `\u21b3${counter}.${si+1}<br><input type="text" class="rc-settlement w-full bg-transparent border-b border-dashed border-gray-400 outline-none text-center text-xs mt-1 font-normal" placeholder="н.п." value="${sec.rcSettlement || ''}" data-id="${item.id}" data-sid="${si}" data-lat="${lat}" data-lng="${lng}">`;
+                html+=`<tr class="bg-gray-50"><td class="border border-gray-400 p-1 text-center text-xs text-gray-500 align-top">${sstHtml}</td><td class="border border-gray-400 p-1 pl-3 text-xs italic text-gray-700">${sec.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(sp)}">${sp}</span></td><td class="border border-gray-400 p-1 text-xs">${sc}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm"></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(srp)}">${srp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`; 
+            });
             counter++;
         } else if (item.type === 'secondary_indep') {
             const p=item.probability||'ND'; const rp=item.residualProbability||'ND'; const c=(item.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>';
-            html+=`<tr><td class="border border-gray-400 p-1 text-center font-bold text-xs text-orange-700">Інд.${counter}</td><td class="border border-gray-400 p-1 text-sm text-orange-800">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getProbBg(p)}">${p}</span></td><td class="border border-gray-400 p-1 text-xs">${c}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getProbBg(rp)}">${rp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            const istHtml = `Інд.${counter}<br><input type="text" class="rc-settlement w-full bg-transparent border-b border-dashed border-gray-400 outline-none text-center text-xs mt-1 font-normal" placeholder="н.п." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}">`;
+            html+=`<tr><td class="border border-gray-400 p-1 text-center font-bold text-xs text-orange-700 align-top w-24">${istHtml}</td><td class="border border-gray-400 p-1 text-sm text-orange-800">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getProbBg(p)}">${p}</span></td><td class="border border-gray-400 p-1 text-xs">${c}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getProbBg(rp)}">${rp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
             counter++;
         }
     });
@@ -3945,6 +3978,24 @@ function saveRiskCard() {
     });
     rc.apd = document.getElementById('rc-apd').value;
     rc.comments = document.getElementById('rc-comments').value;
+    
+    // Save settlements
+    document.querySelectorAll('.rc-settlement').forEach(inp => {
+        const id = inp.getAttribute('data-id');
+        const sid = inp.getAttribute('data-sid');
+        m.data.database.forEach(item => {
+            if (item.id == id) {
+                if (sid !== null && sid !== undefined) {
+                    if (item.secondaries && item.secondaries[sid]) {
+                        item.secondaries[sid].rcSettlement = inp.value;
+                    }
+                } else {
+                    item.rcSettlement = inp.value;
+                }
+            }
+        });
+    });
+
     saveMissions();
     const btn = document.querySelector('#modal-risk-card .save-btn');
     if (btn) { const o=btn.innerText; btn.innerText='Збережено!'; btn.classList.add('bg-green-600'); setTimeout(()=>{ btn.innerText=o; btn.classList.remove('bg-green-600'); }, 2000); }
