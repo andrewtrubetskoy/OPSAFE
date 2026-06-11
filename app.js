@@ -114,6 +114,7 @@ function showContextMenu(latlng, originalEvent, targetLayer = null) {
                 btn.classList.remove('hidden');
                 const deleteText = document.getElementById('menu-delete-shape-text');
                 if (deleteText) {
+                    
                     deleteText.innerText = (contextMenuTargetLayer instanceof L.Polygon) ? "Видалити район" : "Видалити маршрут";
                 }
             } else {
@@ -272,9 +273,13 @@ document.addEventListener('keydown', (e) => {
             const m = missions.find(x => x.id === currentMissionId);
             if (m) {
                 m.data.database.forEach(item => {
+                    
                     item.editing = false;
+                    
                     item.secondaries.forEach(sec => {
+                    
                         sec.editing = false;
+                    
                     });
                 });
                 renderMarkers();
@@ -380,7 +385,9 @@ function deleteShape(layer) {
             title: "Видалити район позицій",
             htmlContent: `
                 <div class="text-center py-2">
+                    
                     <p class="text-sm">Ви дійсно бажаєте видалити цей район позицій?</p>
+                    
                     <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
                 </div>
             `,
@@ -388,11 +395,17 @@ function deleteShape(layer) {
             confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
             onConfirm: () => {
                 m.data.areas = m.data.areas.filter(areaCoords => {
+                    
                     const flat = areaCoords.map(c => L.latLng(c));
+                    
                     if (flat.length !== layerCoords.length) return true;
+                    
                     for (let i = 0; i < flat.length; i++) {
+                    
                         if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
+                    
                     }
+                    
                     return false;
                 });
                 activeLayers.removeLayer(layer);
@@ -406,7 +419,9 @@ function deleteShape(layer) {
             title: "Видалити маршрут",
             htmlContent: `
                 <div class="text-center py-2">
+                    
                     <p class="text-sm">Ви дійсно бажаєте видалити цей маршрут?</p>
+                    
                     <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
                 </div>
             `,
@@ -414,11 +429,17 @@ function deleteShape(layer) {
             confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
             onConfirm: () => {
                 m.data.routes = m.data.routes.filter(routeCoords => {
+                    
                     const flat = routeCoords.map(c => L.latLng(c));
+                    
                     if (flat.length !== layerCoords.length) return true;
+                    
                     for (let i = 0; i < flat.length; i++) {
+                    
                         if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
+                    
                     }
+                    
                     return false;
                 });
                 activeLayers.removeLayer(layer);
@@ -453,13 +474,21 @@ function loadMissions() {
             // Reset transient editing state on load
             missions.forEach(m => {
                 if (m.data && m.data.database) {
+                    
                     m.data.database.forEach(item => {
+                    
                         item.editing = false;
+                    
                         if (item.secondaries) {
+                    
                             item.secondaries.forEach(sec => {
+                    
                                 sec.editing = false;
+                    
                             });
+                    
                         }
+                    
                     });
                 }
             });
@@ -483,31 +512,53 @@ function initDefaultMission() {
             type: "Рекогностування",
             data: {
                 routes: [
+                    
                     [
+                    
                         { lat: 47.694463, lng: 36.086256 },
+                    
                         { lat: 47.705000, lng: 36.100000 },
+                    
                         { lat: 47.715000, lng: 36.120000 }
+                    
                     ]
                 ],
                 areas: [
+                    
                     [
+                    
                         { lat: 47.680000, lng: 36.050000 },
+                    
                         { lat: 47.690000, lng: 36.050000 },
+                    
                         { lat: 47.690000, lng: 36.070000 },
+                    
                         { lat: 47.680000, lng: 36.070000 }
+                    
                     ]
                 ],
                 database: [
+                    
                     {
+                    
                         id: 123456789,
+                    
                         name: "Ураження FPV \\ баражуючий боєприпас",
+                    
                         tag: "#критично",
+                    
                         severity: "критично",
+                    
                         rel: [0, 1, 2, 3, 4, 6],
+                    
                         latlng: { lat: 47.705000, lng: 36.100000 },
+                    
                         measures: ["Постійний моніторинг ефіру", "Використання засобів окопного РЕБ"],
+                    
                         secondaries: [],
+                    
                         type: "primary"
+                    
                     }
                 ]
             }
@@ -1150,10 +1201,15 @@ function findNearestLayer(latlng, thresholdPx = 45) {
                 // If clicked inside the polygon, distance is 0
                 const bounds = layer.getBounds();
                 if (bounds.contains(latlng)) {
+                    
                     if (isPointInPolygon(clickPoint, points)) {
+                    
                         closestLayer = layer;
+                    
                         minDistance = 0;
+                    
                         return;
+                    
                     }
                 }
             }
@@ -1161,6 +1217,7 @@ function findNearestLayer(latlng, thresholdPx = 45) {
             // Calculate minimum distance to polygon/polyline boundary segments
             for (let i = 0; i < points.length; i++) {
                 if (i === points.length - 1 && !(layer instanceof L.Polygon)) {
+                    
                     continue;
                 }
                 const p1 = points[i];
@@ -1168,7 +1225,9 @@ function findNearestLayer(latlng, thresholdPx = 45) {
 
                 const dist = getDistanceToSegment(clickPoint, p1, p2);
                 if (dist < minDistance) {
+                    
                     minDistance = dist;
+                    
                     closestLayer = layer;
                 }
             }
@@ -1379,17 +1438,24 @@ function showGenericWarningModal(title, message, subtext) {
         <div class="glass-panel border border-red-500/50 w-full max-w-lg rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="animation: slideUp 0.25s ease">
             <div class="p-4 bg-red-950/40 border-b border-red-500/30 flex justify-between items-center">
                 <div class="flex items-center gap-2">
+                    
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    
                         <line x1="12" y1="9" x2="12" y2="13"/>
+                    
                         <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    
                     </svg>
+                    
                     <h3 class="text-red-400 font-black uppercase text-xs tracking-wider">${title}</h3>
                 </div>
                 <button onclick="document.getElementById('modal-generic-warning').remove()" class="text-white text-2xl font-light hover:text-red-500 transition-colors leading-none">&times;</button>
             </div>
             <div class="p-6 space-y-4">
                 <div class="bg-slate-900/60 border border-white/5 rounded-lg p-4 space-y-2">
+                    
                     <p class="text-red-300 text-sm flex items-start gap-2"><span class="text-red-500 mt-0.5">⚠</span><span>${message}</span></p>
                 </div>
                 ${subtext ? '<p class="text-slate-400 text-xs italic">' + subtext + '</p>' : ''}
@@ -1509,7 +1575,6 @@ function getProbabilityBadgeHtml(prob) {
     }
     return ` <span style="color: ${color};" class="text-[8px] font-black uppercase">${prob.toUpperCase()}</span>`;
 }
-
 function getProbabilityDiamondStyle(prob) {
     switch (prob) {
         case 'Дуже часто': return 'background:#dc2626; border-color:#fca5a5; box-shadow:0 0 10px rgba(220,38,38,0.6);';
@@ -1522,10 +1587,9 @@ function getProbabilityDiamondStyle(prob) {
 }
 
 function getResidualBadgeHtml(sev, prob, isPrimary) {
-    // For primary threats, always show badge (even ND when sev/prob is missing)
-    if (!isPrimary && (!sev || !prob)) return '';
+    if (!isPrimary && (!sev || !prob)) return { details: '', level: '' };
     const riskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(sev, prob) : null;
-    if (!riskInfo) return '';
+    if (!riskInfo) return { details: '', level: '' };
 
     let probColor = '#cbd5e1';
     switch (prob) {
@@ -1546,15 +1610,20 @@ function getResidualBadgeHtml(sev, prob, isPrimary) {
 
     const fullSev = sev ? sev.charAt(0).toUpperCase() + sev.slice(1) : '—';
     const fullProb = prob ? prob.charAt(0).toUpperCase() + prob.slice(1) : '—';
-    const glowClass = riskInfo.short === 'ND' ? ' badge-nd-glow' : '';
+    const isNd = riskInfo.short === 'ND';
+    const glowClass = isNd ? ' badge-nd-glow pulse-border-red' : '';
+    const textLabel = isNd ? `<span style="font-size: 8px; font-weight: bold; letter-spacing: 0.5px;">НЕВИЗНАЧЕНО</span>` : riskInfo.short;
 
-    return `<div class="badge-residual${glowClass}${window.amplifiersEnabled ? '' : ' hidden'}">
+    const detailsHtml = `<div class="badge-residual${glowClass}${window.amplifiersEnabled ? '' : ' hidden'}">
         <div class="badge-res-details">
             <span style="color: ${sevColor};">${fullSev}</span>
             <span style="color: ${probColor};">${fullProb}</span>
         </div>
-        <div class="badge-res-level" style="color: ${riskInfo.color};">${riskInfo.short}</div>
     </div>`;
+    
+    const levelHtml = `<div class="badge-res-level-top${glowClass}${window.amplifiersEnabled ? '' : ' hidden'}" style="color: ${riskInfo.color};">${textLabel}</div>`;
+
+    return { details: detailsHtml, level: levelHtml };
 }
 
 function showToast(message, duration = 1500) {
@@ -1592,15 +1661,15 @@ function renderMarkers() {
 
         const activeResSev = typeof item.residualSeverity !== 'undefined' ? item.residualSeverity : item.severity;
         const activeResProb = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability;
-        const resMarkerBadge = getResidualBadgeHtml(activeResSev, activeResProb, isP);
+        const resMarkerBadgeObj = getResidualBadgeHtml(activeResSev, activeResProb, isP);
         const resRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(activeResSev, activeResProb) : null;
 
         let riskDiamondClass = '';
         if (isP && resRiskInfo) {
-            if (resRiskInfo.short === 'EH') riskDiamondClass = ' risk-EH';
-            else if (resRiskInfo.short === 'H') riskDiamondClass = ' risk-H';
-            else if (resRiskInfo.short === 'M') riskDiamondClass = ' risk-M';
-            else if (resRiskInfo.short === 'L') riskDiamondClass = ' risk-L';
+            if (resRiskInfo.short === 'НВ') riskDiamondClass = ' risk-НВ';
+            else if (resRiskInfo.short === 'В') riskDiamondClass = ' risk-В';
+            else if (resRiskInfo.short === 'С') riskDiamondClass = ' risk-С';
+            else if (resRiskInfo.short === 'Н') riskDiamondClass = ' risk-Н';
             else if (resRiskInfo.short === 'ND') riskDiamondClass = ' risk-ND';
         }
 
@@ -1620,7 +1689,7 @@ function renderMarkers() {
         const secProbLabel = !isP
             ? `<div class="label-threat-left${window.amplifiersEnabled ? '' : ' hidden'}${labelPulseClass}">${activeProbBadge}</div>`
             : '';
-        const pulseClass = (!isP && !activeResProb) ? ' pulse-border-red' : '';
+        const pulseClass = (isP && resRiskInfo && resRiskInfo.short === 'ND') ? ' pulse-border-red' : ((!isP && !activeResProb) ? ' pulse-border-red' : '');
 
         // Resolve displayName (with shortName resolution for independent secondary threats)
         const secEntry = (!isP && opsafeDb && opsafeDb.secondaryThreats)
@@ -1634,7 +1703,7 @@ function renderMarkers() {
             <div class="diamond ${diamondClass}${extraClass}${riskDiamondClass}${pulseClass}" style="${diamondStyle}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, null, event)">
                 <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
             </div>
-            ${resMarkerBadge}
+            ${resMarkerBadgeObj.details}${resMarkerBadgeObj.level}
             ${closeBtnHtml}
             ${secProbLabel}
             <div class="label-threat ${isP ? sevLabelColor : 'text-orange-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${displayName}</div>
@@ -1646,27 +1715,29 @@ function renderMarkers() {
 
         if (isP) {
                 item.secondaries.forEach((sec, idx) => {
-                const offset = (idx + 1) * 55;
+                const offset = (idx + 1) * 65;
                 const secHasMeasures = sec.measures && sec.measures.length > 0;
                 const secExtraClass = '';
                 const secCloseBtnHtml = sec.editing ? `<div class="btn-ui btn-close" style="left:-25px; top:-25px; width:12px; height:12px;" onclick="confirmDeleteSec(${item.id}, ${idx})">×</div>` : '';
 
                 const secActiveResSev = typeof sec.residualSeverity !== 'undefined' ? sec.residualSeverity : sec.severity;
                 const secActiveResProb = typeof sec.residualProbability !== 'undefined' ? sec.residualProbability : sec.probability;
-                const secResMarkerBadge = getResidualBadgeHtml(secActiveResSev, secActiveResProb);
+                const secResMarkerBadgeObj = getResidualBadgeHtml(secActiveResSev, secActiveResProb, false);
                 const secResRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(secActiveResSev, secActiveResProb) : null;
                 
                 const secRiskDiamondClass = '';
 
                 // Resolve shortName for secondary threat label
                 const secEntry = opsafeDb && opsafeDb.secondaryThreats
+                    
                     ? opsafeDb.secondaryThreats.find(e => getSecThreatName(e) === sec.name)
+                    
                     : null;
                 const secDisplayName = (secEntry && getSecThreatShortName(secEntry)) || sec.shortName || sec.name;
 
                 // Probability-based diamond color for secondary threats
                 const secDiamondStyle = getProbabilityDiamondStyle(secActiveResProb);
-                const secPulseClass = (!secActiveResProb) ? ' pulse-border-red' : '';
+                const secPulseClass = (secResRiskInfo && secResRiskInfo.short === 'ND') ? ' pulse-border-red' : '';
 
                 // Probability label shown to the LEFT of the marker
                 const secLabelPulseClass = secActiveResProb ? '' : ' pulse-border-red';
@@ -1674,16 +1745,27 @@ function renderMarkers() {
                 const secProbLabel = `<div class="label-threat-left${window.amplifiersEnabled ? '' : ' hidden'}${secLabelPulseClass}">${secProbBadge}</div>`;
 
                 html += `<div style="position:absolute; top:-${offset}px; left:0;">
+                    
                     <div class="diamond sec-diamond${secExtraClass}${secRiskDiamondClass}${secPulseClass}" style="${secDiamondStyle}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, ${idx}, event)">
+                    
                         <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
+                    
                     </div>
-                    ${secResMarkerBadge}
+                    
+                    ${secResMarkerBadgeObj.details}${secResMarkerBadgeObj.level}
+                    
                     ${secCloseBtnHtml}
+                    
                     ${secProbLabel}
+                    
                     <div class="label-threat text-orange-300${window.amplifiersEnabled ? '' : ' hidden'}">${secDisplayName}</div>
+                    
                     <div class="flex" style="position:absolute; left:0; top:0;">
+                    
                         <div class="btn-ui btn-ctrl" style="left:20px; top:12px;" onclick="openControls(${item.id}, ${idx})">+</div>
+                    
                         ${sec.measures.length > 0 ? `<div class="btn-ui btn-info" style="left:42px; top:12px;" onclick="viewSingle(${item.id}, ${idx})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>` : ''}
+                    
                     </div>
                 </div>`;
             });
@@ -1700,10 +1782,15 @@ function renderMarkers() {
             if (pane) {
                 console.log("=== LEAFLET MARKER PANE INSPECTION ===");
                 Array.from(pane.children).forEach((child, idx) => {
+                    
                     console.log(`Marker #${idx}:`, {
+                    
                         classes: child.className,
+                    
                         style: child.style.cssText,
+                    
                         html: child.innerHTML
+                    
                     });
                 });
             }
@@ -1841,13 +1928,21 @@ function openControls(pid, sidx) {
                 const col = active ? catColors.a : catColors.i;
                 b.innerHTML = `<div class="mb-1">${me.name}</div><div class="text-[8.5px] uppercase tracking-wider font-extrabold ${col}">${me.cat || 'Без категорії'}</div>`;
                 b.onclick = () => {
+                    
                     if (!active) {
+                    
                         target.measures.push(me.name);
+                    
                     } else {
+                    
                         target.measures = target.measures.filter(x => x !== me.name);
+                    
                     }
+                    
                     openControls(pid, sidx); // Перезавантажуємо модальне вікно
+                    
                     renderMarkers();
+                    
                     saveMissions();
                 };
                 grid.appendChild(b);
@@ -1906,9 +2001,13 @@ function viewSingle(pid, sidx) {
             const riskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(severityToUse, probabilityToUse) : null;
             if (riskInfo) {
                 html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                    
                     <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Рівень ризику:</span>
+                    
                     <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${riskInfo.bg}; color: ${riskInfo.color}; border-color: ${riskInfo.color}40;">
+                    
                         ${riskInfo.short} - ${riskInfo.label}
+                    
                     </div>
                 </div>`;
             }
@@ -1955,9 +2054,13 @@ function viewSingle(pid, sidx) {
             const resRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(activeResSev, activeResProb) : null;
             if (resRiskInfo) {
                 html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                    
                     <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Залишковий ризик:</span>
+                    
                     <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${resRiskInfo.bg}; color: ${resRiskInfo.color}; border-color: ${resRiskInfo.color}40;">
+                    
                         ${resRiskInfo.short} - ${resRiskInfo.label}
+                    
                     </div>
                 </div>`;
             }
@@ -2006,13 +2109,19 @@ function viewSingle(pid, sidx) {
         html += `<details class="group mt-4 mb-2">
             <summary class="bg-slate-800/60 hover:bg-slate-800/80 px-2.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-white uppercase tracking-widest border-b border-white/5 cursor-pointer list-none flex items-center justify-between transition-colors select-none">
                 <span class="flex items-center gap-1.5">
+                    
                     <svg class="w-3 h-3 text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                    
                         <circle cx="11" cy="11" r="8" />
+                    
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    
                     </svg>
+                    
                     <span>Інструменти ідентифікації</span>
                 </span>
                 <svg class="w-2.5 h-2.5 transform group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
             </summary>
@@ -2081,6 +2190,7 @@ function viewCombined(pid) {
             html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
                 <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Рівень ризику:</span>
                 <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${riskInfo.bg}; color: ${riskInfo.color}; border-color: ${riskInfo.color}40;">
+                    
                     ${riskInfo.short} - ${riskInfo.label}
                 </div>
             </div>`;
@@ -2130,6 +2240,7 @@ function viewCombined(pid) {
             html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
                 <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Залишковий ризик:</span>
                 <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${resRiskInfo.bg}; color: ${resRiskInfo.color}; border-color: ${resRiskInfo.color}40;">
+                    
                     ${resRiskInfo.short} - ${resRiskInfo.label}
                 </div>
             </div>`;
@@ -2145,13 +2256,19 @@ function viewCombined(pid) {
         html += `<details class="group mt-2 mb-2">
             <summary class="bg-slate-800/60 hover:bg-slate-800/80 px-2.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-white uppercase tracking-widest border-b border-white/5 cursor-pointer list-none flex items-center justify-between transition-colors select-none">
                 <span class="flex items-center gap-1.5">
+                    
                     <svg class="w-3 h-3 text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                    
                         <circle cx="11" cy="11" r="8" />
+                    
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    
                     </svg>
+                    
                     <span>Інструменти ідентифікації</span>
                 </span>
                 <svg class="w-2.5 h-2.5 transform group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
             </summary>
@@ -2185,15 +2302,25 @@ function viewCombined(pid) {
         if (linkedToolsSec.length > 0) {
             html += `<details class="group mt-2 mb-2">
                 <summary class="bg-slate-800/60 hover:bg-slate-800/80 px-2.5 py-1.5 text-[9px] font-bold text-slate-400 hover:text-white uppercase tracking-widest border-b border-white/5 cursor-pointer list-none flex items-center justify-between transition-colors select-none">
+                    
                     <span class="flex items-center gap-1.5">
+                    
                         <svg class="w-3 h-3 text-slate-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                    
                             <circle cx="11" cy="11" r="8" />
+                    
                             <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    
                         </svg>
+                    
                         <span>Інструменти ідентифікації</span>
+                    
                     </span>
+                    
                     <svg class="w-2.5 h-2.5 transform group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    
                     </svg>
                 </summary>
                 <div class="mt-1.5 space-y-1">`;
@@ -2467,6 +2594,7 @@ async function loadDeepStateFrontline() {
             style: styleFrontlineFeature,
             onEachFeature: (feature, layer) => {
                 if (feature.properties && feature.properties.name) {
+                    
                     layer.bindTooltip(feature.properties.name, { sticky: true, className: 'frontline-feature-tooltip' });
                 }
             }
@@ -2501,8 +2629,11 @@ async function loadDeepStateFrontline() {
             try {
                 const res = await fetch(url);
                 if (res.ok) {
+                    
                     geojsonData = await res.json();
+                    
                     loadedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+                    
                     break;
                 }
             } catch (e) {
@@ -2514,11 +2645,17 @@ async function loadDeepStateFrontline() {
             try {
                 frontlineLayer.clearLayers();
                 const geojsonGroup = L.geoJSON(geojsonData, {
+                    
                     style: styleFrontlineFeature,
+                    
                     onEachFeature: (feature, layer) => {
+                    
                         if (feature.properties && feature.properties.name) {
+                    
                             layer.bindTooltip(feature.properties.name, { sticky: true, className: 'frontline-feature-tooltip' });
+                    
                         }
+                    
                     }
                 }).addTo(frontlineLayer);
 
@@ -2585,10 +2722,15 @@ async function loadBaseRoutes() {
             let comment = '';
             for (let k = 0; k < dataElements.length; k++) {
                 if (dataElements[k].getAttribute('name') === 'comments') {
+                    
                     const valEl = dataElements[k].getElementsByTagName('value')[0];
+                    
                     if (valEl) {
+                    
                         comment = valEl.textContent.trim();
+                    
                     }
+                    
                     break;
                 }
             }
@@ -2598,47 +2740,85 @@ async function loadBaseRoutes() {
             for (let j = 0; j < lineStrings.length; j++) {
                 const coordsEl = lineStrings[j].getElementsByTagName('coordinates')[0];
                 if (coordsEl) {
+                    
                     const coordsText = coordsEl.textContent.trim();
+                    
                     const pts = coordsText.split(/\s+/).map(str => {
+                    
                         const parts = str.split(',');
+                    
                         if (parts.length >= 2) {
+                    
                             const lon = parseFloat(parts[0]);
+                    
                             const lat = parseFloat(parts[1]);
+                    
                             if (!isNaN(lat) && !isNaN(lon)) {
+                    
                                 return [lat, lon];
+                    
                             }
+                    
                         }
+                    
                         return null;
+                    
                     }).filter(pt => pt !== null);
 
+                    
                     if (pts.length >= 2) {
+                    
                         const poly = L.polyline(pts, {
+                    
                             color: '#a855f7', // Purple color for base logistics routes
+                    
                             weight: 3.0,
+                    
                             dashArray: '6, 6',
+                    
                             opacity: 0.85 // Bright
+                    
                         }).addTo(baseRoutesLayer);
 
+                    
                         // Stop click propagation to prevent map click handler from disabling edit mode
+                    
                         poly.on('click', (e) => {
+                    
                             L.DomEvent.stopPropagation(e);
+                    
                         });
 
+                    
                         // Prepare tooltip
+                    
                         let tooltipText = '';
+                    
                         if (name) {
+                    
                             tooltipText += `<strong style="display:block; margin-bottom: 2px;">${name}</strong>`;
+                    
                         }
+                    
                         if (comment) {
+                    
                             tooltipText += `<span style="font-size: 10px; color: #cbd5e1; white-space: normal; display: block; max-width: 200px;">${comment}</span>`;
+                    
                         }
 
+                    
                         if (tooltipText) {
+                    
                             poly.bindTooltip(tooltipText, {
+                    
                                 sticky: true,
+                    
                                 className: 'base-route-tooltip'
+                    
                             });
+                    
                         }
+                    
                     }
                 }
             }
@@ -2685,6 +2865,7 @@ function switchSettingsTab(tab) {
     
     // Check if the tab button is style-colored blue or green
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                    
                       document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const activeColor = isEmerald ? 'text-emerald-400 border-emerald-500' : 'text-blue-400 border-blue-500';
     const activeClassParts = activeColor.split(' ');
@@ -2785,15 +2966,19 @@ function renderThreatsSettings(container) {
             <div class="flex-1 min-w-0 pr-2">
                 <div class="text-xs font-bold text-white truncate" title="${t.name}">${getThreatIcon(t.name)} ${t.name}</div>
                 <div class="flex items-center gap-3 mt-0.5">
+                    
                     <div class="text-[9px] text-slate-400 uppercase font-mono">Тяжкість: <span class="${severityColorClass} font-bold">${t.severity}</span></div>
+                    
                     ${shortNameDisplay}
                 </div>
             </div>
             <div class="flex gap-1.5 shrink-0">
                 <button onclick="editPrimaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
+                    
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                 </button>
                 <button onclick="deletePrimaryThreat(${index})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                    
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                 </button>
             </div>
@@ -2817,9 +3002,11 @@ function renderThreatsSettings(container) {
             </div>
             <div class="flex gap-1.5 shrink-0">
                 <button onclick="editSecondaryThreat(${index})" title="Редагувати" class="p-1 rounded bg-slate-800 text-blue-400 hover:text-blue-300 hover:bg-slate-700 active:scale-95 transition-all">
+                    
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                 </button>
                 <button onclick="deleteSecondaryThreat(${index})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                    
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                 </button>
             </div>
@@ -2978,6 +3165,7 @@ function editPrimaryThreat(index) {
             
             opsafeDb.threatConnections.forEach(tc => {
                 if (tc.primaryThreat === oldName) {
+                    
                     tc.primaryThreat = newName;
                 }
             });
@@ -2988,17 +3176,24 @@ function editPrimaryThreat(index) {
             
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
+                    
                     it.threatRelations = it.threatRelations.map(n => n === oldName ? newName : n);
                 });
             }
             
             missions.forEach(m => {
                 m.data.database.forEach(d => {
+                    
                     if (d.name === oldName) {
+                    
                         d.name = newName;
+                    
                         d.shortName = newShortName;
+                    
                         d.severity = newSeverity;
+                    
                         d.tag = "#" + newSeverity;
+                    
                     }
                 });
             });
@@ -3041,6 +3236,7 @@ function deletePrimaryThreat(index) {
             
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
+                    
                     it.threatRelations = it.threatRelations.filter(n => n !== t.name);
                 });
             }
@@ -3143,15 +3339,20 @@ function editSecondaryThreat(index) {
             
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
+                    
                     it.threatRelations = it.threatRelations.map(n => n === oldName ? newName : n);
                 });
             }
             
             missions.forEach(m => {
                 m.data.database.forEach(d => {
+                    
                     if (d.name === oldName) d.name = newName;
+                    
                     d.secondaries.forEach(sec => {
+                    
                         if (sec.name === oldName) sec.name = newName;
+                    
                     });
                 });
             });
@@ -3196,6 +3397,7 @@ function deleteSecondaryThreat(index) {
             
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
+                    
                     it.threatRelations = it.threatRelations.filter(n => n !== name);
                 });
             }
@@ -3213,6 +3415,7 @@ function deleteSecondaryThreat(index) {
 
 function renderMeasuresSettings(container) {
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                    
                       document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
     
@@ -3272,6 +3475,7 @@ function populateMeasuresList(btnClass) {
             </div>
             <div class="flex gap-2 shrink-0">
                 <button onclick="event.stopPropagation(); deleteMeasure(${idx})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                    
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                 </button>
             </div>
@@ -3311,58 +3515,100 @@ function populateMeasureEditForm() {
             
             <div class="grid grid-cols-2 gap-4">
                 <div>
+                    
                     <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Функціональна категорія</label>
+                    
                     <select id="edit-measure-category" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-xs outline-none ${accentBorder}">
+                    
                         <option value="Тактичні" ${m.category === 'Тактичні' ? 'selected' : ''}>Тактичні</option>
+                    
                         <option value="Інформаційна безпека" ${m.category === 'Інформаційна безпека' ? 'selected' : ''}>Інформаційна безпека</option>
+                    
                         <option value="Інженерні" ${m.category === 'Інженерні' ? 'selected' : ''}>Інженерні</option>
+                    
                         <option value="Технічні" ${m.category === 'Технічні' ? 'selected' : ''}>Технічні</option>
+                    
                         <option value="Ударно-вогневі" ${m.category === 'Ударно-вогневі' ? 'selected' : ''}>Ударно-вогневі</option>
+                    
                         <option value="Розвідувально-інформаційні" ${m.category === 'Розвідувально-інформаційні' ? 'selected' : ''}>Розвідувально-інформаційні</option>
+                    
                     </select>
                 </div>
                 <div>
+                    
                     <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Категорія впровадження</label>
+                    
                     <select id="edit-measure-impl" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-xs outline-none ${accentBorder}">
+                    
                         <option value="Планувальні" ${m.implementation === 'Планувальні' ? 'selected' : ''}>Планувальні</option>
+                    
                         <option value="Операційні" ${m.implementation === 'Операційні' ? 'selected' : ''}>Операційні</option>
+                    
                         <option value="Регламентні" ${m.implementation === 'Регламентні' ? 'selected' : ''}>Регламентні</option>
+                    
                         <option value="Нагляд та контроль" ${m.implementation === 'Нагляд та контроль' ? 'selected' : ''}>Нагляд та контроль</option>
+                    
                         <option value="Навчання" ${m.implementation === 'Навчання' ? 'selected' : ''}>Навчання</option>
+                    
                         <option value="Координаційні" ${m.implementation === 'Координаційні' ? 'selected' : ''}>Координаційні</option>
+                    
                     </select>
                 </div>
             </div>
             
             <div class="grid grid-cols-3 gap-2">
                 <div>
+                    
                     <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Тип місії</label>
+                    
                     <div class="flex flex-wrap gap-1 mt-1">
+                    
                         ${['рекон', 'маневр', 'позиція'].map(opt => {
+                    
                             const active = activeMissions.includes(opt);
+                    
                             const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+                    
                             return `<button type="button" data-val="${opt}" class="pill-mission px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+                    
                         }).join('')}
+                    
                     </div>
                 </div>
                 <div>
+                    
                     <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Тип реагування</label>
+                    
                     <div class="flex flex-wrap gap-1 mt-1">
+                    
                         ${['уникнення ризику', 'зменшення ризику', 'розподіл ризику', 'перенесення ризику', 'прийняття ризику'].map(opt => {
+                    
                             const active = activeResponses.includes(opt);
+                    
                             const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+                    
                             return `<button type="button" data-val="${opt}" class="pill-response px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+                    
                         }).join('')}
+                    
                     </div>
                 </div>
                 <div>
+                    
                     <label class="block text-[10px] text-slate-400 uppercase mb-1 font-bold">Етап планування</label>
+                    
                     <div class="flex flex-wrap gap-1 mt-1">
+                    
                         ${['плановий', 'передопераційний', 'операційний'].map(opt => {
+                    
                             const active = activeStages.includes(opt);
+                    
                             const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+                    
                             return `<button type="button" data-val="${opt}" class="pill-stage px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+                    
                         }).join('')}
+                    
                     </div>
                 </div>
             </div>
@@ -3491,6 +3737,7 @@ function deleteMeasure(idx) {
             mission.data.database.forEach(d => {
                 d.measures = d.measures.filter(val => val !== m.name);
                 d.secondaries.forEach(sec => {
+                    
                     sec.measures = sec.measures.filter(val => val !== m.name);
                 });
             });
@@ -3513,6 +3760,7 @@ function deleteMeasure(idx) {
 
 function renderToolsSettings(container) {
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                    
                       document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
     
@@ -3574,6 +3822,7 @@ function populateToolsList(btnClass) {
             </div>
             <div class="flex gap-2 shrink-0">
                 <button onclick="event.stopPropagation(); deleteTool(${idx})" title="Видалити" class="p-1 rounded bg-slate-800 text-red-400 hover:text-red-300 hover:bg-slate-700 active:scale-95 transition-all">
+                    
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                 </button>
             </div>
@@ -3715,6 +3964,7 @@ function deleteTool(idx) {
 
 function renderConnectionsSettings(container) {
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
+                    
                       document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const accentColorClass = isEmerald ? 'accent-emerald-500' : 'accent-blue-500';
     
@@ -3738,13 +3988,21 @@ function renderConnectionsSettings(container) {
             </h5>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 ${opsafeDb.secondaryThreats.map(entry => {
+                    
                     const st = getSecThreatName(entry);
+                    
                     const checked = conn.secondaryThreats.includes(st) ? 'checked' : '';
+                    
                     return `
+                    
                         <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none bg-black/10 p-1.5 rounded hover:bg-black/25 transition-colors">
+                    
                             <input type="checkbox" onchange="toggleThreatConnection('${pt.name}', '${st}', this.checked)" ${checked} class="mt-0.5 ${accentColorClass}">
+                    
                             <span>${st}</span>
+                    
                         </label>
+                    
                     `;
                 }).join('')}
             </div>
@@ -3847,6 +4105,7 @@ function renderRiskMatrixSettings(container) {
                 option.text = levelCode;
                 option.className = "bg-slate-900 text-white font-bold text-center";
                 if (levelCode === currentLevel) {
+                    
                     option.selected = true;
                 }
                 select.appendChild(option);
@@ -3855,12 +4114,18 @@ function renderRiskMatrixSettings(container) {
             function updateSelectStyle(sel, levelCode) {
                 const levelInfo = opsafeDb.riskMatrix.levels[levelCode];
                 if (levelInfo) {
+                    
                     sel.style.backgroundColor = levelInfo.bg;
+                    
                     sel.style.color = "#ffffff";
+                    
                     sel.style.borderColor = levelInfo.color;
                 } else {
+                    
                     sel.style.backgroundColor = "#1e293b";
+                    
                     sel.style.color = "#cbd5e1";
+                    
                     sel.style.borderColor = "rgba(255,255,255,0.1)";
                 }
             }
@@ -3870,12 +4135,14 @@ function renderRiskMatrixSettings(container) {
             select.addEventListener('change', (e) => {
                 const newLevel = e.target.value;
                 if (!opsafeDb.riskMatrix.matrix[sev]) {
+                    
                     opsafeDb.riskMatrix.matrix[sev] = {};
                 }
                 opsafeDb.riskMatrix.matrix[sev][prob] = newLevel;
                 saveOpsafeDb();
                 updateSelectStyle(select, newLevel);
                 if (typeof renderMarkers === 'function') {
+                    
                     renderMarkers();
                 }
             });
@@ -3898,10 +4165,10 @@ function renderRiskMatrixSettings(container) {
     const legendItems = Object.keys(levels).filter(code => code !== 'ND').map(code => {
         const info = levels[code];
         let customLabel = info.label;
-        if (code === "EH") customLabel = "Надзвичайно високий ризик";
-        if (code === "H") customLabel = "Високий ризик";
-        if (code === "M") customLabel = "Середній ризик";
-        if (code === "L") customLabel = "Низький ризик";
+        if (code === "НВ") customLabel = "Надзвичайно високий ризик";
+        if (code === "В") customLabel = "Високий ризик";
+        if (code === "С") customLabel = "Середній ризик";
+        if (code === "Н") customLabel = "Низький ризик";
         
         return `
             <div class="flex items-center gap-2">
@@ -3937,11 +4204,17 @@ function showRiskCardWarning(issues) {
         <div class="glass-panel border border-red-500/50 w-full max-w-lg rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="animation: slideUp 0.25s ease">
             <div class="p-4 bg-red-950/40 border-b border-red-500/30 flex justify-between items-center">
                 <div class="flex items-center gap-2">
+                    
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    
                         <line x1="12" y1="9" x2="12" y2="13"/>
+                    
                         <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    
                     </svg>
+                    
                     <h3 class="text-red-400 font-black uppercase text-xs tracking-wider">Попередження</h3>
                 </div>
                 <button onclick="document.getElementById('modal-risk-warning').remove()" class="text-white text-2xl font-light hover:text-red-500 transition-colors leading-none">&times;</button>
@@ -3949,6 +4222,7 @@ function showRiskCardWarning(issues) {
             <div class="p-6 space-y-4">
                 <p class="text-slate-200 text-sm font-bold">У місії є загрози з невизначеними параметрами:</p>
                 <div class="bg-slate-900/60 border border-white/5 rounded-lg p-4 space-y-2 max-h-[40vh] overflow-y-auto">
+                    
                     ${issues.map(issue => `<p class="text-red-300 text-xs flex items-start gap-2"><span class="text-red-500 mt-0.5">⚠</span><span>${issue.replace(/^• /, '')}</span></p>`).join('')}
                 </div>
                 <p class="text-slate-400 text-xs italic">Спочатку необхідно врегулювати ці проблеми на мапі.</p>
@@ -4055,12 +4329,14 @@ async function openRiskManagementCard() {
         if (m.data && Array.isArray(m.data.database) && typeof getRiskLevelInfo === 'function') {
             let highestLevel = 0;
             let calcRisk = '';
-            const weights = { 'L': 1, 'M': 2, 'H': 3, 'EH': 4 };
+            const weights = { 'Н': 1, 'С': 2, 'В': 3, 'НВ': 4 };
             m.data.database.forEach(p => {
                 const s = typeof p.residualSeverity !== 'undefined' ? p.residualSeverity : p.severity;
                 const pr = typeof p.residualProbability !== 'undefined' ? p.residualProbability : p.probability;
                 if (s && pr) {
+                    
                     const info = getRiskLevelInfo(s, pr);
+                    
                     if (info && weights[info.short] > highestLevel) { highestLevel = weights[info.short]; calcRisk = info.short; }
                 }
             });
@@ -4118,9 +4394,9 @@ function renderRiskCardThreatsTable(m) {
     const tbody = document.getElementById('rc-threats-tbody');
     if (!tbody) return;
     if (!m.data || !m.data.database || m.data.database.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic">Немає загроз у базі даних місії</td></tr>'; return; }
-    const getRiskBg = c => ({ EH:'#ff3333', H:'#f97316', M:'#eab308', L:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
+    const getRiskBg = c => ({ НВ:'#ff3333', В:'#f97316', С:'#eab308', Н:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
     const getProbColor = c => ({ 'Дуже часто':'#dc2626', 'Часто':'#ea580c', 'Можливо':'#ca8a04', 'Рідко':'#65a30d', 'Малоймовірно':'#0284c7' }[c] || '#64748b');
-    const getRiskText = c => ({ EH:'Надзвичайно високий', H:'Високий', M:'Середній', L:'Низький', ND:'Не визначено' }[c] || 'Не визначено');
+    const getRiskText = c => ({ НВ:'Надзвичайно високий', В:'Високий', С:'Середній', Н:'Низький', ND:'Не визначено' }[c] || 'Не визначено');
     
     function buildThreatRows(itemObj, threatName, riskCode, resRiskCode, stHtml, isSecondary, isIndepSecondary, sp, srp, pid, sid) {
         let rowsHtml = '';
@@ -4250,10 +4526,14 @@ function saveRiskCard() {
         m.data.database.forEach(item => {
             if (item.id == id) {
                 if (sid !== null && sid !== undefined) {
+                    
                     if (item.secondaries && item.secondaries[sid]) {
+                    
                         item.secondaries[sid].rcSettlement = inp.value;
+                    
                     }
                 } else {
+                    
                     item.rcSettlement = inp.value;
                 }
             }
@@ -4311,22 +4591,35 @@ function closeRiskCard() {
         overlay.innerHTML = `
             <div class="glass-panel border border-amber-500/50 w-full max-w-lg rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="animation: slideUp 0.25s ease">
                 <div class="p-4 bg-amber-950/40 border-b border-amber-500/30 flex justify-between items-center">
+                    
                     <div class="flex items-center gap-2">
+                    
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    
                             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    
                             <line x1="12" y1="9" x2="12" y2="13"/>
+                    
                             <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    
                         </svg>
+                    
                         <h3 class="text-amber-400 font-black uppercase text-xs tracking-wider">Незбережені зміни</h3>
+                    
                     </div>
+                    
                     <button onclick="document.getElementById('modal-risk-confirm').remove()" class="text-white text-2xl font-light hover:text-amber-500 transition-colors leading-none">&times;</button>
                 </div>
                 <div class="p-6 space-y-4">
+                    
                     <p class="text-slate-200 text-sm font-bold">Ви внесли зміни в картку ризиків, але не зберегли їх.</p>
+                    
                     <p class="text-slate-400 text-xs">Бажаєте зберегти ці зміни перед закриттям форми?</p>
                 </div>
                 <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end gap-3 flex-wrap">
+                    
                     <button onclick="closeRiskCardWithoutSaving()" class="px-4 py-2 rounded bg-red-900/60 hover:bg-red-800 border border-red-700/30 text-red-200 text-xs uppercase font-bold tracking-wider transition-colors">Закрити БЕЗ збереження</button>
+                    
                     <button onclick="saveAndCloseRiskCard()" class="px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs uppercase font-bold tracking-wider transition-colors">Зберегти і закрити</button>
                 </div>
             </div>
@@ -4367,7 +4660,7 @@ window.updateRcOverallRiskStyle = function(val) {
         return;
     }
     const info = opsafeDb && opsafeDb.riskMatrix && opsafeDb.riskMatrix.levels ? opsafeDb.riskMatrix.levels[val] : null;
-    const getRiskBg = c => ({ EH:'#ff3333', H:'#f97316', M:'#eab308', L:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
+    const getRiskBg = c => ({ НВ:'#ff3333', В:'#f97316', С:'#eab308', Н:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
     if (info) {
         display.innerHTML = '<div class="flex items-center justify-start gap-1"><span class="px-2 py-1 rounded-sm text-xs font-bold text-white shadow-sm" style="background-color:' + getRiskBg(val) + '">' + info.short + '</span><span class="text-xs text-slate-200 font-medium">' + info.label + '</span></div><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
     } else {
@@ -4384,6 +4677,69 @@ window.updateRcOverallRiskStyle = function(val) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function exportMissionsFile() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(missions, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "missions.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+function importMissionsFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const importedMissions = JSON.parse(e.target.result);
+                if (Array.isArray(importedMissions)) {
+                    if (confirm("Увага! Імпорт перезапише всі поточні місії. Продовжити?")) {
+                        missions = importedMissions;
+                        saveMissions();
+                        updateMissionSelect();
+                        if (missions.length > 0) {
+                            handleMissionChange(missions[0].id);
+                        } else {
+                            handleMissionChange(null);
+                        }
+                        showToast("Місії успішно імпортовано!");
+                    }
+                } else {
+                    alert("Недійсний формат файлу missions.json");
+                }
+            } catch (err) {
+                alert("Помилка читання файлу: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
 
 
 

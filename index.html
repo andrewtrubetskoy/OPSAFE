@@ -32,6 +32,8 @@
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-emerald-400 font-black uppercase text-[10px] tracking-[0.2em]">МІСІЯ</h3>
                     <div class="flex gap-1.5">
+                        <button onclick="importMissionsFile()" title="Імпортувати місії з файлу" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-[9px] px-2 py-1 rounded font-bold uppercase transition-colors">↑</button>
+                        <button onclick="exportMissionsFile()" title="Експортувати місії у файл" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-[9px] px-2 py-1 rounded font-bold uppercase transition-colors">↓</button>
                         <button onclick="deleteCurrentMission()" id="delete-mission-btn"
                             class="bg-red-950 hover:bg-red-800 border border-red-700/50 text-red-200 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors btn-disabled">Видалити</button>
                         <button onclick="openNewMissionModal()"
@@ -457,10 +459,10 @@
                                     </div>
                                     <select id="rc-overall-risk-select" onchange="updateRcOverallRiskStyle(this.value); window.markRiskCardDirty()" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer m-0 p-0">
                                         <option value="" style="background-color: #374151; color: #cbd5e1;">-- Оберіть рівень ризику --</option>
-                                        <option value="EH" style="background-color: #ff3333; color: white; font-weight: bold;">EH - Надзвичайно високий ризик</option>
-                                        <option value="H" style="background-color: #f97316; color: white; font-weight: bold;">H - Високий ризик</option>
-                                        <option value="M" style="background-color: #eab308; color: white; font-weight: bold;">M - Середній ризик</option>
-                                        <option value="L" style="background-color: #38bdf8; color: white; font-weight: bold;">L - Низький ризик</option>
+                                        <option value="НВ" style="background-color: #ff3333; color: white; font-weight: bold;">НВ - Надзвичайно високий ризик</option>
+                                        <option value="В" style="background-color: #f97316; color: white; font-weight: bold;">В - Високий ризик</option>
+                                        <option value="С" style="background-color: #eab308; color: white; font-weight: bold;">С - Середній ризик</option>
+                                        <option value="Н" style="background-color: #38bdf8; color: white; font-weight: bold;">Н - Низький ризик</option>
                                     </select>
                                 </div>
                             </td>
@@ -598,6 +600,10 @@
 </body>
 
 </html>
+
+
+
+
 
 
 

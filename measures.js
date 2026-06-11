@@ -1,4 +1,4 @@
-// Dynamic Database system for OPSAFE
+﻿// Dynamic Database system for OPSAFE
 console.log("MEASURES.JS EXECUTION STARTING");
 var opsafeDb = null;
 window.opsafeDb = null;
@@ -1281,40 +1281,40 @@ const DEFAULT_OPSAFE_DB = {
   "riskMatrix": {
     "description": "Матриця оцінки рівня ризику (OPSAFE_CON). Рядки — тяжкість загрози, колонки — ймовірність виникнення.",
     "levels": {
-      "EH": { "label": "Надзвичайно Високий", "short": "EH", "color": "#ff3333", "bg": "rgba(185,28,28,0.85)" },
-      "H":  { "label": "Високий",             "short": "H",  "color": "#f97316", "bg": "rgba(194,65,12,0.85)" },
-      "M":  { "label": "Середній",            "short": "M",  "color": "#fef08a", "bg": "rgba(161,110,7,0.85)" },
-      "L":  { "label": "Низький",             "short": "L",  "color": "#38bdf8", "bg": "rgba(12,74,110,0.85)" },
+      "НВ": { "label": "Надзвичайно Високий", "short": "НВ", "color": "#ff3333", "bg": "rgba(185,28,28,0.85)" },
+      "В":  { "label": "Високий",             "short": "В",  "color": "#f97316", "bg": "rgba(194,65,12,0.85)" },
+      "С":  { "label": "Середній",            "short": "С",  "color": "#fef08a", "bg": "rgba(161,110,7,0.85)" },
+      "Н":  { "label": "Низький",             "short": "Н",  "color": "#38bdf8", "bg": "rgba(12,74,110,0.85)" },
       "ND": { "label": "Невизначений",        "short": "ND", "color": "#94a3b8", "bg": "rgba(30,41,59,0.85)" }
     },
     "matrix": {
       "катастрофічно": {
-        "Дуже часто":           "EH",
-        "Часто":   "EH",
-        "Можливо":              "H",
-        "Рідко":                "M",
-        "Малоймовірно":         "M"
+        "Дуже часто":           "НВ",
+        "Часто":   "НВ",
+        "Можливо":              "В",
+        "Рідко":                "С",
+        "Малоймовірно":         "С"
       },
       "критично": {
-        "Дуже часто":           "EH",
-        "Часто":   "H",
-        "Можливо":              "H",
-        "Рідко":                "M",
-        "Малоймовірно":         "L"
+        "Дуже часто":           "НВ",
+        "Часто":   "В",
+        "Можливо":              "В",
+        "Рідко":                "С",
+        "Малоймовірно":         "Н"
       },
       "помірно": {
-        "Дуже часто":           "H",
-        "Часто":   "M",
-        "Можливо":              "M",
-        "Рідко":                "L",
-        "Малоймовірно":         "L"
+        "Дуже часто":           "В",
+        "Часто":   "С",
+        "Можливо":              "С",
+        "Рідко":                "Н",
+        "Малоймовірно":         "Н"
       },
       "незначні": {
-        "Дуже часто":           "M",
-        "Часто":   "L",
-        "Можливо":              "L",
-        "Рідко":                "L",
-        "Малоймовірно":         "L"
+        "Дуже часто":           "С",
+        "Часто":   "Н",
+        "Можливо":              "Н",
+        "Рідко":                "Н",
+        "Малоймовірно":         "Н"
       }
     }
   }
@@ -1350,6 +1350,7 @@ function loadOpsafeDb() {
   // Force level colors config to apply the latest requirements immediately
   if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.levels) {
     opsafeDb.riskMatrix.levels = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB.riskMatrix.levels));
+    opsafeDb.riskMatrix.matrix = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB.riskMatrix.matrix));
   }
 
   window.opsafeDb = opsafeDb;
@@ -1509,3 +1510,5 @@ function getRiskLevelInfo(severity, probability) {
 
 window.getRiskLevel = getRiskLevel;
 window.getRiskLevelInfo = getRiskLevelInfo;
+
+
