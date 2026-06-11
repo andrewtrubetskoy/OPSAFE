@@ -366,12 +366,7 @@
 
 
                 <table class="risk-card-table w-full border-collapse text-sm">
-                    <thead>
-                        <tr>
-                            <th colspan="7" class="text-center text-base py-2 bg-gray-100 border border-gray-400">Картка
-                                планового управління ризиками</th>
-                        </tr>
-                    </thead>
+
                     <tbody>
                         <!-- 1. Місія -->
                         <tr class="bg-gray-100">
@@ -397,9 +392,9 @@
                             <td class="border border-gray-400 align-top w-28 p-0">
                                 <div class="flex flex-col h-full">
                                     <span
-                                        class="px-2 py-1 text-xs bg-gray-50 border-b border-gray-400">Дата<br>(дд.мм.рррр)</span>
+                                        class="px-2 py-1 text-xs bg-gray-50 border-b border-gray-400">Дата</span>
                                     <input type="date" id="rc-mission-date"
-                                        class="w-full px-2 py-1 outline-none text-sm bg-transparent">
+                                        class="w-full px-2 py-1 outline-none text-sm bg-transparent" style="color-scheme: dark;">
                                 </div>
                             </td>
                         </tr>
@@ -469,19 +464,18 @@
                         </tr>
                         <tr>
                             <td colspan="7" class="border border-gray-400 p-2">
-                                <div class="flex flex-col gap-1 ml-4" id="rc-overall-risk">
-                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
-                                            name="overall_risk" value="EH"> <span class="font-bold">EH</span> -
-                                        Надзвичайно високий ризик</label>
-                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
-                                            name="overall_risk" value="H"> <span class="font-bold">H</span> - Високий
-                                        ризик</label>
-                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
-                                            name="overall_risk" value="M"> <span class="font-bold">M</span> - Середній
-                                        Ризик</label>
-                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
-                                            name="overall_risk" value="L"> <span class="font-bold">L</span> -
-                                        Низький</label>
+                                <div class="relative inline-block ml-4" style="width: 280px;" id="rc-overall-risk">
+                                    <div id="rc-overall-risk-display" class="flex items-center justify-between border border-gray-400 bg-transparent rounded px-2 py-1 h-8">
+                                        <span class="text-sm text-gray-500">-- Оберіть рівень ризику --</span>
+                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <select id="rc-overall-risk-select" onchange="updateRcOverallRiskStyle(this.value)" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer m-0 p-0">
+                                        <option value="" style="background-color: #374151; color: #cbd5e1;">-- Оберіть рівень ризику --</option>
+                                        <option value="EH" style="background-color: #ff3333; color: white; font-weight: bold;">EH - Надзвичайно високий ризик</option>
+                                        <option value="H" style="background-color: #f97316; color: white; font-weight: bold;">H - Високий ризик</option>
+                                        <option value="M" style="background-color: #eab308; color: white; font-weight: bold;">M - Середній ризик</option>
+                                        <option value="L" style="background-color: #38bdf8; color: white; font-weight: bold;">L - Низький ризик</option>
+                                    </select>
                                 </div>
                             </td>
                         </tr>
@@ -537,7 +531,7 @@
                         <tr>
                             <td colspan="2" class="border border-gray-400 p-0"><input type="text"
                                     class="w-full p-1 outline-none text-sm rc-event-name"></td>
-                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local"
+                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" style="color-scheme: dark;"
                                     class="w-full p-1 outline-none text-xs rc-event-date"></td>
                             <td colspan="4" class="border border-gray-400 p-0"><input type="text"
                                     class="w-full p-1 outline-none text-sm rc-event-desc"></td>
@@ -545,7 +539,7 @@
                         <tr>
                             <td colspan="2" class="border border-gray-400 p-0"><input type="text"
                                     class="w-full p-1 outline-none text-sm rc-event-name"></td>
-                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local"
+                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" style="color-scheme: dark;"
                                     class="w-full p-1 outline-none text-xs rc-event-date"></td>
                             <td colspan="4" class="border border-gray-400 p-0"><input type="text"
                                     class="w-full p-1 outline-none text-sm rc-event-desc"></td>
@@ -553,7 +547,7 @@
                         <tr>
                             <td colspan="2" class="border border-gray-400 p-0"><input type="text"
                                     class="w-full p-1 outline-none text-sm rc-event-name"></td>
-                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local"
+                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" style="color-scheme: dark;"
                                     class="w-full p-1 outline-none text-xs rc-event-date"></td>
                             <td colspan="4" class="border border-gray-400 p-0"><input type="text"
                                     class="w-full p-1 outline-none text-sm rc-event-desc"></td>
@@ -599,3 +593,4 @@
 </body>
 
 </html>
+

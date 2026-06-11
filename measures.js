@@ -1290,28 +1290,28 @@ const DEFAULT_OPSAFE_DB = {
     "matrix": {
       "катастрофічно": {
         "Дуже часто":           "EH",
-        "Висока ймовірність":   "EH",
+        "Часто":   "EH",
         "Можливо":              "H",
         "Рідко":                "M",
         "Малоймовірно":         "M"
       },
       "критично": {
         "Дуже часто":           "EH",
-        "Висока ймовірність":   "H",
+        "Часто":   "H",
         "Можливо":              "H",
         "Рідко":                "M",
         "Малоймовірно":         "L"
       },
       "помірно": {
         "Дуже часто":           "H",
-        "Висока ймовірність":   "M",
+        "Часто":   "M",
         "Можливо":              "M",
         "Рідко":                "L",
         "Малоймовірно":         "L"
       },
       "незначні": {
         "Дуже часто":           "M",
-        "Висока ймовірність":   "L",
+        "Часто":   "L",
         "Можливо":              "L",
         "Рідко":                "L",
         "Малоймовірно":         "L"
@@ -1324,7 +1324,9 @@ function loadOpsafeDb() {
   const saved = localStorage.getItem('opsafe_db');
   if (saved) {
     try {
-      opsafeDb = JSON.parse(saved);
+      const migratedSaved = saved.replace(/Висока ймовірність/g, 'Часто');
+      opsafeDb = JSON.parse(migratedSaved);
+      if (saved !== migratedSaved) saveOpsafeDb();
     } catch (e) {
       console.error("Error loading opsafe_db from localStorage:", e);
       opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
@@ -1485,7 +1487,7 @@ window.getThreatIcon = getThreatIcon;
  * Returns the risk level code (EH, H, M, L) for a given severity + probability.
  * Falls back to null if the combination is not found in the matrix.
  * @param {string} severity  - e.g. "катастрофічно", "критично", "помірно", "незначно"
- * @param {string} probability - e.g. "Дуже часто", "Висока ймовірність", "Можливо", "Рідко", "Малоймовірно"
+ * @param {string} probability - e.g. "Дуже часто", "Часто", "Можливо", "Рідко", "Малоймовірно"
  * @returns {string|null}
  */
 function getRiskLevel(severity, probability) {

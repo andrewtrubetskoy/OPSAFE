@@ -1,4 +1,4 @@
-let missions = [];
+﻿let missions = [];
 let currentMissionId = null;
 let missionCounter = 1;
 const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
@@ -442,7 +442,9 @@ function loadMissions() {
 
     if (savedMissions) {
         try {
-            missions = JSON.parse(savedMissions);
+            const migratedMissions = savedMissions.replace(/Висока ймовірність/g, 'Часто');
+            missions = JSON.parse(migratedMissions);
+            if (savedMissions !== migratedMissions) saveMissions();
             if (!Array.isArray(missions)) {
                 missions = [];
             }
@@ -1409,7 +1411,7 @@ function toggleThreatTab(tab) {
 function getProbabilityColorStyle(prob) {
     switch (prob) {
         case 'Дуже часто': return 'color: #ff3333; font-weight: 900; background-color: #374151;'; // Bright red
-        case 'Висока ймовірність': return 'color: #dc2626; font-weight: 700; background-color: #374151;'; // Red
+        case 'Часто': return 'color: #dc2626; font-weight: 700; background-color: #374151;'; // Red
         case 'Можливо': return 'color: #f97316; font-weight: 700; background-color: #374151;'; // Orange
         case 'Рідко': return 'color: #facc15; font-weight: 700; background-color: #374151;'; // Yellow
         case 'Малоймовірно': return 'color: #60a5fa; font-weight: 700; background-color: #374151;'; // Blue
@@ -1434,7 +1436,7 @@ function getProbabilityBadgeHtml(prob) {
     let color = '';
     switch (prob) {
         case 'Дуже часто': color = '#ff3333'; break;
-        case 'Висока ймовірність': color = '#dc2626'; break;
+        case 'Часто': color = '#dc2626'; break;
         case 'Можливо': color = '#f97316'; break;
         case 'Рідко': color = '#facc15'; break;
         case 'Малоймовірно': color = '#60a5fa'; break;
@@ -1446,7 +1448,7 @@ function getProbabilityBadgeHtml(prob) {
 function getProbabilityDiamondStyle(prob) {
     switch (prob) {
         case 'Дуже часто': return 'background:#dc2626; border-color:#fca5a5; box-shadow:0 0 10px rgba(220,38,38,0.6);';
-        case 'Висока ймовірність': return 'background:#b91c1c; border-color:#fca5a5; box-shadow:0 0 10px rgba(185,28,28,0.5);';
+        case 'Часто': return 'background:#b91c1c; border-color:#fca5a5; box-shadow:0 0 10px rgba(185,28,28,0.5);';
         case 'Можливо': return 'background:#ea580c; border-color:#fdba74; box-shadow:0 0 10px rgba(234,88,12,0.5);';
         case 'Рідко': return 'background:#ca8a04; border-color:#fde047; box-shadow:0 0 10px rgba(202,138,4,0.5);';
         case 'Малоймовірно': return 'background:#0284c7; border-color:#7dd3fc; box-shadow:0 0 10px rgba(2,132,199,0.5);';
@@ -1463,7 +1465,7 @@ function getResidualBadgeHtml(sev, prob, isPrimary) {
     let probColor = '#cbd5e1';
     switch (prob) {
         case 'Дуже часто': probColor = '#ff5555'; break;
-        case 'Висока ймовірність': probColor = '#ff6b6b'; break;
+        case 'Часто': probColor = '#ff6b6b'; break;
         case 'Можливо': probColor = '#f97316'; break;
         case 'Рідко': probColor = '#facc15'; break;
         case 'Малоймовірно': probColor = '#60a5fa'; break;
@@ -1771,7 +1773,7 @@ function viewSingle(pid, sidx) {
             <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!target.probability ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${target.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
-                <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${target.probability === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${target.probability === 'Часто' ? 'selected' : ''}>Часто</option>
                 <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${target.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
                 <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${target.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
                 <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${target.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
@@ -1819,7 +1821,7 @@ function viewSingle(pid, sidx) {
             <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
-                <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Часто' ? 'selected' : ''}>Часто</option>
                 <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResProb === 'Можливо' ? 'selected' : ''}>Можливо</option>
                 <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${activeResProb === 'Рідко' ? 'selected' : ''}>Рідко</option>
                 <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResProb === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
@@ -1859,7 +1861,7 @@ function viewSingle(pid, sidx) {
             <select onchange="updateSingleThreatProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!target.probability ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${target.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
-                <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${target.probability === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${target.probability === 'Часто' ? 'selected' : ''}>Часто</option>
                 <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${target.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
                 <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${target.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
                 <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${target.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
@@ -1877,7 +1879,7 @@ function viewSingle(pid, sidx) {
             <select onchange="updateSingleThreatResidualProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(resProbToUse)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!resProbToUse ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${resProbToUse === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
-                <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Часто' ? 'selected' : ''}>Часто</option>
                 <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Можливо' ? 'selected' : ''}>Можливо</option>
                 <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Рідко' ? 'selected' : ''}>Рідко</option>
                 <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
@@ -1946,7 +1948,7 @@ function viewCombined(pid) {
         <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(item.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
             <option value="" style="color: #cbd5e1; background-color: #374151;" ${!item.probability ? 'selected' : ''}>-- Не вказано --</option>
             <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${item.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
-            <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${item.probability === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+            <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${item.probability === 'Часто' ? 'selected' : ''}>Часто</option>
             <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${item.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
             <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${item.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
             <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${item.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
@@ -1992,7 +1994,7 @@ function viewCombined(pid) {
         <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
             <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
             <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
-            <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+            <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Часто' ? 'selected' : ''}>Часто</option>
             <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResProb === 'Можливо' ? 'selected' : ''}>Можливо</option>
             <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${activeResProb === 'Рідко' ? 'selected' : ''}>Рідко</option>
             <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResProb === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
@@ -2058,7 +2060,7 @@ function viewCombined(pid) {
             <select onchange="updateSingleThreatProbability(${pid}, ${idx}, this.value)" style="${getProbabilityColorStyle(sec.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!sec.probability ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${sec.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
-                <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${sec.probability === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+                <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${sec.probability === 'Часто' ? 'selected' : ''}>Часто</option>
                 <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${sec.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
                 <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${sec.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
                 <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${sec.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
@@ -3670,7 +3672,7 @@ function toggleThreatConnection(primaryName, secondaryName, isChecked) {
 
 function renderRiskMatrixSettings(container) {
     const severities = ["катастрофічно", "критично", "помірно", "незначні"];
-    const probabilities = ["Дуже часто", "Висока ймовірність", "Можливо", "Рідко", "Малоймовірно"];
+    const probabilities = ["Дуже часто", "Часто", "Можливо", "Рідко", "Малоймовірно"];
     
     const wrapper = document.createElement('div');
     wrapper.className = "space-y-4 max-h-[55vh] overflow-y-auto pr-2";
@@ -3887,7 +3889,27 @@ function openRiskManagementCard() {
     document.getElementById('rc-appr-role').value = rc.appr.role || '';
     document.getElementById('rc-appr-phone').value = rc.appr.phone || '';
     document.getElementById('rc-appr-unit').value = rc.appr.unit || '';
-    document.querySelectorAll('input[name="overall_risk"]').forEach(r => { r.checked = (r.value === rc.overallRisk); });
+    const selRisk = document.getElementById('rc-overall-risk-select');
+    if (selRisk) {
+        let defaultRisk = rc.overallRisk;
+        // Always calculate the highest primary residual risk to keep it updated when threats change
+        if (m.data && Array.isArray(m.data.database) && typeof getRiskLevelInfo === 'function') {
+            let highestLevel = 0;
+            let calcRisk = '';
+            const weights = { 'L': 1, 'M': 2, 'H': 3, 'EH': 4 };
+            m.data.database.forEach(p => {
+                const s = typeof p.residualSeverity !== 'undefined' ? p.residualSeverity : p.severity;
+                const pr = typeof p.residualProbability !== 'undefined' ? p.residualProbability : p.probability;
+                if (s && pr) {
+                    const info = getRiskLevelInfo(s, pr);
+                    if (info && weights[info.short] > highestLevel) { highestLevel = weights[info.short]; calcRisk = info.short; }
+                }
+            });
+            if (calcRisk) defaultRisk = calcRisk; // Overwrite saved risk with calculated highest risk from threats
+        }
+        selRisk.value = defaultRisk || '';
+        if (typeof updateRcOverallRiskStyle === 'function') updateRcOverallRiskStyle(selRisk.value);
+    }
     const eventRows = document.getElementById('rc-events-tbody').querySelectorAll('tr');
     rc.events.forEach((ev, idx) => { if (eventRows[idx]) { eventRows[idx].querySelector('.rc-event-name').value = ev.name||''; eventRows[idx].querySelector('.rc-event-date').value = ev.date||''; eventRows[idx].querySelector('.rc-event-desc').value = ev.desc||''; } });
     document.getElementById('rc-apd').value = rc.apd || '';
@@ -3926,7 +3948,7 @@ function renderRiskCardThreatsTable(m) {
     if (!tbody) return;
     if (!m.data || !m.data.database || m.data.database.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic">Немає загроз у базі даних місії</td></tr>'; return; }
     const getRiskBg = c => ({ EH:'#ff3333', H:'#f97316', M:'#eab308', L:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
-    const getProbColor = c => ({ 'Дуже часто':'#dc2626', 'Висока ймовірність':'#ea580c', 'Можливо':'#ca8a04', 'Рідко':'#65a30d', 'Малоймовірно':'#0284c7' }[c] || '#64748b');
+    const getProbColor = c => ({ 'Дуже часто':'#dc2626', 'Часто':'#ea580c', 'Можливо':'#ca8a04', 'Рідко':'#65a30d', 'Малоймовірно':'#0284c7' }[c] || '#64748b');
     const getRiskText = c => ({ EH:'Надзвичайно високий', H:'Високий', M:'Середній', L:'Низький', ND:'Не визначено' }[c] || 'Не визначено');
     
     function buildThreatRows(itemObj, threatName, riskCode, resRiskCode, stHtml, isSecondary, isIndepSecondary, sp, srp) {
@@ -3975,18 +3997,18 @@ function renderRiskCardThreatsTable(m) {
 
         if (item.type === 'primary') {
             let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
-            const resRiskCode = item.residualRisk || 'ND';
+            let resRiskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix) { const rs = typeof item.residualSeverity !== 'undefined' ? item.residualSeverity : item.severity; const rp = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability; if (rs && rp) { resRiskCode = opsafeDb.riskMatrix.matrix[rs][rp] || 'ND'; } } } catch(e) {}
             const stHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
             html += buildThreatRows(item, item.name, riskCode, resRiskCode, stHtml, false, false);
             
             if (item.secondaries) item.secondaries.forEach((sec,si) => { 
-                const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND';
+                const sp=sec.probability||'ND'; const srp=sec.residualProbability || sec.probability || 'ND';
                 const sstHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${sec.rcSettlement || ''}" data-id="${item.id}" data-sid="${si}" data-lat="${lat}" data-lng="${lng}"></a>`;
                 html += buildThreatRows(sec, sec.name, '', '', sstHtml, true, false, sp, srp);
             });
             counter++;
         } else if (item.type === 'secondary_indep') {
-            const p=item.probability||'ND'; const rp=item.residualProbability||'ND';
+            const p=item.probability||'ND'; const rp=item.residualProbability || item.probability || 'ND';
             const istHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
             html += buildThreatRows(item, item.name, '', '', istHtml, false, true, p, rp);
             counter++;
@@ -4012,8 +4034,8 @@ function saveRiskCard() {
     rc.appr.role = document.getElementById('rc-appr-role').value;
     rc.appr.phone = document.getElementById('rc-appr-phone').value;
     rc.appr.unit = document.getElementById('rc-appr-unit').value;
-    const sel = document.querySelector('input[name="overall_risk"]:checked');
-    rc.overallRisk = sel ? sel.value : '';
+    const selRisk = document.getElementById('rc-overall-risk-select');
+    rc.overallRisk = selRisk ? selRisk.value : '';
     rc.events = [];
     document.getElementById('rc-events-tbody').querySelectorAll('tr').forEach(row => {
         rc.events.push({ name: row.querySelector('.rc-event-name')?.value||'', date: row.querySelector('.rc-event-date')?.value||'', desc: row.querySelector('.rc-event-desc')?.value||'' });
@@ -4050,3 +4072,25 @@ function closeRiskCard() {
 function printRiskCard() {
     window.print();
 }
+
+window.updateRcOverallRiskStyle = function(val) {
+    const display = document.getElementById('rc-overall-risk-display');
+    if (!display) return;
+    if (!val) {
+        display.innerHTML = '<span class="text-sm text-gray-500">-- Оберіть рівень ризику --</span><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+        return;
+    }
+    const info = opsafeDb && opsafeDb.riskMatrix && opsafeDb.riskMatrix.levels ? opsafeDb.riskMatrix.levels[val] : null;
+    const getRiskBg = c => ({ EH:'#ff3333', H:'#f97316', M:'#eab308', L:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
+    if (info) {
+        display.innerHTML = '<div class="flex items-center justify-start gap-1"><span class="px-2 py-1 rounded-sm text-xs font-bold text-white shadow-sm" style="background-color:' + getRiskBg(val) + '">' + info.short + '</span><span class="text-xs text-slate-200 font-medium">' + info.label + '</span></div><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+    } else {
+        display.innerHTML = '<span class="text-sm text-gray-500">-- Оберіть рівень ризику --</span><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+    }
+};
+
+
+
+
+
+
