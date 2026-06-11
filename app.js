@@ -1635,7 +1635,14 @@ function getResidualBadgeHtml(sev, prob, isPrimary) {
     const fullProb = prob ? prob.charAt(0).toUpperCase() + prob.slice(1) : '—';
     const isNd = riskInfo.short === 'ND';
     const glowClass = isNd ? ' badge-nd-glow pulse-border-red' : '';
-    const textLabel = isNd ? `<span style="font-size: 8px; font-weight: bold; letter-spacing: 0.5px;">НЕВИЗНАЧЕНО</span>` : riskInfo.short;
+    let textLabel = isNd ? `<span style="font-size: 8px; font-weight: bold; letter-spacing: 0.5px;">НЕВИЗНАЧЕНО</span>` : riskInfo.short;
+
+    if (isPrimary && !isNd) {
+        textLabel = `<div class="flex flex-col items-center justify-center leading-none pt-[1px]">
+            <span>${riskInfo.short}</span>
+            <span style="font-size: 6px; opacity: 0.9; margin-top: 1px;" class="uppercase tracking-widest">${riskInfo.label}</span>
+        </div>`;
+    }
 
     const detailsHtml = `<div class="badge-residual${glowClass}${window.amplifiersEnabled ? '' : ' hidden'}">
         <div class="badge-res-details">
@@ -1738,7 +1745,7 @@ function renderMarkers() {
 
         if (isP) {
                 item.secondaries.forEach((sec, idx) => {
-                const offset = (idx + 1) * 65;
+                const offset = 68.25 + (idx * 58.5); // first offset is 68.25 (+5%), subsequent gap is 58.5 (-10%)
                 const secHasMeasures = sec.measures && sec.measures.length > 0;
                 const secExtraClass = '';
                 const secCloseBtnHtml = sec.editing ? `<div class="btn-ui btn-close" style="left:-25px; top:-25px; width:12px; height:12px;" onclick="confirmDeleteSec(${item.id}, ${idx})">×</div>` : '';
