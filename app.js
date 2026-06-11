@@ -3940,17 +3940,17 @@ function renderRiskCardThreatsTable(m) {
         if (isSecondary) {
             nameHtml = `<td rowspan="${len}" class="border border-gray-400 p-1 pl-3 text-xs italic text-gray-700">${threatName}</td>`;
             ptext = `<div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(sp)}">${sp}</span></div>`;
-            rptext = `<span class="font-bold text-xs" style="color:${getProbColor(srp)}">${srp}</span>`;
+            rptext = `<div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(srp)}">${srp}</span></div>`;
             stTd = `<td rowspan="${len}" class="border border-gray-400 p-1 text-center text-xs text-gray-500 align-top">${stHtml}</td>`;
         } else if (isIndepSecondary) {
             nameHtml = `<td rowspan="${len}" class="border border-gray-400 p-1 text-sm text-orange-800">${threatName}</td>`;
             ptext = `<div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(sp)}">${sp}</span></div>`;
-            rptext = `<span class="font-bold text-xs" style="color:${getProbColor(srp)}">${srp}</span>`;
+            rptext = `<div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(srp)}">${srp}</span></div>`;
             stTd = `<td rowspan="${len}" class="border border-gray-400 p-1 text-center font-bold text-xs text-orange-700 align-top w-24">${stHtml}</td>`;
         } else {
             nameHtml = `<td rowspan="${len}" class="border border-gray-400 p-1 text-sm">${threatName}</td>`;
             ptext = `<div class="flex items-center justify-start gap-1.5"><span class="font-bold px-1.5 py-0.5 rounded text-white text-xs whitespace-nowrap" style="background:${getRiskBg(riskCode)}">${riskCode}</span><span class="text-[10px] text-gray-700 leading-tight text-left">${getRiskText(riskCode)}</span></div>`;
-            rptext = `<span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span>`;
+            rptext = `<div class="flex items-center justify-start gap-1.5"><span class="font-bold px-1.5 py-0.5 rounded text-white text-xs whitespace-nowrap" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span><span class="text-[10px] text-gray-700 leading-tight text-left">${getRiskText(resRiskCode)}</span></div>`;
             stTd = `<td rowspan="${len}" class="border border-gray-400 p-1 text-center font-bold text-sm align-top w-24">${stHtml}</td>`;
         }
 
@@ -3959,7 +3959,7 @@ function renderRiskCardThreatsTable(m) {
             const whoInput = `<input type="text" class="w-full bg-transparent outline-none text-sm" placeholder="...">`;
             
             if (i === 0) {
-                rowsHtml += `<tr class="${cellBg}">${stTd}${nameHtml}<td rowspan="${len}" class="border border-gray-400 p-1">${ptext}</td><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center">${rptext}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+                rowsHtml += `<tr class="${cellBg}">${stTd}${nameHtml}<td rowspan="${len}" class="border border-gray-400 p-1">${ptext}</td><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td><td rowspan="${len}" class="border border-gray-400 p-1">${rptext}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
             } else {
                 rowsHtml += `<tr class="${cellBg}"><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td></tr>`;
             }
