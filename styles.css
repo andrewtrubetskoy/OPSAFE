@@ -140,14 +140,65 @@ body {
     border-color: #7dd3fc !important;
     box-shadow: 0 0 12px rgba(14, 165, 233, 0.6) !important;
 }
+@keyframes border-pulse-nd {
+    0% {
+        border-color: #ff0000;
+        box-shadow: 0 0 12px 3px rgba(255, 0, 0, 1);
+    }
+    50% {
+        border-color: rgba(255, 0, 0, 0.2);
+        box-shadow: 0 0 4px 1px rgba(255, 0, 0, 0.2);
+    }
+    100% {
+        border-color: #ff0000;
+        box-shadow: 0 0 12px 3px rgba(255, 0, 0, 1);
+    }
+}
 .risk-ND {
-    box-shadow: 0 0 12px 3px rgba(255, 0, 0, 1) !important;
-    border-color: #ff0000 !important;
+    background: #64748b !important;
+    box-shadow: 0 0 12px 3px rgba(255, 0, 0, 1);
+    border-color: #ff0000;
+    animation: border-pulse-nd 1.5s infinite ease-in-out;
 }
 
-.badge-nd-glow {
-    border-color: rgba(255, 0, 0, 0.8) !important;
-    box-shadow: 0 0 8px 1px rgba(255, 0, 0, 0.8) !important;
+@keyframes badge-pulse-nd {
+    0% {
+        border-color: rgba(255, 0, 0, 0.8);
+        box-shadow: 0 0 8px 1px rgba(255, 0, 0, 0.8);
+    }
+    50% {
+        border-color: rgba(255, 0, 0, 0.2);
+        box-shadow: 0 0 2px rgba(255, 0, 0, 0.2);
+    }
+    100% {
+        border-color: rgba(255, 0, 0, 0.8);
+        box-shadow: 0 0 8px 1px rgba(255, 0, 0, 0.8);
+    }
+}
+.badge-residual.badge-nd-glow {
+    border-color: rgba(255, 0, 0, 0.8);
+    box-shadow: 0 0 8px 1px rgba(255, 0, 0, 0.8);
+    animation: badge-pulse-nd 1.5s infinite ease-in-out;
+}
+
+@keyframes border-pulse {
+    0% {
+        border-color: #ef4444;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
+    }
+    50% {
+        border-color: rgba(239, 68, 68, 0.2);
+        box-shadow: 0 0 4px rgba(239, 68, 68, 0.2);
+    }
+    100% {
+        border-color: #ef4444;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
+    }
+}
+.pulse-border-red {
+    border-color: #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
+    animation: border-pulse 1.5s infinite ease-in-out;
 }
 
 .secured {

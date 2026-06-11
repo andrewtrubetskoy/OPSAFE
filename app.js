@@ -87,7 +87,7 @@ let isPlacingThreat = false;
 
 function toggleAmplifiers(enabled) {
     window.amplifiersEnabled = enabled;
-    const selectors = ['.label-threat', '.badge-severity', '.badge-probability'];
+    const selectors = ['.label-threat', '.badge-severity', '.badge-probability', '.badge-residual', '.label-threat-left', '.route-length-tooltip'];
     selectors.forEach(sel => {
         const elements = document.querySelectorAll(sel);
         elements.forEach(el => {
@@ -117,6 +117,8 @@ function showContextMenu(latlng, originalEvent, targetLayer = null) {
             } else {
                 btn.classList.add('hidden');
             }
+        } else if (btn.id === 'menu-add-control-btn' || btn.id === 'menu-add-secondary-btn') {
+            btn.classList.add('hidden');
         } else {
             btn.classList.remove('hidden');
         }
@@ -134,6 +136,10 @@ function showThreatContextMenu(pid, sidx, event) {
     const menu = document.getElementById('map-context-menu');
     if (!menu) return;
 
+    const m = missions.find(x => x.id === currentMissionId);
+    const parent = m ? m.data.database.find(d => d.id === pid) : null;
+    const isPrimary = parent && parent.type === 'primary';
+
     // Hide drawing actions, show only the appropriate delete threat action
     Array.from(menu.children).forEach(btn => {
         if (btn.id === 'menu-delete-shape-btn') {
@@ -141,6 +147,14 @@ function showThreatContextMenu(pid, sidx, event) {
             const deleteText = document.getElementById('menu-delete-shape-text');
             if (deleteText) {
                 deleteText.innerText = sidx === null ? "Видалити загрозу" : "Видалити фактор";
+            }
+        } else if (btn.id === 'menu-add-control-btn') {
+            btn.classList.remove('hidden');
+        } else if (btn.id === 'menu-add-secondary-btn') {
+            if (sidx === null && isPrimary) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
             }
         } else {
             btn.classList.add('hidden');
@@ -290,6 +304,16 @@ function handleContextMenuAction(mode) {
             contextMenuThreat = null;
         } else {
             deleteShape(contextMenuTargetLayer);
+        }
+    } else if (mode === 'add_control') {
+        if (contextMenuThreat) {
+            const { pid, sidx } = contextMenuThreat;
+            openControls(pid, sidx);
+        }
+    } else if (mode === 'add_secondary') {
+        if (contextMenuThreat) {
+            const { pid } = contextMenuThreat;
+            openLinked(pid);
         }
     } else {
         validateDrawing(mode, contextMenuLatLng);
@@ -1163,7 +1187,7 @@ function renderRoute(coords, index) {
     poly.bindTooltip(formatLength(len), {
         permanent: true,
         direction: 'center',
-        className: 'route-length-tooltip',
+        className: `route-length-tooltip${window.amplifiersEnabled ? '' : ' hidden'}`,
         interactive: false
     });
 
@@ -1401,7 +1425,9 @@ function getSeverityColorStyle(sev) {
 }
 
 function getProbabilityBadgeHtml(prob) {
-    if (!prob) return '';
+    if (!prob) {
+        return ` <span style="color: #94a3b8;" class="text-[8px] font-black uppercase">ЙМ. НЕВИЗНАЧЕНА</span>`;
+    }
     let color = '';
     switch (prob) {
         case 'Дуже часто': color = '#ff3333'; break;
@@ -1411,7 +1437,7 @@ function getProbabilityBadgeHtml(prob) {
         case 'Малоймовірно': color = '#60a5fa'; break;
         default: color = '#cbd5e1';
     }
-    return ` <span style="color: ${color};" class="text-[8px] font-black">[${prob}]</span>`;
+    return ` <span style="color: ${color};" class="text-[8px] font-black uppercase">${prob.toUpperCase()}</span>`;
 }
 
 function getProbabilityDiamondStyle(prob) {
@@ -1421,7 +1447,7 @@ function getProbabilityDiamondStyle(prob) {
         case 'Можливо': return 'background:#ea580c; border-color:#fdba74; box-shadow:0 0 10px rgba(234,88,12,0.5);';
         case 'Рідко': return 'background:#ca8a04; border-color:#fde047; box-shadow:0 0 10px rgba(202,138,4,0.5);';
         case 'Малоймовірно': return 'background:#0284c7; border-color:#7dd3fc; box-shadow:0 0 10px rgba(2,132,199,0.5);';
-        default: return '';
+        default: return 'background:#64748b;';
     }
 }
 
@@ -1471,8 +1497,8 @@ function renderMarkers() {
         const hasMeasures = item.measures && item.measures.length > 0;
         // For primary threats, diamond color is driven by risk level (not severity)
         const diamondClass = isP ? 'sev-' + item.severity : 'sec-diamond';
-        // 'secured' class only applies to secondary/independent threats; primary threats use risk level colors
-        const extraClass = (!isP && hasMeasures) ? ' secured' : '';
+        // 'secured' class is only for primary threats? No, primary threats use risk level colors. Secondaries now use probability colors.
+        const extraClass = '';
 
         const probBadge = getProbabilityBadgeHtml(item.probability);
         const closeBtnHtml = item.editing ? `<div class="btn-ui btn-close" style="left:-28px; top:-28px;" onclick="confirmDeleteObj(${item.id})">×</div>` : '';
@@ -1483,7 +1509,7 @@ function renderMarkers() {
         const resRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(activeResSev, activeResProb) : null;
 
         let riskDiamondClass = '';
-        if (resRiskInfo) {
+        if (isP && resRiskInfo) {
             if (resRiskInfo.short === 'EH') riskDiamondClass = ' risk-EH';
             else if (resRiskInfo.short === 'H') riskDiamondClass = ' risk-H';
             else if (resRiskInfo.short === 'M') riskDiamondClass = ' risk-M';
@@ -1500,13 +1526,31 @@ function renderMarkers() {
             else if (item.severity === 'незначні')    sevLabelColor = 'text-blue-400';
         }
 
+        // Probability-based diamond style and left-positioned label for independent secondary threats
+        const diamondStyle = isP ? '' : getProbabilityDiamondStyle(activeResProb);
+        const activeProbBadge = getProbabilityBadgeHtml(activeResProb);
+        const labelPulseClass = activeResProb ? '' : ' pulse-border-red';
+        const secProbLabel = !isP
+            ? `<div class="label-threat-left${window.amplifiersEnabled ? '' : ' hidden'}${labelPulseClass}">${activeProbBadge}</div>`
+            : '';
+        const pulseClass = (!isP && !activeResProb) ? ' pulse-border-red' : '';
+
+        // Resolve displayName (with shortName resolution for independent secondary threats)
+        const secEntry = (!isP && opsafeDb && opsafeDb.secondaryThreats)
+            ? opsafeDb.secondaryThreats.find(e => getSecThreatName(e) === item.name)
+            : null;
+        const displayName = isP
+            ? (item.shortName || item.name)
+            : ((secEntry && getSecThreatShortName(secEntry)) || item.shortName || item.name);
+
         let html = `<div class="threat-marker-wrapper">
-            <div class="diamond ${diamondClass}${extraClass}${riskDiamondClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, null, event)">
+            <div class="diamond ${diamondClass}${extraClass}${riskDiamondClass}${pulseClass}" style="${diamondStyle}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, null, event)">
                 <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
             </div>
             ${resMarkerBadge}
             ${closeBtnHtml}
-            <div class="label-threat ${isP ? sevLabelColor : 'text-orange-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${item.shortName || item.name}</div>
+            ${secProbLabel}
+            <div class="label-threat ${isP ? sevLabelColor : 'text-orange-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${displayName}</div>
             <div class="flex" style="position:absolute; left:0; top:0;">
                 ${isP ? `<div class="btn-ui btn-s-sec" style="left:20px; top:12px;" onclick="openLinked(${item.id})"><span>+</span></div>` : ''}
                 <div class="btn-ui btn-ctrl" style="left:${isP ? '42px' : '20px'}; top:12px;" onclick="openControls(${item.id}, null)">+</div>
@@ -1517,8 +1561,7 @@ function renderMarkers() {
                 item.secondaries.forEach((sec, idx) => {
                 const offset = (idx + 1) * 55;
                 const secHasMeasures = sec.measures && sec.measures.length > 0;
-                const secExtraClass = secHasMeasures ? ' secured' : '';
-                const secProbBadge = getProbabilityBadgeHtml(sec.probability);
+                const secExtraClass = '';
                 const secCloseBtnHtml = sec.editing ? `<div class="btn-ui btn-close" style="left:-25px; top:-25px; width:12px; height:12px;" onclick="confirmDeleteSec(${item.id}, ${idx})">×</div>` : '';
 
                 const secActiveResSev = typeof sec.residualSeverity !== 'undefined' ? sec.residualSeverity : sec.severity;
@@ -1526,17 +1569,7 @@ function renderMarkers() {
                 const secResMarkerBadge = getResidualBadgeHtml(secActiveResSev, secActiveResProb);
                 const secResRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(secActiveResSev, secActiveResProb) : null;
                 
-                let secRiskDiamondClass = '';
-                if (secResRiskInfo) {
-                    if (secResRiskInfo.short === 'EH') secRiskDiamondClass = ' risk-EH';
-                    else if (secResRiskInfo.short === 'H') secRiskDiamondClass = ' risk-H';
-                    else if (secResRiskInfo.short === 'M') secRiskDiamondClass = ' risk-M';
-                    else if (secResRiskInfo.short === 'L') secRiskDiamondClass = ' risk-L';
-                    else if (secResRiskInfo.short === 'ND') {
-                        secRiskDiamondClass = ' risk-ND';
-                        if (secActiveResSev) secRiskDiamondClass += ' sev-' + secActiveResSev;
-                    }
-                }
+                const secRiskDiamondClass = '';
 
                 // Resolve shortName for secondary threat label
                 const secEntry = opsafeDb && opsafeDb.secondaryThreats
@@ -1545,15 +1578,16 @@ function renderMarkers() {
                 const secDisplayName = (secEntry && getSecThreatShortName(secEntry)) || sec.shortName || sec.name;
 
                 // Probability-based diamond color for secondary threats
-                const secDiamondStyle = getProbabilityDiamondStyle(sec.probability);
+                const secDiamondStyle = getProbabilityDiamondStyle(secActiveResProb);
+                const secPulseClass = (!secActiveResProb) ? ' pulse-border-red' : '';
 
                 // Probability label shown to the LEFT of the marker
-                const secProbLabel = sec.probability
-                    ? `<div class="label-threat-left${window.amplifiersEnabled ? '' : ' hidden'}">${secProbBadge}</div>`
-                    : '';
+                const secLabelPulseClass = secActiveResProb ? '' : ' pulse-border-red';
+                const secProbBadge = getProbabilityBadgeHtml(secActiveResProb);
+                const secProbLabel = `<div class="label-threat-left${window.amplifiersEnabled ? '' : ' hidden'}${secLabelPulseClass}">${secProbBadge}</div>`;
 
                 html += `<div style="position:absolute; top:-${offset}px; left:0;">
-                    <div class="diamond sec-diamond${secExtraClass}${secRiskDiamondClass}" style="${secDiamondStyle}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, ${idx}, event)">
+                    <div class="diamond sec-diamond${secExtraClass}${secRiskDiamondClass}${secPulseClass}" style="${secDiamondStyle}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})" oncontextmenu="L.DomEvent.stopPropagation(event); event.preventDefault(); showThreatContextMenu(${item.id}, ${idx}, event)">
                         <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
                     </div>
                     ${secResMarkerBadge}
@@ -1725,7 +1759,7 @@ function viewSingle(pid, sidx) {
 
     let html = `<div class="bg-slate-800 p-2 border-l-4 border-emerald-500 mb-2 font-bold text-white uppercase text-[10px] tracking-widest">${getThreatIcon(target.name)} ${target.name}</div>`;
 
-    if (sidx === null) {
+    if (sidx === null && target.type === 'primary') {
         // === PRIMARY THREAT: full layout with severity, risk level, residual ===
         html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5">Початковий ризик</div>`;
 
@@ -1770,12 +1804,16 @@ function viewSingle(pid, sidx) {
             <span class="text-[8px] text-slate-500 font-normal normal-case leading-none ml-2 text-right">З урахуванням заходів</span>
         </div>`;
 
+        const hasMeasures = target.measures && target.measures.length > 0;
+        const disabledAttr = hasMeasures ? '' : ' disabled';
+        const disabledSelectClass = hasMeasures ? '' : ' opacity-50 !cursor-not-allowed pointer-events-none';
+
         const resProbToUse = typeof target.residualProbability !== 'undefined' ? target.residualProbability : probabilityToUse;
         const activeResProb = resProbToUse;
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
-            <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
                 <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
@@ -1790,7 +1828,7 @@ function viewSingle(pid, sidx) {
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
-            <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
                 <option value="незначні" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResSev === 'незначні' ? 'selected' : ''}>Незначні</option>
                 <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${activeResSev === 'помірно' ? 'selected' : ''}>Помірно</option>
                 <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResSev === 'критично' ? 'selected' : ''}>Критично</option>
@@ -1825,11 +1863,15 @@ function viewSingle(pid, sidx) {
             </select>
         </div>`;
 
+        const hasMeasures = target.measures && target.measures.length > 0;
+        const disabledAttr = hasMeasures ? '' : ' disabled';
+        const disabledSelectClass = hasMeasures ? '' : ' opacity-50 !cursor-not-allowed pointer-events-none';
+
         const resProbToUse = typeof target.residualProbability !== 'undefined' ? target.residualProbability : target.probability;
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Залишкова:</span>
-            <select onchange="updateSingleThreatResidualProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(resProbToUse)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <select onchange="updateSingleThreatResidualProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(resProbToUse)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!resProbToUse ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${resProbToUse === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
                 <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
@@ -1935,12 +1977,16 @@ function viewCombined(pid) {
         <span class="text-[8px] text-slate-500 font-normal normal-case leading-none ml-2 text-right">З урахуванням заходів</span>
     </div>`;
 
+    const hasMeasures = item.measures && item.measures.length > 0;
+    const disabledAttr = hasMeasures ? '' : ' disabled';
+    const disabledSelectClass = hasMeasures ? '' : ' opacity-50 !cursor-not-allowed pointer-events-none';
+
     const resProbToUse = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability;
     const activeResProb = resProbToUse;
 
     html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
-        <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+        <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
             <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
             <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
             <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
@@ -1955,7 +2001,7 @@ function viewCombined(pid) {
 
     html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
-        <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+        <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
             <option value="незначні" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResSev === 'незначні' ? 'selected' : ''}>Незначні</option>
             <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${activeResSev === 'помірно' ? 'selected' : ''}>Помірно</option>
             <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResSev === 'критично' ? 'selected' : ''}>Критично</option>
@@ -2189,8 +2235,8 @@ function openLinked(pid) {
 
     p.rel.forEach(idx => {
         const b = document.createElement('button');
-        b.className = "w-full text-left p-2 glass-panel border-white/10 hover:bg-orange-950 text-[10px] mb-1 transition-colors";
-        b.innerText = SECONDARY_TITLES[idx];
+        b.className = "w-full text-left p-2 glass-panel border-white/10 hover:bg-orange-950 text-[10px] mb-1 transition-colors flex items-center";
+        b.innerHTML = `${getThreatIcon(SECONDARY_TITLES[idx])} <span>${SECONDARY_TITLES[idx]}</span>`;
         b.onclick = () => {
             p.secondaries.push({ name: SECONDARY_TITLES[idx], measures: [] });
             renderMarkers();
