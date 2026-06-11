@@ -1,6 +1,6 @@
-﻿let missions = [];
+let missions = [];
 let riskCardDirty = false;
-function markRiskCardDirty() { riskCardDirty = true; }
+window.markRiskCardDirty = function() { console.log("markRiskCardDirty called"); riskCardDirty = true; };
 let currentMissionId = null;
 let missionCounter = 1;
 const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
@@ -3921,10 +3921,10 @@ function openRiskManagementCard() {
         autoFillRiskCardSettlements();
     riskCardDirty = false;
     const modal = document.getElementById('modal-risk-card');
-    modal.removeEventListener('input', markRiskCardDirty);
-    modal.removeEventListener('change', markRiskCardDirty);
-    modal.addEventListener('input', markRiskCardDirty);
-    modal.addEventListener('change', markRiskCardDirty);
+    modal.removeEventListener('input', window.markRiskCardDirty);
+    modal.removeEventListener('change', window.markRiskCardDirty);
+    modal.addEventListener('input', window.markRiskCardDirty);
+    modal.addEventListener('change', window.markRiskCardDirty);
 }
 
 async function autoFillRiskCardSettlements() {
@@ -3989,9 +3989,9 @@ function renderRiskCardThreatsTable(m) {
             const mText = measures[i] ? `\u2022 ${measures[i]}` : '<span class="text-gray-400 italic">\u2014</span>';
             const whoVal = measuresWho[i] || '';
             const sidAttr = sid !== null ? ` data-sid="${sid}"` : '';
-            const whoInput = `<input type="text" class="w-full bg-transparent outline-none text-sm rc-who-input" data-pid="${pid}"${sidAttr} data-midx="${i}" value="${whoVal}" placeholder="...">`;
+            const whoInput = `<input type="text" class="w-full bg-transparent outline-none text-sm rc-who-input" data-pid="${pid}"${sidAttr} data-midx="${i}" value="${whoVal}" placeholder="..." oninput="window.markRiskCardDirty()">`;
             if (i === 0) {
-                rowsHtml += `<tr class="${cellBg}">${stTd}${nameHtml}<td rowspan="${len}" class="border border-gray-400 p-1">${ptext}</td><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td><td rowspan="${len}" class="border border-gray-400 p-1">${rptext}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4 rc-check-input" data-pid="${pid}"${sidAttr} ${isDone}></td></tr>`;
+                rowsHtml += `<tr class="${cellBg}">${stTd}${nameHtml}<td rowspan="${len}" class="border border-gray-400 p-1">${ptext}</td><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td><td rowspan="${len}" class="border border-gray-400 p-1">${rptext}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4 rc-check-input" data-pid="${pid}"${sidAttr} ${isDone} onchange="window.markRiskCardDirty()"></td></tr>`;
             } else {
                 rowsHtml += `<tr class="${cellBg}"><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td></tr>`;
             }
@@ -4104,10 +4104,59 @@ function saveRiskCard() {
 
 function closeRiskCard() {
     if (riskCardDirty) {
-        if (confirm("Є незбережені зміни в картці ризиків. Зберегти їх перед закриттям?")) {
-            saveRiskCard();
-        }
+        const existing = document.getElementById('modal-risk-confirm');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'modal-risk-confirm';
+        overlay.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-[6000] p-4';
+        overlay.style.animation = 'fadeIn 0.2s ease';
+
+        overlay.innerHTML = `
+            <div class="glass-panel border border-amber-500/50 w-full max-w-lg rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="animation: slideUp 0.25s ease">
+                <div class="p-4 bg-amber-950/40 border-b border-amber-500/30 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <h3 class="text-amber-400 font-black uppercase text-xs tracking-wider">Незбережені зміни</h3>
+                    </div>
+                    <button onclick="document.getElementById('modal-risk-confirm').remove()" class="text-white text-2xl font-light hover:text-amber-500 transition-colors leading-none">&times;</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-slate-200 text-sm font-bold">Ви внесли зміни в картку ризиків, але не зберегли їх.</p>
+                    <p class="text-slate-400 text-xs">Бажаєте зберегти ці зміни перед закриттям форми?</p>
+                </div>
+                <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end gap-3 flex-wrap">
+                    <button onclick="document.getElementById('modal-risk-confirm').remove()" class="px-4 py-2 rounded bg-slate-700 hover:bg-slate-600 text-xs uppercase font-bold tracking-wider transition-colors">Скасувати закриття</button>
+                    <button onclick="closeRiskCardWithoutSaving()" class="px-4 py-2 rounded bg-red-900/60 hover:bg-red-800 border border-red-700/30 text-red-200 text-xs uppercase font-bold tracking-wider transition-colors">Закрити БЕЗ збереження</button>
+                    <button onclick="saveAndCloseRiskCard()" class="px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs uppercase font-bold tracking-wider transition-colors">Зберегти і закрити</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    } else {
+        document.getElementById('modal-risk-card').classList.add('hidden');
     }
+}
+
+
+
+
+
+function saveAndCloseRiskCard() {
+    saveRiskCard();
+    const existing = document.getElementById('modal-risk-confirm');
+    if (existing) existing.remove();
+    document.getElementById('modal-risk-card').classList.add('hidden');
+}
+
+function closeRiskCardWithoutSaving() {
+    const existing = document.getElementById('modal-risk-confirm');
+    if (existing) existing.remove();
     document.getElementById('modal-risk-card').classList.add('hidden');
 }
 
@@ -4130,6 +4179,12 @@ window.updateRcOverallRiskStyle = function(val) {
         display.innerHTML = '<span class="text-sm text-gray-500">-- Оберіть рівень ризику --</span><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
     }
 };
+
+
+
+
+
+
 
 
 
