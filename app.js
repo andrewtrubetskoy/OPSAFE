@@ -1345,10 +1345,47 @@ function renderArea(coords, index) {
     });
 }
 
+function showGenericWarningModal(title, message, subtext) {
+    const existing = document.getElementById('modal-generic-warning');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'modal-generic-warning';
+    overlay.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-[6000] p-4';
+    overlay.style.animation = 'fadeIn 0.2s ease';
+
+    overlay.innerHTML = `
+        <div class="glass-panel border border-red-500/50 w-full max-w-lg rounded-2xl flex flex-col shadow-2xl overflow-hidden" style="animation: slideUp 0.25s ease">
+            <div class="p-4 bg-red-950/40 border-b border-red-500/30 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <h3 class="text-red-400 font-black uppercase text-xs tracking-wider">${title}</h3>
+                </div>
+                <button onclick="document.getElementById('modal-generic-warning').remove()" class="text-white text-2xl font-light hover:text-red-500 transition-colors leading-none">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-slate-900/60 border border-white/5 rounded-lg p-4 space-y-2">
+                    <p class="text-red-300 text-sm flex items-start gap-2"><span class="text-red-500 mt-0.5">⚠</span><span>${message}</span></p>
+                </div>
+                ${subtext ? '<p class="text-slate-400 text-xs italic">' + subtext + '</p>' : ''}
+            </div>
+            <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end">
+                <button onclick="document.getElementById('modal-generic-warning').remove()" class="px-6 py-2 text-xs uppercase font-bold bg-red-900/60 hover:bg-red-800 border border-red-700/30 text-red-200 rounded transition-colors tracking-wider">Зрозуміло</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 function triggerThreatModal(latlng) {
     const nearest = findNearestLayer(latlng, 100);
     if (!nearest) {
-        alert("Помилка! Загрозу можна додати лише в межах району позицій або поблизу маршруту.");
+        showGenericWarningModal('Помилка', 'Загрозу можна додати лише в межах району позицій або поблизу маршруту.', 'Спершу створіть маршрут або район позиції.');
         return;
     }
     tempLatLng = latlng;
