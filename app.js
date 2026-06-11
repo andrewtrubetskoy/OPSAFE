@@ -1346,6 +1346,11 @@ function renderArea(coords, index) {
 }
 
 function triggerThreatModal(latlng) {
+    const nearest = findNearestLayer(latlng, 100);
+    if (!nearest) {
+        alert("Помилка! Загрозу можна додати лише в межах району позицій або поблизу маршруту.");
+        return;
+    }
     tempLatLng = latlng;
     document.getElementById('modal-threat').classList.remove('hidden');
     toggleThreatTab('primary');
