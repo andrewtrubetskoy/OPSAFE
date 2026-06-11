@@ -1284,7 +1284,8 @@ const DEFAULT_OPSAFE_DB = {
       "EH": { "label": "Надзвичайно Високий", "short": "EH", "color": "#ff3333", "bg": "rgba(185,28,28,0.85)" },
       "H":  { "label": "Високий",             "short": "H",  "color": "#f97316", "bg": "rgba(194,65,12,0.85)" },
       "M":  { "label": "Середній",            "short": "M",  "color": "#fef08a", "bg": "rgba(161,110,7,0.85)" },
-      "L":  { "label": "Низький",             "short": "L",  "color": "#38bdf8", "bg": "rgba(12,74,110,0.85)" }
+      "L":  { "label": "Низький",             "short": "L",  "color": "#38bdf8", "bg": "rgba(12,74,110,0.85)" },
+      "ND": { "label": "Невизначений",        "short": "ND", "color": "#94a3b8", "bg": "rgba(30,41,59,0.85)" }
     },
     "matrix": {
       "катастрофічно": {
@@ -1488,10 +1489,11 @@ window.getThreatIcon = getThreatIcon;
  * @returns {string|null}
  */
 function getRiskLevel(severity, probability) {
-  if (!opsafeDb || !opsafeDb.riskMatrix || !severity || !probability) return null;
+  if (!opsafeDb || !opsafeDb.riskMatrix) return null;
+  if (!severity || !probability) return "ND";
   const row = opsafeDb.riskMatrix.matrix[severity];
-  if (!row) return null;
-  return row[probability] || null;
+  if (!row) return "ND";
+  return row[probability] || "ND";
 }
 
 /**

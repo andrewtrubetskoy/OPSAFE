@@ -1685,7 +1685,9 @@ function viewSingle(pid, sidx) {
 
     let html = `<div class="bg-slate-800 p-2 border-l-4 border-emerald-500 mb-2 font-bold text-white uppercase text-[10px] tracking-widest">${getThreatIcon(target.name)} ${target.name}</div>`;
 
-    html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+    html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5">Початковий ризик</div>`;
+
+    html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
         <select onchange="updateSingleThreatProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
             <option value="" style="color: #cbd5e1; background-color: #374151;" ${!target.probability ? 'selected' : ''}>-- Не вказано --</option>
@@ -1698,7 +1700,7 @@ function viewSingle(pid, sidx) {
     </div>`;
 
     if (sidx === null && target.type === 'primary') {
-        html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+        html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
             <select onchange="updateSingleThreatSeverity(${pid}, this.value)" style="${getSeverityColorStyle(target.severity)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
                 <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${target.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
@@ -1706,6 +1708,67 @@ function viewSingle(pid, sidx) {
                 <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${target.severity === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
             </select>
         </div>`;
+    }
+
+    const severityToUse = (sidx === null) ? target.severity : parent.severity;
+    const probabilityToUse = target.probability;
+    if (severityToUse) {
+        const riskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(severityToUse, probabilityToUse) : null;
+        if (riskInfo) {
+            html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Рівень ризику:</span>
+                <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${riskInfo.bg}; color: ${riskInfo.color}; border-color: ${riskInfo.color}40;">
+                    ${riskInfo.short} - ${riskInfo.label}
+                </div>
+            </div>`;
+        }
+    }
+
+    html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5 flex justify-between items-center">
+        <span>Залишковий ризик</span>
+        <span class="text-[8px] text-slate-500 font-normal normal-case leading-none ml-2 text-right">З урахуванням заходів</span>
+    </div>`;
+
+    const resProbToUse = typeof target.residualProbability !== 'undefined' ? target.residualProbability : probabilityToUse;
+    const activeResProb = resProbToUse;
+
+    html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+        <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
+        <select onchange="updateSingleThreatResidualProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
+            <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
+            <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+            <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResProb === 'Можливо' ? 'selected' : ''}>Можливо</option>
+            <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${activeResProb === 'Рідко' ? 'selected' : ''}>Рідко</option>
+            <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResProb === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
+        </select>
+    </div>`;
+
+    let activeResSev = severityToUse;
+    if (sidx === null && target.type === 'primary') {
+        const resSevToUse = typeof target.residualSeverity !== 'undefined' ? target.residualSeverity : severityToUse;
+        activeResSev = resSevToUse;
+
+        html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+            <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
+            <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${activeResSev === 'помірно' ? 'selected' : ''}>Помірно</option>
+                <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResSev === 'критично' ? 'selected' : ''}>Критично</option>
+                <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${activeResSev === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
+            </select>
+        </div>`;
+    }
+
+    if (activeResSev) {
+        const resRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(activeResSev, activeResProb) : null;
+        if (resRiskInfo) {
+            html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Залишковий ризик:</span>
+                <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${resRiskInfo.bg}; color: ${resRiskInfo.color}; border-color: ${resRiskInfo.color}40;">
+                    ${resRiskInfo.short} - ${resRiskInfo.label}
+                </div>
+            </div>`;
+        }
     }
 
     target.measures.forEach(item => {
@@ -1759,7 +1822,9 @@ function viewCombined(pid) {
     
     html += `<div class="sidebar-item font-bold ${textClass}" style="border-color:${primaryColor}; border-left-width:4px; margin-bottom: 2px;">${getThreatIcon(item.name)} ${item.name}</div>`;
 
-    html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+    html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5">Початковий ризик</div>`;
+
+    html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
         <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(item.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
             <option value="" style="color: #cbd5e1; background-color: #374151;" ${!item.probability ? 'selected' : ''}>-- Не вказано --</option>
@@ -1771,7 +1836,7 @@ function viewCombined(pid) {
         </select>
     </div>`;
 
-    html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+    html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
         <select onchange="updateSingleThreatSeverity(${pid}, this.value)" style="${getSeverityColorStyle(item.severity)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
             <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${item.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
@@ -1779,6 +1844,62 @@ function viewCombined(pid) {
             <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${item.severity === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
         </select>
     </div>`;
+
+    if (item.severity) {
+        const riskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(item.severity, item.probability) : null;
+        if (riskInfo) {
+            html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Рівень ризику:</span>
+                <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${riskInfo.bg}; color: ${riskInfo.color}; border-color: ${riskInfo.color}40;">
+                    ${riskInfo.short} - ${riskInfo.label}
+                </div>
+            </div>`;
+        }
+    }
+
+    html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5 flex justify-between items-center">
+        <span>Залишковий ризик</span>
+        <span class="text-[8px] text-slate-500 font-normal normal-case leading-none ml-2 text-right">З урахуванням заходів</span>
+    </div>`;
+
+    const resProbToUse = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability;
+    const activeResProb = resProbToUse;
+
+    html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+        <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
+        <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
+            <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
+            <option value="Висока ймовірність" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Висока ймовірність' ? 'selected' : ''}>Висока ймовірність</option>
+            <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResProb === 'Можливо' ? 'selected' : ''}>Можливо</option>
+            <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${activeResProb === 'Рідко' ? 'selected' : ''}>Рідко</option>
+            <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResProb === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
+        </select>
+    </div>`;
+
+    const resSevToUse = typeof item.residualSeverity !== 'undefined' ? item.residualSeverity : item.severity;
+    const activeResSev = resSevToUse;
+
+    html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+        <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
+        <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${activeResSev === 'помірно' ? 'selected' : ''}>Помірно</option>
+            <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResSev === 'критично' ? 'selected' : ''}>Критично</option>
+            <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${activeResSev === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
+        </select>
+    </div>`;
+
+    if (activeResSev) {
+        const resRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(activeResSev, activeResProb) : null;
+        if (resRiskInfo) {
+            html += `<div class="mb-4 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+                <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Залишковий ризик:</span>
+                <div class="px-2 py-0.5 rounded text-[11px] font-bold w-44 text-center border" style="background-color: ${resRiskInfo.bg}; color: ${resRiskInfo.color}; border-color: ${resRiskInfo.color}40;">
+                    ${resRiskInfo.short} - ${resRiskInfo.label}
+                </div>
+            </div>`;
+        }
+    }
 
     item.measures.forEach(i => {
         html += `<div class="sidebar-item">● ${i}</div>`;
@@ -1885,6 +2006,43 @@ function updateSingleThreatSeverity(pid, val) {
             viewCombined(pid);
         } else {
             viewSingle(pid, null);
+        }
+    }
+}
+
+function updateSingleThreatResidualSeverity(pid, val) {
+    const m = missions.find(x => x.id === currentMissionId);
+    if (!m) return;
+    const parent = m.data.database.find(d => d.id === pid);
+    if (parent) {
+        parent.residualSeverity = val;
+        saveMissions();
+        renderMarkers();
+        
+        const sidebar = document.getElementById('sidebar-content');
+        if (sidebar && sidebar.innerHTML.includes("ЗВІТ ОБ'ЄКТА")) {
+            viewCombined(pid);
+        } else {
+            viewSingle(pid, null);
+        }
+    }
+}
+
+function updateSingleThreatResidualProbability(pid, sidx, val) {
+    const m = missions.find(x => x.id === currentMissionId);
+    if (!m) return;
+    const parent = m.data.database.find(d => d.id === pid);
+    if (parent) {
+        const target = sidx === null ? parent : parent.secondaries[sidx];
+        target.residualProbability = val;
+        saveMissions();
+        renderMarkers();
+        
+        const sidebar = document.getElementById('sidebar-content');
+        if (sidebar && sidebar.innerHTML.includes("ЗВІТ ОБ'ЄКТА")) {
+            viewCombined(pid);
+        } else {
+            viewSingle(pid, sidx);
         }
     }
 }
@@ -3440,6 +3598,7 @@ function renderRiskMatrixSettings(container) {
             select.className = "w-full p-2 rounded text-xs font-bold text-white outline-none cursor-pointer text-center transition-all border";
             
             Object.keys(opsafeDb.riskMatrix.levels).forEach(levelCode => {
+                if (levelCode === 'ND') return;
                 const levelInfo = opsafeDb.riskMatrix.levels[levelCode];
                 const option = document.createElement('option');
                 option.value = levelCode;
@@ -3494,7 +3653,7 @@ function renderRiskMatrixSettings(container) {
     const legend = document.createElement('div');
     legend.className = "mt-4 bg-slate-900/40 border border-white/5 p-4 rounded-xl space-y-2";
     
-    const legendItems = Object.keys(levels).map(code => {
+    const legendItems = Object.keys(levels).filter(code => code !== 'ND').map(code => {
         const info = levels[code];
         let customLabel = info.label;
         if (code === "EH") customLabel = "Надзвичайно високий ризик";
