@@ -1181,11 +1181,27 @@ function findNearestLayer(latlng, thresholdPx = 45) {
     return null;
 }
 
+function findNearestLayerMeters(latlng, thresholdMeters = 2000) {
+    const pt1 = map.latLngToLayerPoint(latlng);
+    const pt2 = L.point(pt1.x + 100, pt1.y);
+    const latlng2 = map.layerPointToLatLng(pt2);
+    const dist = latlng.distanceTo(latlng2);
+    if (dist === 0) return findNearestLayer(latlng, 100);
+    const metersPerPx = dist / 100;
+    const thresholdPx = thresholdMeters / metersPerPx;
+    return findNearestLayer(latlng, thresholdPx);
+}
+
 
 function renderRoute(coords, index) {
     const poly = L.polyline(coords, { color: '#22c55e', weight: 5, dashArray: '8, 8' }).addTo(activeLayers);
 
     poly.on('click', (e) => {
+        if (isPlacingThreat) {
+            stopThreatPlacement();
+            triggerThreatModal(e.latlng);
+            return;
+        }
         L.DomEvent.stopPropagation(e);
     });
 
@@ -1275,6 +1291,11 @@ function renderArea(coords, index) {
 
     // Stop click propagation to prevent map click handler from disabling edit mode
     area.on('click', (e) => {
+        if (isPlacingThreat) {
+            stopThreatPlacement();
+            triggerThreatModal(e.latlng);
+            return;
+        }
         L.DomEvent.stopPropagation(e);
     });
 
@@ -1383,7 +1404,7 @@ function showGenericWarningModal(title, message, subtext) {
 }
 
 function triggerThreatModal(latlng) {
-    const nearest = findNearestLayer(latlng, 100);
+    const nearest = findNearestLayerMeters(latlng, 2000);
     if (!nearest) {
         showGenericWarningModal('Помилка', 'Загрозу можна додати лише в межах району позицій або поблизу маршруту.', 'Спершу створіть маршрут або район позиції.');
         return;
@@ -1536,6 +1557,23 @@ function getResidualBadgeHtml(sev, prob, isPrimary) {
     </div>`;
 }
 
+function showToast(message, duration = 1500) {
+    const existing = document.getElementById('floating-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'floating-toast';
+    toast.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-red-900/90 text-red-100 px-4 py-2 rounded-lg border border-red-500/50 shadow-2xl z-[7000] font-bold text-sm pointer-events-none transition-opacity duration-300';
+    toast.innerText = message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
 function renderMarkers() {
     markersLayer.clearLayers();
     if (!currentMissionId) return;
@@ -1673,6 +1711,12 @@ function renderMarkers() {
 
         marker.on('dragend', () => {
             const newLatLng = marker.getLatLng();
+            const nearest = findNearestLayerMeters(newLatLng, 2000);
+            if (!nearest) {
+                marker.setLatLng([item.latlng.lat, item.latlng.lng]);
+                showToast("Відміна: загрозу можна переміщати лише в межах або поблизу маршруту чи району позицій.", 2000);
+                return;
+            }
             item.latlng = { lat: newLatLng.lat, lng: newLatLng.lng };
             saveMissions();
         });
@@ -2283,11 +2327,16 @@ function openLinked(pid) {
     list.innerHTML = '';
 
     p.rel.forEach(idx => {
+        const title = SECONDARY_TITLES[idx];
+        const alreadyAdded = p.secondaries.some(s => s.name === title);
         const b = document.createElement('button');
-        b.className = "w-full text-left p-2 glass-panel border-white/10 hover:bg-orange-950 text-[10px] mb-1 transition-colors flex items-center";
-        b.innerHTML = `${getThreatIcon(SECONDARY_TITLES[idx])} <span>${SECONDARY_TITLES[idx]}</span>`;
+        b.className = alreadyAdded 
+            ? "w-full text-left p-2 glass-panel border-white/10 opacity-40 cursor-not-allowed text-[10px] mb-1 flex items-center" 
+            : "w-full text-left p-2 glass-panel border-white/10 hover:bg-orange-950 text-[10px] mb-1 transition-colors flex items-center cursor-pointer";
+        b.innerHTML = getThreatIcon(title) + ' <span>' + title + (alreadyAdded ? ' <span class="text-green-400 ml-2 font-bold">(Вже додано)</span>' : '') + '</span>';
+        b.disabled = alreadyAdded;
         b.onclick = () => {
-            p.secondaries.push({ name: SECONDARY_TITLES[idx], measures: [] });
+            p.secondaries.push({ name: title, measures: [] });
             renderMarkers();
             saveMissions();
             closeModals();
