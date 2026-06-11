@@ -1276,7 +1276,47 @@ const DEFAULT_OPSAFE_DB = {
         "Обізнаність противника про позицію БпЛА"
       ]
     }
-  ]
+  ],
+
+  "riskMatrix": {
+    "description": "Матриця оцінки рівня ризику (OPSAFE_CON). Рядки — тяжкість загрози, колонки — ймовірність виникнення.",
+    "levels": {
+      "EH": { "label": "Надзвичайно Високий", "short": "EH", "color": "#ff3333", "bg": "rgba(185,28,28,0.85)" },
+      "H":  { "label": "Високий",             "short": "H",  "color": "#f97316", "bg": "rgba(194,65,12,0.85)" },
+      "M":  { "label": "Середній",            "short": "M",  "color": "#fef08a", "bg": "rgba(161,110,7,0.85)" },
+      "L":  { "label": "Низький",             "short": "L",  "color": "#38bdf8", "bg": "rgba(12,74,110,0.85)" }
+    },
+    "matrix": {
+      "катастрофічно": {
+        "Дуже часто":           "EH",
+        "Висока ймовірність":   "EH",
+        "Можливо":              "H",
+        "Рідко":                "M",
+        "Малоймовірно":         "M"
+      },
+      "критично": {
+        "Дуже часто":           "EH",
+        "Висока ймовірність":   "H",
+        "Можливо":              "H",
+        "Рідко":                "M",
+        "Малоймовірно":         "L"
+      },
+      "помірно": {
+        "Дуже часто":           "H",
+        "Висока ймовірність":   "M",
+        "Можливо":              "M",
+        "Рідко":                "L",
+        "Малоймовірно":         "L"
+      },
+      "незначно": {
+        "Дуже часто":           "M",
+        "Висока ймовірність":   "L",
+        "Можливо":              "L",
+        "Рідко":                "L",
+        "Малоймовірно":         "L"
+      }
+    }
+  }
 };
 
 function loadOpsafeDb() {
@@ -1296,6 +1336,17 @@ function loadOpsafeDb() {
   if (!opsafeDb || typeof opsafeDb !== 'object' || !opsafeDb.primaryThreats || !opsafeDb.secondaryThreats || !opsafeDb.measures || !opsafeDb.threatConnections) {
     console.warn("opsafeDb structure is invalid, resetting to default...");
     opsafeDb = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB));
+  }
+
+  // Migrate: add riskMatrix if missing from saved database
+  if (!opsafeDb.riskMatrix) {
+    opsafeDb.riskMatrix = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB.riskMatrix));
+    console.info('opsafeDb: riskMatrix migrated from default.');
+  }
+
+  // Force level colors config to apply the latest requirements immediately
+  if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.levels) {
+    opsafeDb.riskMatrix.levels = JSON.parse(JSON.stringify(DEFAULT_OPSAFE_DB.riskMatrix.levels));
   }
 
   window.opsafeDb = opsafeDb;
@@ -1426,3 +1477,31 @@ function getThreatIcon(name) {
 
 window.THREAT_ICONS = THREAT_ICONS;
 window.getThreatIcon = getThreatIcon;
+
+// --- RISK LEVEL UTILITIES ---
+
+/**
+ * Returns the risk level code (EH, H, M, L) for a given severity + probability.
+ * Falls back to null if the combination is not found in the matrix.
+ * @param {string} severity  - e.g. "катастрофічно", "критично", "помірно", "незначно"
+ * @param {string} probability - e.g. "Дуже часто", "Висока ймовірність", "Можливо", "Рідко", "Малоймовірно"
+ * @returns {string|null}
+ */
+function getRiskLevel(severity, probability) {
+  if (!opsafeDb || !opsafeDb.riskMatrix || !severity || !probability) return null;
+  const row = opsafeDb.riskMatrix.matrix[severity];
+  if (!row) return null;
+  return row[probability] || null;
+}
+
+/**
+ * Returns the full risk level info object { label, short, color, bg } or null.
+ */
+function getRiskLevelInfo(severity, probability) {
+  const code = getRiskLevel(severity, probability);
+  if (!code || !opsafeDb || !opsafeDb.riskMatrix) return null;
+  return opsafeDb.riskMatrix.levels[code] || null;
+}
+
+window.getRiskLevel = getRiskLevel;
+window.getRiskLevelInfo = getRiskLevelInfo;

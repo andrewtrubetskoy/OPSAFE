@@ -2283,7 +2283,7 @@ function openSettingsModal() {
 
 function switchSettingsTab(tab) {
     currentSettingsTab = tab;
-    const tabs = ['threats', 'measures', 'tools', 'connections'];
+    const tabs = ['threats', 'measures', 'tools', 'connections', 'riskMatrix'];
     
     // Check if the tab button is style-colored blue or green
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
@@ -2329,6 +2329,8 @@ function renderSettingsTabContent() {
         renderToolsSettings(container);
     } else if (currentSettingsTab === 'connections') {
         renderConnectionsSettings(container);
+    } else if (currentSettingsTab === 'riskMatrix') {
+        renderRiskMatrixSettings(container);
     }
 }
 
@@ -3381,4 +3383,140 @@ function toggleThreatConnection(primaryName, secondaryName, isChecked) {
     saveOpsafeDb();
     saveMissions();
     renderMarkers();
+}
+
+function renderRiskMatrixSettings(container) {
+    const severities = ["катастрофічно", "критично", "помірно", "незначно"];
+    const probabilities = ["Дуже часто", "Висока ймовірність", "Можливо", "Рідко", "Малоймовірно"];
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = "space-y-4 max-h-[55vh] overflow-y-auto pr-2";
+
+    const tableContainer = document.createElement('div');
+    tableContainer.className = "overflow-x-auto rounded-xl border border-white/10 bg-slate-900/40 p-4 shadow-xl";
+    
+    const table = document.createElement('table');
+    table.className = "w-full min-w-[750px] border-collapse text-xs table-fixed";
+    
+    // Header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headerRow.className = "border-b border-white/10 bg-slate-950/60";
+    
+    const cornerTh = document.createElement('th');
+    cornerTh.className = "p-3 text-left font-bold text-white tracking-wider border border-white/5";
+    cornerTh.style.width = "200px";
+    cornerTh.innerText = "Тяжкість загрози \\ Ймовірність";
+    headerRow.appendChild(cornerTh);
+    
+    probabilities.forEach(p => {
+        const th = document.createElement('th');
+        th.className = "p-3 text-center font-bold text-slate-300 tracking-wider border border-white/5";
+        th.style.width = "110px";
+        th.innerText = p;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Body
+    const tbody = document.createElement('tbody');
+    
+    severities.forEach(sev => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-white/[0.02] transition-colors border-b border-white/5";
+        
+        const labelTd = document.createElement('td');
+        labelTd.className = "p-3 text-left font-bold text-white uppercase tracking-wide border border-white/5 bg-slate-950/20";
+        labelTd.innerText = sev;
+        tr.appendChild(labelTd);
+        
+        probabilities.forEach(prob => {
+            const td = document.createElement('td');
+            td.className = "p-2 border border-white/5 text-center";
+            
+            const currentLevel = opsafeDb.riskMatrix.matrix[sev] ? opsafeDb.riskMatrix.matrix[sev][prob] : null;
+            const select = document.createElement('select');
+            select.className = "w-full p-2 rounded text-xs font-bold text-white outline-none cursor-pointer text-center transition-all border";
+            
+            Object.keys(opsafeDb.riskMatrix.levels).forEach(levelCode => {
+                const levelInfo = opsafeDb.riskMatrix.levels[levelCode];
+                const option = document.createElement('option');
+                option.value = levelCode;
+                option.text = levelCode;
+                option.className = "bg-slate-900 text-white font-bold text-center";
+                if (levelCode === currentLevel) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            function updateSelectStyle(sel, levelCode) {
+                const levelInfo = opsafeDb.riskMatrix.levels[levelCode];
+                if (levelInfo) {
+                    sel.style.backgroundColor = levelInfo.bg;
+                    sel.style.color = "#ffffff";
+                    sel.style.borderColor = levelInfo.color;
+                } else {
+                    sel.style.backgroundColor = "#1e293b";
+                    sel.style.color = "#cbd5e1";
+                    sel.style.borderColor = "rgba(255,255,255,0.1)";
+                }
+            }
+            
+            updateSelectStyle(select, currentLevel);
+            
+            select.addEventListener('change', (e) => {
+                const newLevel = e.target.value;
+                if (!opsafeDb.riskMatrix.matrix[sev]) {
+                    opsafeDb.riskMatrix.matrix[sev] = {};
+                }
+                opsafeDb.riskMatrix.matrix[sev][prob] = newLevel;
+                saveOpsafeDb();
+                updateSelectStyle(select, newLevel);
+                if (typeof renderMarkers === 'function') {
+                    renderMarkers();
+                }
+            });
+            
+            td.appendChild(select);
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+    
+    table.appendChild(tbody);
+    tableContainer.appendChild(table);
+    wrapper.appendChild(tableContainer);
+
+    // Render legend below the table
+    const levels = opsafeDb.riskMatrix.levels;
+    const legend = document.createElement('div');
+    legend.className = "mt-4 bg-slate-900/40 border border-white/5 p-4 rounded-xl space-y-2";
+    
+    const legendItems = Object.keys(levels).map(code => {
+        const info = levels[code];
+        let customLabel = info.label;
+        if (code === "EH") customLabel = "Надзвичайно високий ризик";
+        if (code === "H") customLabel = "Високий ризик";
+        if (code === "M") customLabel = "Середній ризик";
+        if (code === "L") customLabel = "Низький ризик";
+        
+        return `
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white border" style="background-color: ${info.bg}; border-color: ${info.color};">${code}</span>
+                <span class="text-slate-300 font-semibold">${customLabel}</span>
+            </div>
+        `;
+    }).join('');
+
+    legend.innerHTML = `
+        <h5 class="text-white font-bold text-xs uppercase tracking-wider mb-2">Легенда:</h5>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-[11px]">
+            ${legendItems}
+        </div>
+    `;
+    wrapper.appendChild(legend);
+    
+    container.appendChild(wrapper);
 }
