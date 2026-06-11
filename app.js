@@ -1,4 +1,4 @@
-﻿let missions = [];
+let missions = [];
 window.initialRiskCardState = null;
 window.markRiskCardDirty = function() { console.log("markRiskCardDirty called"); riskCardDirty = true; };
 let currentMissionId = null;
@@ -26,6 +26,29 @@ const layerControl = L.control.layers(null, {
     "Базові маршрути": baseRoutesLayer,
     "Лінія зіткнення (DeepState)": frontlineLayer
 }, { position: 'topright', collapsed: false }).addTo(map);
+
+// Add Risk Legend Control
+const RiskLegendControl = L.Control.extend({
+    options: {
+        position: 'bottomleft'
+    },
+    onAdd: function (map) {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control bg-slate-900/90 border border-slate-700/50 p-2.5 rounded-lg shadow-xl backdrop-blur-sm text-slate-200 text-xs');
+        container.innerHTML = `
+            <div class="flex items-center gap-4">
+                <div class="font-bold text-[10px] uppercase text-slate-400 tracking-wider">Легенда:</div>
+                <div class="flex flex-row items-center gap-3">
+                    <div class="flex items-center gap-1.5"><span style="background-color: #ff3333;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-white/10">НВ</span><span class="text-slate-300 whitespace-nowrap">Надзвичайно високий ризик</span></div>
+                    <div class="flex items-center gap-1.5"><span style="background-color: #f97316;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-white/10">В</span><span class="text-slate-300 whitespace-nowrap">Високий ризик</span></div>
+                    <div class="flex items-center gap-1.5"><span style="background-color: #fef08a;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-slate-900 shadow-sm border border-black/10">С</span><span class="text-slate-300 whitespace-nowrap">Середній Ризик</span></div>
+                    <div class="flex items-center gap-1.5"><span style="background-color: #38bdf8;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-slate-900 shadow-sm border border-white/10">Н</span><span class="text-slate-300 whitespace-nowrap">Низький</span></div>
+                </div>
+            </div>
+        `;
+        return container;
+    }
+});
+map.addControl(new RiskLegendControl());
 
 window.amplifiersEnabled = true;
 
