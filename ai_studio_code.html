@@ -104,8 +104,15 @@
         }
 
         .sev-помірно {
-            background: #b45309;
+            background: #713f12;
             border-color: #fde68a;
+            box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+        }
+
+        .sev-незначні {
+            background: #14532d;
+            border-color: #86efac;
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.4);
         }
 
         .sec-diamond {
@@ -113,6 +120,36 @@
             border-color: #ddd6fe;
             width: 18px;
             height: 18px;
+        }
+
+        .risk-EH {
+            background: #dc2626 !important;
+            border-color: #fca5a5 !important;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.6) !important;
+        }
+        .risk-H {
+            background: #ea580c !important;
+            border-color: #fdba74 !important;
+            box-shadow: 0 0 12px rgba(249, 115, 22, 0.6) !important;
+        }
+        .risk-M {
+            background: #ca8a04 !important;
+            border-color: #fde047 !important;
+            box-shadow: 0 0 12px rgba(234, 179, 8, 0.6) !important;
+        }
+        .risk-L {
+            background: #0284c7 !important;
+            border-color: #7dd3fc !important;
+            box-shadow: 0 0 12px rgba(14, 165, 233, 0.6) !important;
+        }
+        .risk-ND {
+            box-shadow: 0 0 12px 3px rgba(255, 0, 0, 1) !important;
+            border-color: #ff0000 !important;
+        }
+
+        .badge-nd-glow {
+            border-color: rgba(255, 0, 0, 0.8) !important;
+            box-shadow: 0 0 8px 1px rgba(255, 0, 0, 0.8) !important;
         }
 
         .secured {
@@ -195,41 +232,42 @@
             border-radius: 2px;
         }
 
-        .badge-severity {
+        .badge-residual {
             position: absolute;
-            right: 17px;
-            bottom: 4px;
-            white-space: nowrap;
-            font-size: 8px;
-            font-weight: 900;
-            text-transform: uppercase;
-            padding: 1px 4px;
-            border-radius: 3px;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 2px 5px;
             pointer-events: none;
-            line-height: 1.1;
             z-index: 15;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
-        .badge-probability {
-            position: absolute;
-            right: 17px;
-            top: 4px;
-            white-space: nowrap;
-            font-size: 8px;
+        .badge-res-level {
+            font-size: 14px;
             font-weight: 900;
-            text-transform: uppercase;
-            padding: 1px 4px;
-            border-radius: 3px;
-            pointer-events: none;
-            line-height: 1.1;
-            z-index: 15;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            line-height: 1;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
 
-        .diamond.sec-diamond ~ .badge-severity,
-        .diamond.sec-diamond ~ .badge-probability {
-            right: 13px;
+        .badge-res-details {
+            display: flex;
+            flex-direction: column;
+            font-size: 8px;
+            line-height: 1.1;
+            font-weight: bold;
+            gap: 1px;
+            text-transform: uppercase;
+        }
+
+        .diamond.sec-diamond ~ .badge-residual {
+            left: 13px;
         }
 
         .sidebar-item {
@@ -1186,6 +1224,7 @@
                 case 'катастрофічно': return 'color: #ef4444; font-weight: 900; background-color: #374151;'; // Red
                 case 'критично': return 'color: #f97316; font-weight: 700; background-color: #374151;'; // Orange
                 case 'помірно': return 'color: #eab308; font-weight: 700; background-color: #374151;'; // Yellow
+                case 'незначні': return 'color: #60a5fa; font-weight: 700; background-color: #374151;'; // Blue
                 default: return 'color: #cbd5e1; font-weight: bold; background-color: #374151;';
             }
         }
@@ -1204,49 +1243,39 @@
             return ` <span style="color: ${color};" class="text-[8px] font-black">[${prob}]</span>`;
         }
 
-        function getSeverityMarkerBadgeHtml(sev) {
-            if (!sev) return '';
-            let style = '';
-            switch (sev) {
-                case 'катастрофічно':
-                    style = 'color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(185, 28, 28, 0.85);';
-                    break;
-                case 'критично':
-                    style = 'color: #fca5a5; border: 1px solid rgba(252, 165, 165, 0.3); background: rgba(127, 29, 29, 0.85);';
-                    break;
-                case 'помірно':
-                    style = 'color: #fde68a; border: 1px solid rgba(250, 204, 21, 0.3); background: rgba(113, 63, 18, 0.85);';
-                    break;
-                default:
-                    style = 'color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.2); background: rgba(51, 65, 85, 0.85);';
-            }
-            const labelText = sev.charAt(0).toUpperCase() + sev.slice(1);
-            return `<div class="badge-severity${window.amplifiersEnabled ? '' : ' hidden'}" style="${style}">${labelText}</div>`;
-        }
+        function getResidualBadgeHtml(sev, prob) {
+            if (!sev || !prob) return '';
+            const riskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(sev, prob) : null;
+            if (!riskInfo) return '';
 
-        function getProbabilityMarkerBadgeHtml(prob) {
-            if (!prob) return '';
-            let style = '';
+            let probColor = '#cbd5e1';
             switch (prob) {
-                case 'Дуже часто':
-                    style = 'color: #ff5555; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(127, 29, 29, 0.85);';
-                    break;
-                case 'Висока ймовірність':
-                    style = 'color: #ff6b6b; border: 1px solid rgba(220, 38, 38, 0.4); background: rgba(127, 29, 29, 0.75);';
-                    break;
-                case 'Можливо':
-                    style = 'color: #f97316; border: 1px solid rgba(249, 115, 22, 0.4); background: rgba(124, 45, 18, 0.75);';
-                    break;
-                case 'Рідко':
-                    style = 'color: #facc15; border: 1px solid rgba(250, 204, 21, 0.4); background: rgba(113, 63, 18, 0.75);';
-                    break;
-                case 'Малоймовірно':
-                    style = 'color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4); background: rgba(30, 58, 138, 0.75);';
-                    break;
-                default:
-                    style = 'color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.2); background: rgba(51, 65, 85, 0.75);';
+                case 'Дуже часто': probColor = '#ff5555'; break;
+                case 'Висока ймовірність': probColor = '#ff6b6b'; break;
+                case 'Можливо': probColor = '#f97316'; break;
+                case 'Рідко': probColor = '#facc15'; break;
+                case 'Малоймовірно': probColor = '#60a5fa'; break;
             }
-            return `<div class="badge-probability${window.amplifiersEnabled ? '' : ' hidden'}" style="${style}">${prob}</div>`;
+            
+            let sevColor = '#cbd5e1';
+            switch (sev) {
+                case 'катастрофічно': sevColor = '#fca5a5'; break;
+                case 'критично': sevColor = '#f97316'; break;
+                case 'помірно': sevColor = '#fde68a'; break;
+                case 'незначні': sevColor = '#93c5fd'; break;
+            }
+
+            const fullSev = sev.charAt(0).toUpperCase() + sev.slice(1);
+            const fullProb = prob.charAt(0).toUpperCase() + prob.slice(1);
+            const glowClass = riskInfo.short === 'ND' ? ' badge-nd-glow' : '';
+
+            return `<div class="badge-residual${glowClass}${window.amplifiersEnabled ? '' : ' hidden'}">
+                <div class="badge-res-details">
+                    <span style="color: ${sevColor};">${fullSev}</span>
+                    <span style="color: ${probColor};">${fullProb}</span>
+                </div>
+                <div class="badge-res-level" style="color: ${riskInfo.color}; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${riskInfo.short}</div>
+            </div>`;
         }
 
         function renderMarkers() {
@@ -1260,15 +1289,25 @@
                 const probBadge = getProbabilityBadgeHtml(item.probability);
                 const closeBtnHtml = item.editing ? `<div class="btn-ui btn-close" style="left:-32px; top:-32px;" onclick="confirmDeleteObj(${item.id})">×</div>` : '';
 
-                const sevMarkerBadge = getSeverityMarkerBadgeHtml(item.severity);
-                const probMarkerBadge = getProbabilityMarkerBadgeHtml(item.probability);
+                const activeResSev = typeof item.residualSeverity !== 'undefined' ? item.residualSeverity : item.severity;
+                const activeResProb = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability;
+                const resMarkerBadge = getResidualBadgeHtml(activeResSev, activeResProb);
+                const resRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(activeResSev, activeResProb) : null;
+
+                let riskDiamondClass = '';
+                if (resRiskInfo) {
+                    if (resRiskInfo.short === 'EH') riskDiamondClass = ' risk-EH';
+                    else if (resRiskInfo.short === 'H') riskDiamondClass = ' risk-H';
+                    else if (resRiskInfo.short === 'M') riskDiamondClass = ' risk-M';
+                    else if (resRiskInfo.short === 'L') riskDiamondClass = ' risk-L';
+                    else if (resRiskInfo.short === 'ND') riskDiamondClass = ' risk-ND';
+                }
 
                 let html = `<div class="threat-marker-wrapper">
-                    <div class="diamond ${isP ? 'sev-' + item.severity : 'sec-diamond'}${extraClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)">
+                    <div class="diamond ${isP ? 'sev-' + item.severity : 'sec-diamond'}${extraClass}${riskDiamondClass}" onclick="L.DomEvent.stopPropagation(event); ${isP ? `viewCombined(${item.id})` : `viewSingle(${item.id}, null)`}" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, null)">
                         <span class="threat-marker-icon">${getThreatIcon(item.name)}</span>
                     </div>
-                    ${sevMarkerBadge}
-                    ${probMarkerBadge}
+                    ${resMarkerBadge}
                     ${closeBtnHtml}
                     <div class="label-threat ${isP ? 'text-white' : 'text-purple-400'}${window.amplifiersEnabled ? '' : ' hidden'}">${item.name}${probBadge}</div>
                     <div class="flex" style="position:absolute; left:0; top:0;">
@@ -1284,15 +1323,28 @@
                         const secProbBadge = getProbabilityBadgeHtml(sec.probability);
                         const secCloseBtnHtml = sec.editing ? `<div class="btn-ui btn-close" style="left:-25px; top:-25px; width:12px; height:12px;" onclick="confirmDeleteSec(${item.id}, ${idx})">×</div>` : '';
 
-                        const secSevMarkerBadge = getSeverityMarkerBadgeHtml(sec.severity);
-                        const secProbMarkerBadge = getProbabilityMarkerBadgeHtml(sec.probability);
+                        const secActiveResSev = typeof sec.residualSeverity !== 'undefined' ? sec.residualSeverity : sec.severity;
+                        const secActiveResProb = typeof sec.residualProbability !== 'undefined' ? sec.residualProbability : sec.probability;
+                        const secResMarkerBadge = getResidualBadgeHtml(secActiveResSev, secActiveResProb);
+                        const secResRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(secActiveResSev, secActiveResProb) : null;
+                        
+                        let secRiskDiamondClass = '';
+                        if (secResRiskInfo) {
+                            if (secResRiskInfo.short === 'EH') secRiskDiamondClass = ' risk-EH';
+                            else if (secResRiskInfo.short === 'H') secRiskDiamondClass = ' risk-H';
+                            else if (secResRiskInfo.short === 'M') secRiskDiamondClass = ' risk-M';
+                            else if (secResRiskInfo.short === 'L') secRiskDiamondClass = ' risk-L';
+                            else if (secResRiskInfo.short === 'ND') {
+                                secRiskDiamondClass = ' risk-ND';
+                                if (secActiveResSev) secRiskDiamondClass += ' sev-' + secActiveResSev;
+                            }
+                        }
 
                         html += `<div style="position:absolute; top:-${offset}px; left:0;">
-                            <div class="diamond sec-diamond${secExtraClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})">
+                            <div class="diamond sec-diamond${secExtraClass}${secRiskDiamondClass}" onclick="L.DomEvent.stopPropagation(event); viewSingle(${item.id}, ${idx})" ondblclick="L.DomEvent.stopPropagation(event); toggleThreatEdit(${item.id}, ${idx})">
                                 <span class="threat-marker-icon">${getThreatIcon(sec.name)}</span>
                             </div>
-                            ${secSevMarkerBadge}
-                            ${secProbMarkerBadge}
+                            ${secResMarkerBadge}
                             ${secCloseBtnHtml}
                             <div class="label-threat text-purple-300 italic${window.amplifiersEnabled ? '' : ' hidden'}">${sec.name}${secProbBadge}</div>
                             <div class="flex" style="position:absolute; left:0; top:0;">
@@ -1342,6 +1394,7 @@
                 html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
                     <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
                     <select onchange="updateSingleThreatSeverity(${pid}, this.value)" style="${getSeverityColorStyle(target.severity)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                        <option value="незначні" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${target.severity === 'незначні' ? 'selected' : ''}>Незначні</option>
                         <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${target.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
                         <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${target.severity === 'критично' ? 'selected' : ''}>Критично</option>
                         <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${target.severity === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
@@ -1391,6 +1444,7 @@
                 html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
                     <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
                     <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                        <option value="незначні" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResSev === 'незначні' ? 'selected' : ''}>Незначні</option>
                         <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${activeResSev === 'помірно' ? 'selected' : ''}>Помірно</option>
                         <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResSev === 'критично' ? 'selected' : ''}>Критично</option>
                         <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${activeResSev === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
@@ -1450,6 +1504,7 @@
             html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
                 <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
                 <select onchange="updateSingleThreatSeverity(${pid}, this.value)" style="${getSeverityColorStyle(item.severity)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                    <option value="незначні" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${item.severity === 'незначні' ? 'selected' : ''}>Незначні</option>
                     <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${item.severity === 'помірно' ? 'selected' : ''}>Помірно</option>
                     <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${item.severity === 'критично' ? 'selected' : ''}>Критично</option>
                     <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${item.severity === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
@@ -1494,6 +1549,7 @@
             html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
                 <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Тяжкість:</span>
                 <select onchange="updateSingleThreatResidualSeverity(${pid}, this.value)" style="${getSeverityColorStyle(activeResSev)}" class="severity-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+                    <option value="незначні" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${activeResSev === 'незначні' ? 'selected' : ''}>Незначні</option>
                     <option value="помірно" style="color: #eab308; font-weight: 700; background-color: #374151;" ${activeResSev === 'помірно' ? 'selected' : ''}>Помірно</option>
                     <option value="критично" style="color: #f97316; font-weight: 700; background-color: #374151;" ${activeResSev === 'критично' ? 'selected' : ''}>Критично</option>
                     <option value="катастрофічно" style="color: #ef4444; font-weight: 900; background-color: #374151;" ${activeResSev === 'катастрофічно' ? 'selected' : ''}>Катастрофічно</option>
@@ -1989,8 +2045,30 @@
                 item.innerHTML = `
                     <div class="flex-1 min-w-0 pr-2">
                         <div class="text-xs font-bold text-white truncate" title="${t.name}">${getThreatIcon(t.name)} ${t.name}</div>
-                        <div class="text-[9px] text-slate-400 uppercase font-mono">Тяжкість: <span class="${t.severity === 'катастрофічно' ? 'text-red-500' : t.severity === 'критично' ? 'text-orange-500' : 'text-yellow-500'} font-bold">${t.severity}</span></div>
+                        <div class="text-[9px] text-slate-400 uppercase font-mono">Тяжкість: <span class="${t.severity === 'катастрофічно' ? 'text-red-500' : t.severity === 'критично' ? 'text-orange-500' : t.severity === 'помірно' ? 'text-yellow-500' : 'text-blue-500'} font-bold">${t.severity}</span></div>
                     </div>
+                    <div class="flex gap-1">
+                        <button onclick="editPrimaryThreat(${index})" class="p-1.5 hover:bg-white/10 rounded"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                        <button onclick="deletePrimaryThreat(${index})" class="p-1.5 hover:bg-red-500/20 text-red-400 rounded"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg></button>
+                    </div>
+                `;
+                listPrimary.appendChild(item);
+            });
+
+            const listSecondary = colSecondary.querySelector('#settings-secondary-threats-list');
+            opsafeDb.secondaryThreats.forEach((t, index) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-slate-900/80 p-2.5 rounded border border-white/5 hover:border-white/10";
+                item.innerHTML = `
+                    <div class="text-xs font-bold text-white">${t}</div>
+                    <div class="flex gap-1">
+                        <button onclick="deleteSecondaryThreat(${index})" class="p-1.5 hover:bg-red-500/20 text-red-400 rounded"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg></button>
+                    </div>
+                `;
+                listSecondary.appendChild(item);
+            });
+        }
+        
         function showCustomModal({ title, htmlContent, onConfirm, onCancel, confirmText = 'Зберегти', cancelText = 'Скасувати', confirmBtnClass = 'bg-emerald-600 hover:bg-emerald-500 text-white' }) {
             const existing = document.getElementById('custom-dynamic-modal');
             if (existing) existing.remove();
@@ -2981,7 +3059,7 @@
         }
 
         function renderRiskMatrixSettings(container) {
-            const severities = ["катастрофічно", "критично", "помірно", "незначно"];
+            const severities = ["катастрофічно", "критично", "помірно", "незначні"];
             const probabilities = ["Дуже часто", "Висока ймовірність", "Можливо", "Рідко", "Малоймовірно"];
             
             const wrapper = document.createElement('div');

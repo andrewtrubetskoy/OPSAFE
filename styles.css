@@ -106,12 +106,48 @@ body {
     box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
 }
 
+.sev-незначні {
+    background: #1e3a8a;
+    border-color: #93c5fd;
+    box-shadow: 0 0 12px rgba(96, 165, 250, 0.4);
+}
+
 .sec-diamond {
     background: #f97316;
     border-color: #fed7aa;
     width: 24px;
     height: 24px;
     box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+}
+
+.risk-EH {
+    background: #dc2626 !important;
+    border-color: #fca5a5 !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6) !important;
+}
+.risk-H {
+    background: #ea580c !important;
+    border-color: #fdba74 !important;
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.6) !important;
+}
+.risk-M {
+    background: #ca8a04 !important;
+    border-color: #fde047 !important;
+    box-shadow: 0 0 12px rgba(234, 179, 8, 0.6) !important;
+}
+.risk-L {
+    background: #0284c7 !important;
+    border-color: #7dd3fc !important;
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.6) !important;
+}
+.risk-ND {
+    box-shadow: 0 0 12px 3px rgba(255, 0, 0, 1) !important;
+    border-color: #ff0000 !important;
+}
+
+.badge-nd-glow {
+    border-color: rgba(255, 0, 0, 0.8) !important;
+    box-shadow: 0 0 8px 1px rgba(255, 0, 0, 0.8) !important;
 }
 
 .secured {
@@ -217,40 +253,56 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.badge-severity {
+.label-threat-left {
     position: absolute;
     right: 22px;
-    bottom: 4px;
+    top: -14px;
     white-space: nowrap;
-    font-size: 8px;
-    font-weight: 900;
-    text-transform: uppercase;
-    padding: 1px 4px;
-    border-radius: 3px;
+    font-weight: bold;
+    font-size: 10px;
+    text-shadow: 1px 1px 2px black;
     pointer-events: none;
-    line-height: 1.1;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.badge-residual {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 2px 5px;
+    pointer-events: none;
     z-index: 15;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.badge-probability {
-    position: absolute;
-    right: 22px;
-    top: 4px;
-    white-space: nowrap;
-    font-size: 8px;
+.badge-res-level {
+    font-size: 14px;
     font-weight: 900;
-    text-transform: uppercase;
-    padding: 1px 4px;
-    border-radius: 3px;
-    pointer-events: none;
-    line-height: 1.1;
-    z-index: 15;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
 }
 
-.diamond.sec-diamond ~ .badge-severity,
-.diamond.sec-diamond ~ .badge-probability {
+.badge-res-details {
+    display: flex;
+    flex-direction: column;
+    font-size: 8px;
+    line-height: 1.1;
+    font-weight: bold;
+    gap: 1px;
+    text-transform: uppercase;
+}
+
+.diamond.sec-diamond ~ .badge-residual {
     right: 17px;
 }
 
