@@ -3940,7 +3940,51 @@ function showRiskCardWarning(issues) {
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
-function openRiskManagementCard() {
+window.locCache = window.locCache || {};
+
+async function autoFillRiskCardSettlements(onProgress) {
+    const inputs = Array.from(document.querySelectorAll('.rc-settlement')).filter(inp => inp.dataset.lat && inp.dataset.lng);
+    const total = inputs.length;
+    let current = 0;
+    if (onProgress) onProgress(current, total);
+
+    for (const inp of inputs) {
+        const key = `${inp.dataset.lat},${inp.dataset.lng}`;
+        if (window.locCache[key]) {
+            inp.value = window.locCache[key];
+            current++;
+            if (onProgress) onProgress(current, total);
+            continue;
+        }
+
+        try {
+            inp.placeholder = 'Пошук...';
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${inp.dataset.lat}&lon=${inp.dataset.lng}`);
+            const data = await res.json();
+            let name = '';
+            if (data && data.address) {
+                name = data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.municipality || data.name || '';
+            }
+            if (name) {
+                inp.value = name;
+                window.locCache[key] = name;
+            } else {
+                inp.placeholder = 'Не знайдено';
+            }
+        } catch(e) {
+            inp.placeholder = 'Помилка API';
+        }
+        
+        current++;
+        if (onProgress) onProgress(current, total);
+
+        if (current < total) {
+            await new Promise(r => setTimeout(r, 1100)); // Rate limit 1 req/sec
+        }
+    }
+}
+
+async function openRiskManagementCard() {
     if (!currentMissionId) { showRiskCardWarning(['Оберіть місію для відкриття картки ризиків']); return; }
     const m = missions.find(x => x.id === currentMissionId);
     if (!m) return;
@@ -4008,8 +4052,36 @@ function openRiskManagementCard() {
     document.getElementById('rc-apd').value = rc.apd || '';
     document.getElementById('rc-comments').value = rc.comments || '';
     renderRiskCardThreatsTable(m);
+    
+    const inputsToFetch = Array.from(document.querySelectorAll('.rc-settlement')).filter(inp => inp.dataset.lat && inp.dataset.lng);
+    if (inputsToFetch.length > 0) {
+        const overlay = document.createElement('div');
+        overlay.id = 'modal-loading-progress';
+        overlay.className = 'fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[7000] p-4';
+        overlay.innerHTML = '<div class="w-full max-w-md bg-gray-800 rounded-xl p-6 border border-emerald-500/30 shadow-2xl flex flex-col items-center text-center">' +
+            '<h3 class="text-emerald-400 font-bold uppercase tracking-wider text-sm mb-4">Визначення населених пунктів</h3>' +
+            '<div class="w-full bg-gray-900 rounded-full h-4 mb-2 overflow-hidden border border-gray-700">' +
+                '<div id="loading-progress-bar" class="bg-emerald-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>' +
+            '</div>' +
+            '<p id="loading-progress-text" class="text-slate-400 text-xs mt-2">Оброблено 0 з ' + inputsToFetch.length + '</p>' +
+        '</div>';
+        document.body.appendChild(overlay);
+
+        await autoFillRiskCardSettlements((curr, tot) => {
+            const bar = document.getElementById('loading-progress-bar');
+            const txt = document.getElementById('loading-progress-text');
+            if (bar && txt && tot > 0) {
+                const pct = Math.round((curr / tot) * 100);
+                bar.style.width = pct + '%';
+                txt.innerText = 'Оброблено ' + curr + ' з ' + tot;
+            }
+        });
+        overlay.remove();
+    } else {
+        await autoFillRiskCardSettlements();
+    }
+
     document.getElementById('modal-risk-card').classList.remove('hidden');
-        autoFillRiskCardSettlements();
     window.initialRiskCardState = window.getRiskCardState();
     const modal = document.getElementById('modal-risk-card');
     modal.removeEventListener('input', window.markRiskCardDirty);
@@ -4018,29 +4090,7 @@ function openRiskManagementCard() {
     modal.addEventListener('change', window.markRiskCardDirty);
 }
 
-async function autoFillRiskCardSettlements() {
-    const inputs = Array.from(document.querySelectorAll('.rc-settlement')).filter(inp => !inp.value && inp.dataset.lat && inp.dataset.lng);
-    for (const inp of inputs) {
-        if (inp.value) continue; // might have been edited by user while waiting
-        try {
-            inp.placeholder = 'Пошук...';
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${inp.dataset.lat}&lon=${inp.dataset.lng}`);
-            const data = await res.json();
-            let name = '';
-            if (data && data.address) {
-                name = data.address.city || data.address.town || data.address.village || data.address.hamlet || data.address.municipality || data.name || '';
-            }
-            if (name) {
-                inp.value = name;
-            } else {
-                inp.placeholder = 'Не знайдено';
-            }
-        } catch(e) {
-            inp.placeholder = 'Помилка API';
-        }
-        await new Promise(r => setTimeout(r, 1100)); // Rate limit 1 req/sec
-    }
-}
+
 
 function renderRiskCardThreatsTable(m) {
     const tbody = document.getElementById('rc-threats-tbody');
