@@ -341,20 +341,6 @@
                 <div class="flex items-center gap-4">
                     <h3 class="text-emerald-400 font-black uppercase text-sm tracking-wider">Картка планового управління
                         ризиками</h3>
-                    <button onclick="printRiskCard()"
-                        class="bg-emerald-700/80 hover:bg-emerald-600 border border-emerald-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors flex items-center gap-1">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                            <rect x="6" y="14" width="12" height="8"></rect>
-                        </svg>
-                        Друк
-                    </button>
-                    <button onclick="saveRiskCard()"
-                        class="bg-blue-800/80 hover:bg-blue-700 border border-blue-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors">
-                        Зберегти дані
-                    </button>
                 </div>
                 <button onclick="closeRiskCard()"
                     class="text-white text-3xl font-light hover:text-red-500 transition-colors">&times;</button>
@@ -580,6 +566,24 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Footer for Screen (Hidden in print) -->
+            <div class="p-4 bg-emerald-950/40 border-t border-emerald-500/30 flex justify-end gap-3 print:hidden">
+                <button onclick="printRiskCard()"
+                    class="bg-emerald-700/80 hover:bg-emerald-600 border border-emerald-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Друк
+                </button>
+                <button onclick="saveRiskCard()"
+                    class="save-btn bg-blue-800/80 hover:bg-blue-700 border border-blue-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors">
+                    Зберегти дані
+                </button>
             </div>
         </div>
     </div>

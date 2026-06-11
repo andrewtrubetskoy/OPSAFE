@@ -1,4 +1,6 @@
 ﻿let missions = [];
+let riskCardDirty = false;
+function markRiskCardDirty() { riskCardDirty = true; }
 let currentMissionId = null;
 let missionCounter = 1;
 const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
@@ -3916,7 +3918,13 @@ function openRiskManagementCard() {
     document.getElementById('rc-comments').value = rc.comments || '';
     renderRiskCardThreatsTable(m);
     document.getElementById('modal-risk-card').classList.remove('hidden');
-    autoFillRiskCardSettlements();
+        autoFillRiskCardSettlements();
+    riskCardDirty = false;
+    const modal = document.getElementById('modal-risk-card');
+    modal.removeEventListener('input', markRiskCardDirty);
+    modal.removeEventListener('change', markRiskCardDirty);
+    modal.addEventListener('input', markRiskCardDirty);
+    modal.addEventListener('change', markRiskCardDirty);
 }
 
 async function autoFillRiskCardSettlements() {
@@ -3951,11 +3959,12 @@ function renderRiskCardThreatsTable(m) {
     const getProbColor = c => ({ 'Дуже часто':'#dc2626', 'Часто':'#ea580c', 'Можливо':'#ca8a04', 'Рідко':'#65a30d', 'Малоймовірно':'#0284c7' }[c] || '#64748b');
     const getRiskText = c => ({ EH:'Надзвичайно високий', H:'Високий', M:'Середній', L:'Низький', ND:'Не визначено' }[c] || 'Не визначено');
     
-    function buildThreatRows(itemObj, threatName, riskCode, resRiskCode, stHtml, isSecondary, isIndepSecondary, sp, srp) {
+    function buildThreatRows(itemObj, threatName, riskCode, resRiskCode, stHtml, isSecondary, isIndepSecondary, sp, srp, pid, sid) {
         let rowsHtml = '';
         const measures = (itemObj.measures && itemObj.measures.length > 0) ? itemObj.measures : [null];
         const len = measures.length;
-        
+        const measuresWho = itemObj.measuresWho || [];
+        const isDone = itemObj.rcDone ? 'checked' : '';
         let cellBg = isSecondary ? 'bg-gray-50' : '';
         let nameHtml = '', ptext = '', rptext = '', stTd = '';
 
@@ -3978,10 +3987,11 @@ function renderRiskCardThreatsTable(m) {
 
         for (let i = 0; i < len; i++) {
             const mText = measures[i] ? `\u2022 ${measures[i]}` : '<span class="text-gray-400 italic">\u2014</span>';
-            const whoInput = `<input type="text" class="w-full bg-transparent outline-none text-sm" placeholder="...">`;
-            
+            const whoVal = measuresWho[i] || '';
+            const sidAttr = sid !== null ? ` data-sid="${sid}"` : '';
+            const whoInput = `<input type="text" class="w-full bg-transparent outline-none text-sm rc-who-input" data-pid="${pid}"${sidAttr} data-midx="${i}" value="${whoVal}" placeholder="...">`;
             if (i === 0) {
-                rowsHtml += `<tr class="${cellBg}">${stTd}${nameHtml}<td rowspan="${len}" class="border border-gray-400 p-1">${ptext}</td><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td><td rowspan="${len}" class="border border-gray-400 p-1">${rptext}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+                rowsHtml += `<tr class="${cellBg}">${stTd}${nameHtml}<td rowspan="${len}" class="border border-gray-400 p-1">${ptext}</td><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td><td rowspan="${len}" class="border border-gray-400 p-1">${rptext}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4 rc-check-input" data-pid="${pid}"${sidAttr} ${isDone}></td></tr>`;
             } else {
                 rowsHtml += `<tr class="${cellBg}"><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td></tr>`;
             }
@@ -3999,18 +4009,18 @@ function renderRiskCardThreatsTable(m) {
             let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
             let resRiskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix) { const rs = typeof item.residualSeverity !== 'undefined' ? item.residualSeverity : item.severity; const rp = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability; if (rs && rp) { resRiskCode = opsafeDb.riskMatrix.matrix[rs][rp] || 'ND'; } } } catch(e) {}
             const stHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
-            html += buildThreatRows(item, item.name, riskCode, resRiskCode, stHtml, false, false);
+            html += buildThreatRows(item, item.name, riskCode, resRiskCode, stHtml, false, false, '', '', item.id, null);
             
             if (item.secondaries) item.secondaries.forEach((sec,si) => { 
                 const sp=sec.probability||'ND'; const srp=sec.residualProbability || sec.probability || 'ND';
                 const sstHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${sec.rcSettlement || ''}" data-id="${item.id}" data-sid="${si}" data-lat="${lat}" data-lng="${lng}"></a>`;
-                html += buildThreatRows(sec, sec.name, '', '', sstHtml, true, false, sp, srp);
+                html += buildThreatRows(sec, sec.name, '', '', sstHtml, true, false, sp, srp, item.id, si);
             });
             counter++;
         } else if (item.type === 'secondary_indep') {
             const p=item.probability||'ND'; const rp=item.residualProbability || item.probability || 'ND';
             const istHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
-            html += buildThreatRows(item, item.name, '', '', istHtml, false, true, p, rp);
+            html += buildThreatRows(item, item.name, '', '', istHtml, false, true, p, rp, item.id, null);
             counter++;
         }
     });
@@ -4040,8 +4050,35 @@ function saveRiskCard() {
     document.getElementById('rc-events-tbody').querySelectorAll('tr').forEach(row => {
         rc.events.push({ name: row.querySelector('.rc-event-name')?.value||'', date: row.querySelector('.rc-event-date')?.value||'', desc: row.querySelector('.rc-event-desc')?.value||'' });
     });
-    rc.apd = document.getElementById('rc-apd').value;
+        rc.apd = document.getElementById('rc-apd').value;
     rc.comments = document.getElementById('rc-comments').value;
+
+    document.querySelectorAll('.rc-who-input').forEach(inp => {
+        const pid = inp.dataset.pid;
+        const sid = inp.dataset.sid;
+        const midx = parseInt(inp.dataset.midx);
+        const t = m.data.database.find(x => x.id == pid);
+        if (t) {
+            const target = (sid && sid !== 'null') ? t.secondaries[sid] : t;
+            if (target) {
+                if (!target.measuresWho) target.measuresWho = [];
+                target.measuresWho[midx] = inp.value;
+            }
+        }
+    });
+    document.querySelectorAll('.rc-check-input').forEach(inp => {
+        const pid = inp.dataset.pid;
+        const sid = inp.dataset.sid;
+        const t = m.data.database.find(x => x.id == pid);
+        if (t) {
+            const target = (sid && sid !== 'null') ? t.secondaries[sid] : t;
+            if (target) {
+                target.rcDone = inp.checked;
+            }
+        }
+    });
+
+    riskCardDirty = false;
     
     // Save settlements
     document.querySelectorAll('.rc-settlement').forEach(inp => {
@@ -4066,6 +4103,11 @@ function saveRiskCard() {
 }
 
 function closeRiskCard() {
+    if (riskCardDirty) {
+        if (confirm("Є незбережені зміни в картці ризиків. Зберегти їх перед закриттям?")) {
+            saveRiskCard();
+        }
+    }
     document.getElementById('modal-risk-card').classList.add('hidden');
 }
 
@@ -4088,6 +4130,11 @@ window.updateRcOverallRiskStyle = function(val) {
         display.innerHTML = '<span class="text-sm text-gray-500">-- Оберіть рівень ризику --</span><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
     }
 };
+
+
+
+
+
 
 
 
