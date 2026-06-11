@@ -579,6 +579,7 @@ function handleMissionChange(id) {
     const threatBtn = document.getElementById('draw-btn-threat');
     const rulerBtn = document.getElementById('ruler-btn');
     const sidebarContent = document.getElementById('sidebar-content');
+    const riskCardBtn = document.getElementById('risk-card-btn');
     if (!id) {
         routeBtn.classList.add('btn-disabled');
         areaBtn.classList.add('btn-disabled');
@@ -586,6 +587,7 @@ function handleMissionChange(id) {
         if (boxSelectBtn) boxSelectBtn.classList.add('btn-disabled');
         if (threatBtn) threatBtn.classList.add('btn-disabled');
         if (rulerBtn) rulerBtn.classList.add('btn-disabled');
+        if (riskCardBtn) riskCardBtn.classList.add('btn-disabled');
         clearAllRulerResults();
         activeLayers.clearLayers();
         markersLayer.clearLayers();
@@ -603,6 +605,7 @@ function handleMissionChange(id) {
     if (boxSelectBtn) boxSelectBtn.classList.remove('btn-disabled');
     if (threatBtn) threatBtn.classList.remove('btn-disabled');
     if (rulerBtn) rulerBtn.classList.remove('btn-disabled');
+    if (riskCardBtn) riskCardBtn.classList.remove('btn-disabled');
     clearAllRulerResults();
 
     const m = missions.find(x => x.id === id);
@@ -3800,4 +3803,118 @@ function renderRiskMatrixSettings(container) {
     wrapper.appendChild(legend);
     
     container.appendChild(wrapper);
+}
+
+// ================= RISK MANAGEMENT CARD =================
+function openRiskManagementCard() {
+    if (!currentMissionId) return alert("Оберіть місію для відкриття картки ризиків");
+    const m = missions.find(x => x.id === currentMissionId);
+    if (!m) return;
+
+    const issues = [];
+    if (m.data && m.data.database) {
+        m.data.database.forEach(item => {
+            if (item.type === 'primary') {
+                let riskCode = 'ND';
+                try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
+                if (!item.severity || !item.probability || riskCode === 'ND') issues.push(`\u2022 Основна загроза "${item.shortName || item.name}": не визначений рівень ризику`);
+                if (item.secondaries) item.secondaries.forEach(sec => { if (!sec.probability) issues.push(`\u2022 Вторинна загроза "${sec.name}": не визначена ймовірність`); });
+            } else if (item.type === 'secondary_indep') {
+                if (!item.probability) issues.push(`\u2022 Вторинна загроза "${item.shortName || item.name}": не визначена ймовірність`);
+            }
+        });
+    }
+
+    if (issues.length > 0) {
+        alert("Попередження! У місії є загрози з невизначеними параметрами:\n\n" + issues.join("\n") + "\n\nСпочатку необхідно врегулювати ці проблеми на мапі.");
+        return;
+    }
+
+    if (!m.data.riskCard) {
+        m.data.riskCard = { desc: '', date: '', prep: { name:'', callsign:'', role:'', phone:'', unit:'' }, appr: { name:'', callsign:'', role:'', phone:'', unit:'' }, overallRisk: '', events: [{name:'',date:'',desc:''},{name:'',date:'',desc:''},{name:'',date:'',desc:''}], apd:'', comments:'' };
+    }
+
+    const rc = m.data.riskCard;
+    document.getElementById('rc-mission-name').value = m.name || '';
+    document.getElementById('rc-mission-desc').value = rc.desc || '';
+    document.getElementById('rc-mission-date').value = rc.date || '';
+    document.getElementById('rc-prep-name').value = rc.prep.name || '';
+    document.getElementById('rc-prep-callsign').value = rc.prep.callsign || '';
+    document.getElementById('rc-prep-role').value = rc.prep.role || '';
+    document.getElementById('rc-prep-phone').value = rc.prep.phone || '';
+    document.getElementById('rc-prep-unit').value = rc.prep.unit || '';
+    document.getElementById('rc-appr-name').value = rc.appr.name || '';
+    document.getElementById('rc-appr-callsign').value = rc.appr.callsign || '';
+    document.getElementById('rc-appr-role').value = rc.appr.role || '';
+    document.getElementById('rc-appr-phone').value = rc.appr.phone || '';
+    document.getElementById('rc-appr-unit').value = rc.appr.unit || '';
+    document.querySelectorAll('input[name="overall_risk"]').forEach(r => { r.checked = (r.value === rc.overallRisk); });
+    const eventRows = document.getElementById('rc-events-tbody').querySelectorAll('tr');
+    rc.events.forEach((ev, idx) => { if (eventRows[idx]) { eventRows[idx].querySelector('.rc-event-name').value = ev.name||''; eventRows[idx].querySelector('.rc-event-date').value = ev.date||''; eventRows[idx].querySelector('.rc-event-desc').value = ev.desc||''; } });
+    document.getElementById('rc-apd').value = rc.apd || '';
+    document.getElementById('rc-comments').value = rc.comments || '';
+    renderRiskCardThreatsTable(m);
+    document.getElementById('modal-risk-card').classList.remove('hidden');
+}
+
+function renderRiskCardThreatsTable(m) {
+    const tbody = document.getElementById('rc-threats-tbody');
+    if (!tbody) return;
+    if (!m.data || !m.data.database || m.data.database.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic">Немає загроз у базі даних місії</td></tr>'; return; }
+    const getRiskBg = c => ({ EH:'#ff3333', H:'#f97316', M:'#eab308', L:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
+    const getProbBg = c => ({ F:'#ff3333', L:'#f97316', O:'#eab308', U:'#38bdf8' }[c] || '#e2e8f0');
+    let html = '', counter = 1;
+    m.data.database.forEach(item => {
+        if (item.type === 'primary') {
+            let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
+            const resRiskCode = item.residualRisk || 'ND';
+            const ctrls = (item.report || []).map(c => `\u2022 ${c.name}`).join('<br>') || '<span class="text-gray-400 italic">\u2014</span>';
+            html += `<tr><td class="border border-gray-400 p-1 text-center font-bold text-xs">1.${counter}</td><td class="border border-gray-400 p-1 text-xs">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getRiskBg(riskCode)}">${riskCode}</span></td><td class="border border-gray-400 p-1 text-[10px]">${ctrls}</td><td class="border border-gray-400 p-1 text-xs"><div class="text-[9px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            if (item.secondaries) item.secondaries.forEach((sec,si) => { const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND'; const sc=(sec.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>'; html+=`<tr class="bg-gray-50"><td class="border border-gray-400 p-1 text-center text-[10px] text-gray-500">\u21b3${counter}.${si+1}</td><td class="border border-gray-400 p-1 pl-3 text-[11px] italic text-gray-700">${sec.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-[10px]" style="background:${getProbBg(sp)}">${sp}</span></td><td class="border border-gray-400 p-1 text-[10px]">${sc}</td><td class="border border-gray-400 p-1 text-xs"><div class="text-[9px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs"></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-[10px]" style="background:${getProbBg(srp)}">${srp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`; });
+            counter++;
+        } else if (item.type === 'secondary_indep') {
+            const p=item.probability||'ND'; const rp=item.residualProbability||'ND'; const c=(item.report||[]).map(c=>`\u2022 ${c.name}`).join('<br>')||'<span class="text-gray-400 italic">\u2014</span>';
+            html+=`<tr><td class="border border-gray-400 p-1 text-center font-bold text-[10px] text-orange-700">Інд.${counter}</td><td class="border border-gray-400 p-1 text-xs text-orange-800">${item.shortName||item.name}</td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(p)}">${p}</span></td><td class="border border-gray-400 p-1 text-[10px]">${c}</td><td class="border border-gray-400 p-1 text-xs"><div class="text-[9px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-xs" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-xs" style="background:${getProbBg(rp)}">${rp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            counter++;
+        }
+    });
+    tbody.innerHTML = html || '<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic">Немає загроз на мапі</td></tr>';
+}
+
+function saveRiskCard() {
+    if (!currentMissionId) return;
+    const m = missions.find(x => x.id === currentMissionId);
+    if (!m || !m.data.riskCard) return;
+    const rc = m.data.riskCard;
+    rc.desc = document.getElementById('rc-mission-desc').value;
+    rc.date = document.getElementById('rc-mission-date').value;
+    rc.prep.name = document.getElementById('rc-prep-name').value;
+    rc.prep.callsign = document.getElementById('rc-prep-callsign').value;
+    rc.prep.role = document.getElementById('rc-prep-role').value;
+    rc.prep.phone = document.getElementById('rc-prep-phone').value;
+    rc.prep.unit = document.getElementById('rc-prep-unit').value;
+    rc.appr.name = document.getElementById('rc-appr-name').value;
+    rc.appr.callsign = document.getElementById('rc-appr-callsign').value;
+    rc.appr.role = document.getElementById('rc-appr-role').value;
+    rc.appr.phone = document.getElementById('rc-appr-phone').value;
+    rc.appr.unit = document.getElementById('rc-appr-unit').value;
+    const sel = document.querySelector('input[name="overall_risk"]:checked');
+    rc.overallRisk = sel ? sel.value : '';
+    rc.events = [];
+    document.getElementById('rc-events-tbody').querySelectorAll('tr').forEach(row => {
+        rc.events.push({ name: row.querySelector('.rc-event-name')?.value||'', date: row.querySelector('.rc-event-date')?.value||'', desc: row.querySelector('.rc-event-desc')?.value||'' });
+    });
+    rc.apd = document.getElementById('rc-apd').value;
+    rc.comments = document.getElementById('rc-comments').value;
+    saveMissions();
+    const btn = document.querySelector('#modal-risk-card .save-btn');
+    if (btn) { const o=btn.innerText; btn.innerText='Збережено!'; btn.classList.add('bg-green-600'); setTimeout(()=>{ btn.innerText=o; btn.classList.remove('bg-green-600'); }, 2000); }
+}
+
+function closeRiskCard() {
+    document.getElementById('modal-risk-card').classList.add('hidden');
+}
+
+function printRiskCard() {
+    window.print();
 }

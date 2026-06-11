@@ -41,6 +41,17 @@
                 <select id="mission-combo-box" class="custom-select" onchange="handleMissionChange(this.value)">
                     <option value="">-- Оберіть місію із списку --</option>
                 </select>
+                <button onclick="openRiskManagementCard()" id="risk-card-btn"
+                    class="mt-3 w-full py-2 bg-slate-900/80 hover:bg-emerald-900/40 border border-white/10 hover:border-emerald-500/50 text-slate-300 hover:text-white rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md select-none cursor-pointer text-xs uppercase font-bold tracking-wider btn-disabled">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Картка ризиків</span>
+                </button>
             </div>
 
             <div class="p-4 bg-white/5 border-b border-white/10 relative z-10">
@@ -279,6 +290,186 @@
             class="hidden w-full text-left px-3 py-2 hover:bg-red-900/40 text-red-300 hover:text-white transition-colors flex items-center gap-2 border-t border-white/5">
             <span>🗑️</span> <span id="menu-delete-shape-text">Видалити об'єкт</span>
         </button>
+    </div>
+
+    <!-- МОДАЛКА КАРТКИ РИЗИКІВ -->
+    <div id="modal-risk-card" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[5000] p-4">
+        <div class="glass-panel risk-card-panel border-emerald-500 w-full max-w-6xl rounded-2xl flex flex-col h-[95vh] shadow-2xl overflow-hidden bg-white text-black print:p-0 print:border-none print:shadow-none print:bg-transparent">
+            <!-- Header for Screen (Hidden in print) -->
+            <div class="p-4 bg-emerald-950/90 border-b border-emerald-500/30 flex justify-between items-center print:hidden">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-emerald-400 font-black uppercase text-sm tracking-wider">Картка планового управління ризиками</h3>
+                    <button onclick="printRiskCard()" class="bg-emerald-700/80 hover:bg-emerald-600 border border-emerald-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        Друк
+                    </button>
+                    <button onclick="saveRiskCard()" class="bg-blue-800/80 hover:bg-blue-700 border border-blue-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors">
+                        Зберегти дані
+                    </button>
+                </div>
+                <button onclick="closeRiskCard()" class="text-white text-3xl font-light hover:text-red-500 transition-colors">&times;</button>
+            </div>
+            
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-8 print:overflow-visible print:p-0 risk-card-content bg-white" id="risk-card-container">
+                <h2 class="font-bold text-lg mb-4 text-center">Додаток 1 (Картка планового управління ризиками)</h2>
+                
+                <table class="risk-card-table w-full border-collapse text-xs">
+                    <thead>
+                        <tr>
+                            <th colspan="7" class="text-center text-sm py-2 bg-gray-100 border border-gray-400">Картка планового управління ризикам</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 1. Місія -->
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">1. Місія</td>
+                        </tr>
+                        <tr>
+                            <td colspan="6" class="border border-gray-400 align-top p-0">
+                                <div class="flex flex-col h-full">
+                                    <div class="flex border-b border-gray-400">
+                                        <span class="px-2 py-1 text-[10px] w-12 border-r border-gray-400 bg-gray-50">Назва:</span>
+                                        <input type="text" id="rc-mission-name" class="flex-1 px-2 py-1 outline-none text-xs bg-transparent" readonly>
+                                    </div>
+                                    <div class="flex flex-1">
+                                        <span class="px-2 py-1 text-[10px] w-12 border-r border-gray-400 bg-gray-50">Опис:</span>
+                                        <textarea id="rc-mission-desc" class="flex-1 px-2 py-1 outline-none text-xs bg-transparent resize-none h-16"></textarea>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="border border-gray-400 align-top w-24 p-0">
+                                <div class="flex flex-col h-full">
+                                    <span class="px-2 py-1 text-[10px] bg-gray-50 border-b border-gray-400">Дата<br>(дд.мм.рррр)</span>
+                                    <input type="date" id="rc-mission-date" class="w-full px-2 py-1 outline-none text-xs bg-transparent">
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- 2. Ким підготовлено -->
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">2. Ким підготовлено</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" class="border border-gray-400 p-0">
+                                <div class="flex w-full">
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">ПІП:</span><input type="text" id="rc-prep-name" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Позивний:</span><input type="text" id="rc-prep-callsign" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Роль/Посада:</span><input type="text" id="rc-prep-role" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Телефон:</span><input type="text" id="rc-prep-phone" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Підрозділ:</span><input type="text" id="rc-prep-unit" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Підпис:</span><input type="text" class="w-full px-1 py-1 text-xs outline-none bg-transparent" disabled></div>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- 3. Заходи контролю -->
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">3. Заходи контролю ризиків (заходи зменшення або уникнення ризиків)</td>
+                        </tr>
+                        <tr class="bg-gray-50 text-center text-[10px]">
+                            <td class="border border-gray-400 p-1 w-[12%]">Підзадача</td>
+                            <td class="border border-gray-400 p-1 w-[15%]">Загроза</td>
+                            <td class="border border-gray-400 p-1 w-[12%]">Початковий рівень ризику (або ймовірність для вторинної загрози)</td>
+                            <td class="border border-gray-400 p-1 w-[25%]">Заходи контролю</td>
+                            <td class="border border-gray-400 p-1 w-[15%]">Хто реалізовує (якщо потрібно, то уточнення як)</td>
+                            <td class="border border-gray-400 p-1 w-[12%]">Залишковий рівень ризику (або ймовірність для вторинної загрози)</td>
+                            <td class="border border-gray-400 p-1 w-[9%]">Виникнення загрози</td>
+                        </tr>
+                    </tbody>
+                    <tbody id="rc-threats-tbody">
+                        <!-- Динамічно заповнюється -->
+                    </tbody>
+
+                        <!-- 4. Загальний залишковий ризик -->
+                    <tbody>
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">4. Загальний залишковий рівень ризику (з урахуванням усіх заходів контролю ризиків)</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" class="border border-gray-400 p-2">
+                                <div class="flex flex-col gap-1 ml-4" id="rc-overall-risk">
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="overall_risk" value="EH"> <span class="font-bold">EH</span> - Надзвичайно високий ризик</label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="overall_risk" value="H"> <span class="font-bold">H</span> - Високий ризик</label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="overall_risk" value="M"> <span class="font-bold">M</span> - Середній Ризик</label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="overall_risk" value="L"> <span class="font-bold">L</span> - Низький</label>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- 5. Погодження -->
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">5. Погодження</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" class="border border-gray-400 p-0">
+                                <div class="flex w-full">
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">ПІП:</span><input type="text" id="rc-appr-name" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Позивний:</span><input type="text" id="rc-appr-callsign" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Роль/Посада:</span><input type="text" id="rc-appr-role" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Телефон:</span><input type="text" id="rc-appr-phone" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 border-r border-gray-400 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Підрозділ:</span><input type="text" id="rc-appr-unit" class="w-full px-1 py-1 text-xs outline-none"></div>
+                                    <div class="flex-1 flex flex-col"><span class="text-[9px] px-1 bg-gray-50 border-b border-gray-400">Підпис:</span><input type="text" class="w-full px-1 py-1 text-xs outline-none bg-transparent" disabled></div>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- 6. Події -->
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">6. Події (опис передбачених та непередбачених інцидентів (реалізованих загроз))</td>
+                        </tr>
+                        <tr class="bg-gray-50 text-center text-[10px]">
+                            <td colspan="2" class="border border-gray-400 p-1">Назва події<br>(приклад: Обстріл артилерії)</td>
+                            <td colspan="1" class="border border-gray-400 p-1">Дата та час</td>
+                            <td colspan="4" class="border border-gray-400 p-1">Опис</td>
+                        </tr>
+                    </tbody>
+                    <tbody id="rc-events-tbody">
+                        <tr>
+                            <td colspan="2" class="border border-gray-400 p-0"><input type="text" class="w-full p-1 outline-none text-xs rc-event-name"></td>
+                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" class="w-full p-1 outline-none text-[10px] rc-event-date"></td>
+                            <td colspan="4" class="border border-gray-400 p-0"><input type="text" class="w-full p-1 outline-none text-xs rc-event-desc"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="border border-gray-400 p-0"><input type="text" class="w-full p-1 outline-none text-xs rc-event-name"></td>
+                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" class="w-full p-1 outline-none text-[10px] rc-event-date"></td>
+                            <td colspan="4" class="border border-gray-400 p-0"><input type="text" class="w-full p-1 outline-none text-xs rc-event-desc"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="border border-gray-400 p-0"><input type="text" class="w-full p-1 outline-none text-xs rc-event-name"></td>
+                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" class="w-full p-1 outline-none text-[10px] rc-event-date"></td>
+                            <td colspan="4" class="border border-gray-400 p-0"><input type="text" class="w-full p-1 outline-none text-xs rc-event-desc"></td>
+                        </tr>
+                    </tbody>
+
+                    <tbody>
+                        <!-- 7. АПД, ВВД -->
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">7. АПД, ВВД (Інформація про ефективність заходів контролю ризиків, рекомендації по поліпшенню заходів, впровадженню нових)</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" class="border border-gray-400 p-0">
+                                <textarea id="rc-apd" class="w-full h-24 p-2 outline-none text-xs resize-y"></textarea>
+                            </td>
+                        </tr>
+
+                        <!-- 8. Додаткові коментарі -->
+                        <tr class="bg-gray-100">
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">8. Додаткові коментарі та зауваження</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" class="border border-gray-400 p-0">
+                                <textarea id="rc-comments" class="w-full h-24 p-2 outline-none text-xs resize-y"></textarea>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- ПІДКЛЮЧЕННЯ БАЗИ ДАНИХ -->
