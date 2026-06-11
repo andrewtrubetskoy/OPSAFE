@@ -3928,29 +3928,67 @@ function renderRiskCardThreatsTable(m) {
     const getRiskBg = c => ({ EH:'#ff3333', H:'#f97316', M:'#eab308', L:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
     const getProbColor = c => ({ 'Дуже часто':'#dc2626', 'Висока ймовірність':'#ea580c', 'Можливо':'#ca8a04', 'Рідко':'#65a30d', 'Малоймовірно':'#0284c7' }[c] || '#64748b');
     const getRiskText = c => ({ EH:'Надзвичайно високий', H:'Високий', M:'Середній', L:'Низький', ND:'Не визначено' }[c] || 'Не визначено');
+    
+    function buildThreatRows(itemObj, threatName, riskCode, resRiskCode, stHtml, isSecondary, isIndepSecondary, sp, srp) {
+        let rowsHtml = '';
+        const measures = (itemObj.measures && itemObj.measures.length > 0) ? itemObj.measures : [null];
+        const len = measures.length;
+        
+        let cellBg = isSecondary ? 'bg-gray-50' : '';
+        let nameHtml = '', ptext = '', rptext = '', stTd = '';
+
+        if (isSecondary) {
+            nameHtml = `<td rowspan="${len}" class="border border-gray-400 p-1 pl-3 text-xs italic text-gray-700">${threatName}</td>`;
+            ptext = `<div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(sp)}">${sp}</span></div>`;
+            rptext = `<span class="font-bold text-xs" style="color:${getProbColor(srp)}">${srp}</span>`;
+            stTd = `<td rowspan="${len}" class="border border-gray-400 p-1 text-center text-xs text-gray-500 align-top">${stHtml}</td>`;
+        } else if (isIndepSecondary) {
+            nameHtml = `<td rowspan="${len}" class="border border-gray-400 p-1 text-sm text-orange-800">${threatName}</td>`;
+            ptext = `<div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(sp)}">${sp}</span></div>`;
+            rptext = `<span class="font-bold text-xs" style="color:${getProbColor(srp)}">${srp}</span>`;
+            stTd = `<td rowspan="${len}" class="border border-gray-400 p-1 text-center font-bold text-xs text-orange-700 align-top w-24">${stHtml}</td>`;
+        } else {
+            nameHtml = `<td rowspan="${len}" class="border border-gray-400 p-1 text-sm">${threatName}</td>`;
+            ptext = `<div class="flex items-center justify-start gap-1.5"><span class="font-bold px-1.5 py-0.5 rounded text-white text-xs whitespace-nowrap" style="background:${getRiskBg(riskCode)}">${riskCode}</span><span class="text-[10px] text-gray-700 leading-tight text-left">${getRiskText(riskCode)}</span></div>`;
+            rptext = `<span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span>`;
+            stTd = `<td rowspan="${len}" class="border border-gray-400 p-1 text-center font-bold text-sm align-top w-24">${stHtml}</td>`;
+        }
+
+        for (let i = 0; i < len; i++) {
+            const mText = measures[i] ? `\u2022 ${measures[i]}` : '<span class="text-gray-400 italic">\u2014</span>';
+            const whoInput = `<input type="text" class="w-full bg-transparent outline-none text-sm" placeholder="...">`;
+            
+            if (i === 0) {
+                rowsHtml += `<tr class="${cellBg}">${stTd}${nameHtml}<td rowspan="${len}" class="border border-gray-400 p-1">${ptext}</td><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center">${rptext}</td><td rowspan="${len}" class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            } else {
+                rowsHtml += `<tr class="${cellBg}"><td class="border border-gray-400 p-1 text-xs">${mText}</td><td class="border border-gray-400 p-1 text-sm">${whoInput}</td></tr>`;
+            }
+        }
+        return rowsHtml;
+    }
+
     let html = '', counter = 1;
     m.data.database.forEach(item => {
         const lat = item.latlng ? item.latlng.lat : '';
         const lng = item.latlng ? item.latlng.lng : '';
+        const gmapLink = (lat && lng) ? `href="https://www.google.com/maps?q=${lat},${lng}&z=10" target="_blank" class="flex items-center justify-center gap-1 text-xs w-full text-blue-500 group print:text-black print:no-underline" title="Відкрити в Google Maps"` : `class="flex items-center justify-center gap-1 text-xs w-full text-gray-700"`;
+
         if (item.type === 'primary') {
             let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
             const resRiskCode = item.residualRisk || 'ND';
-            const ctrls = (item.measures && item.measures.length) ? item.measures.map(c => `\u2022 ${c}`).join('<br>') : '<span class="text-gray-400 italic">\u2014</span>';
-            const gmapLink = (lat && lng) ? `href="https://www.google.com/maps?q=${lat},${lng}&z=10" target="_blank" class="flex items-center justify-center gap-1 text-xs w-full text-blue-500 group print:text-black print:no-underline" title="Відкрити в Google Maps"` : `class="flex items-center justify-center gap-1 text-xs w-full text-gray-700"`;
             const stHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
-            html += `<tr><td class="border border-gray-400 p-1 text-center font-bold text-sm align-top w-24">${stHtml}</td><td class="border border-gray-400 p-1 text-sm">${item.name}</td><td class="border border-gray-400 p-1"><div class="flex items-center justify-start gap-1.5"><span class="font-bold px-1.5 py-0.5 rounded text-white text-xs whitespace-nowrap" style="background:${getRiskBg(riskCode)}">${riskCode}</span><span class="text-[10px] text-gray-700 leading-tight text-left">${getRiskText(riskCode)}</span></div></td><td class="border border-gray-400 p-1 text-xs">${ctrls}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold px-1 py-0.5 rounded text-white text-sm" style="background:${getRiskBg(resRiskCode)}">${resRiskCode}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            html += buildThreatRows(item, item.name, riskCode, resRiskCode, stHtml, false, false);
+            
             if (item.secondaries) item.secondaries.forEach((sec,si) => { 
-                const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND'; const sc=(sec.measures && sec.measures.length) ? sec.measures.map(c=>`\u2022 ${c}`).join('<br>') : '<span class="text-gray-400 italic">\u2014</span>'; 
-                const gmapLink = (lat && lng) ? `href="https://www.google.com/maps?q=${lat},${lng}&z=10" target="_blank" class="flex items-center justify-center gap-1 text-xs w-full text-blue-500 group print:text-black print:no-underline" title="Відкрити в Google Maps"` : `class="flex items-center justify-center gap-1 text-xs w-full text-gray-700"`;
+                const sp=sec.probability||'ND'; const srp=sec.residualProbability||'ND';
                 const sstHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${sec.rcSettlement || ''}" data-id="${item.id}" data-sid="${si}" data-lat="${lat}" data-lng="${lng}"></a>`;
-                html+=`<tr class="bg-gray-50"><td class="border border-gray-400 p-1 text-center text-xs text-gray-500 align-top">${sstHtml}</td><td class="border border-gray-400 p-1 pl-3 text-xs italic text-gray-700">${sec.name}</td><td class="border border-gray-400 p-1"><div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(sp)}">${sp}</span></div></td><td class="border border-gray-400 p-1 text-xs">${sc}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm"></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold text-xs" style="color:${getProbColor(srp)}">${srp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`; 
+                html += buildThreatRows(sec, sec.name, '', '', sstHtml, true, false, sp, srp);
             });
             counter++;
         } else if (item.type === 'secondary_indep') {
-            const p=item.probability||'ND'; const rp=item.residualProbability||'ND'; const c=(item.measures && item.measures.length) ? item.measures.map(c=>`\u2022 ${c}`).join('<br>') : '<span class="text-gray-400 italic">\u2014</span>';
-            const gmapLink = (lat && lng) ? `href="https://www.google.com/maps?q=${lat},${lng}&z=10" target="_blank" class="flex items-center justify-center gap-1 text-xs w-full text-blue-500 group print:text-black print:no-underline" title="Відкрити в Google Maps"` : `class="flex items-center justify-center gap-1 text-xs w-full text-gray-700"`;
+            const p=item.probability||'ND'; const rp=item.residualProbability||'ND';
             const istHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
-            html+=`<tr><td class="border border-gray-400 p-1 text-center font-bold text-xs text-orange-700 align-top w-24">${istHtml}</td><td class="border border-gray-400 p-1 text-sm text-orange-800">${item.name}</td><td class="border border-gray-400 p-1"><div class="flex items-center justify-start"><span class="font-bold text-xs" style="color:${getProbColor(p)}">${p}</span></div></td><td class="border border-gray-400 p-1 text-xs">${c}</td><td class="border border-gray-400 p-1 text-sm"><div class="text-[11px] text-gray-500">Хто:</div><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm mb-1"><input type="text" class="w-full border-b border-dashed border-gray-400 bg-transparent outline-none text-sm" placeholder="уточнення..."></td><td class="border border-gray-400 p-1 text-center"><span class="font-bold text-xs" style="color:${getProbColor(rp)}">${rp}</span></td><td class="border border-gray-400 p-1 text-center"><input type="checkbox" class="w-4 h-4"></td></tr>`;
+            html += buildThreatRows(item, item.name, '', '', istHtml, false, true, p, rp);
             counter++;
         }
     });
