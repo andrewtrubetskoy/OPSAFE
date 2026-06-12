@@ -605,14 +605,30 @@ function deleteCurrentMission() {
 
     const m = missions[idx];
 
-    if (confirm(`Ви дійсно бажаєте видалити місію "${m.name}"?`)) {
-        missions.splice(idx, 1);
-        currentMissionId = missions.length > 0 ? missions[0].id : null;
+    const htmlContent = `
+        <div class="text-center py-4">
+            <p class="text-sm font-bold text-slate-200 mb-2">Ви дійсно бажаєте видалити цю місію?</p>
+            <div class="inline-block bg-red-900/30 border border-red-500/30 px-3 py-1.5 rounded-lg text-red-400 font-black tracking-wider text-xs uppercase mb-3">
+                ${m.name}
+            </div>
+            <p class="text-[10px] text-slate-400">Всі маршрути, райони та загрози, прив'язані до цієї місії, будуть назавжди видалені.</p>
+        </div>
+    `;
 
-        saveMissions();
-        updateMissionSelect();
-        handleMissionChange(currentMissionId);
-    }
+    showCustomModal({
+        title: "Видалення місії",
+        htmlContent: htmlContent,
+        confirmText: "Видалити місію",
+        confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
+        onConfirm: () => {
+            missions.splice(idx, 1);
+            currentMissionId = missions.length > 0 ? missions[0].id : null;
+            saveMissions();
+            updateMissionSelect();
+            handleMissionChange(currentMissionId);
+            return true;
+        }
+    });
 }
 
 function updateMissionSelect() {
@@ -980,6 +996,89 @@ function findObjectsInBounds(bounds) {
     });
 }
 
+window.copySelectedObjects = function() {
+    const targetSelect = document.getElementById('copy-target-mission');
+    if (!targetSelect) return;
+    const targetMissionId = targetSelect.value;
+    if (!targetMissionId) {
+        alert('Виберіть місію для копіювання!');
+        return;
+    }
+
+    const sourceMission = missions.find(x => x.id === currentMissionId);
+    const targetMission = missions.find(x => x.id === targetMissionId);
+
+    if (!sourceMission || !targetMission) return;
+
+    // Deep copy routes
+    selectedObjects.routes.forEach(idx => {
+        if (sourceMission.data.routes[idx]) {
+            targetMission.data.routes.push(JSON.parse(JSON.stringify(sourceMission.data.routes[idx])));
+        }
+    });
+
+    // Deep copy areas
+    selectedObjects.areas.forEach(idx => {
+        if (sourceMission.data.areas[idx]) {
+            targetMission.data.areas.push(JSON.parse(JSON.stringify(sourceMission.data.areas[idx])));
+        }
+    });
+
+    // Deep copy threats
+    selectedObjects.threats.forEach(id => {
+        const threat = sourceMission.data.database.find(t => t.id === id);
+        if (threat) {
+            const copiedThreat = JSON.parse(JSON.stringify(threat));
+            copiedThreat.id = Date.now() + Math.floor(Math.random() * 10000); // ensure unique ID
+            targetMission.data.database.push(copiedThreat);
+        }
+    });
+
+    saveMissions();
+    
+    // Close modal
+    const modal = document.getElementById('custom-dynamic-modal');
+    if (modal) modal.remove();
+
+    showToast("Об'єкти успішно скопійовано!", 2000);
+    selectedObjects = { routes: [], areas: [], threats: [] };
+};
+
+window.openCopyTargetModal = function() {
+    // Close the current modal
+    const currentModal = document.getElementById('custom-dynamic-modal');
+    if (currentModal) currentModal.remove();
+
+    const otherMissions = missions.filter(m => m.id !== currentMissionId);
+    if (otherMissions.length === 0) {
+        alert("Немає інших місій для копіювання. Створіть нову місію спочатку.");
+        return;
+    }
+
+    const htmlContent = `
+        <div class="text-center py-2">
+            <label class="text-[10px] text-slate-400 uppercase font-bold mb-2 block tracking-wider">Оберіть місію-призначення:</label>
+            <select id="copy-target-mission" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs text-white mb-2 font-medium focus:outline-none focus:border-blue-500">
+                ${otherMissions.map(m => {
+                    const idx = missions.findIndex(x => x.id === m.id);
+                    return `<option value="${m.id}">#${idx + 1} ${m.type}: ${m.name}</option>`;
+                }).join('')}
+            </select>
+        </div>
+    `;
+
+    showCustomModal({
+        title: "Копіювання об'єктів",
+        htmlContent: htmlContent,
+        confirmText: "Виконати копіювання",
+        confirmBtnClass: "bg-blue-600 hover:bg-blue-500 text-white",
+        onConfirm: () => {
+            window.copySelectedObjects();
+            return true;
+        }
+    });
+};
+
 function showSelectionDeleteDialog() {
     const totalCount = selectedObjects.routes.length + selectedObjects.areas.length + selectedObjects.threats.length;
     if (totalCount === 0) {
@@ -988,21 +1087,28 @@ function showSelectionDeleteDialog() {
     }
 
     const htmlContent = `
+        <style>#custom-dynamic-modal .bg-black\\/40.flex.gap-3 { display: none !important; }</style>
         <div class="text-center py-2">
-            <p class="text-sm">Ви дійсно бажаєте видалити всі виділені об'єкти (${totalCount} шт.)?</p>
+            <p class="text-sm font-bold text-slate-200">Виділено об'єктів: ${totalCount}</p>
             <div class="my-3 text-left bg-slate-900/50 border border-white/5 rounded-lg p-3 max-w-[240px] mx-auto space-y-1 text-xs text-slate-300">
-                <div class="flex justify-between"><span>Маршрути:</span> <span class="font-bold text-slate-100">${selectedObjects.routes.length}</span></div>
-                <div class="flex justify-between"><span>Райони позицій:</span> <span class="font-bold text-slate-100">${selectedObjects.areas.length}</span></div>
-                <div class="flex justify-between"><span>Загрози:</span> <span class="font-bold text-slate-100">${selectedObjects.threats.length}</span></div>
+                <div class="flex justify-between items-center"><span>Маршрути:</span> <span class="font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">${selectedObjects.routes.length}</span></div>
+                <div class="flex justify-between items-center"><span>Райони позицій:</span> <span class="font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">${selectedObjects.areas.length}</span></div>
+                <div class="flex justify-between items-center"><span>Загрози:</span> <span class="font-black text-red-400 bg-red-400/10 px-2 py-0.5 rounded">${selectedObjects.threats.length}</span></div>
             </div>
-            <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
+            
+            <p class="text-slate-400 text-[10px] uppercase font-bold tracking-wide mt-5 mb-2">Оберіть дію:</p>
+            <div class="flex gap-2 w-full mt-2">
+                <button onclick="document.getElementById('custom-modal-cancel-btn').click()" class="flex-1 py-2 text-[10px] uppercase font-bold border border-white/10 hover:bg-white/5 transition-colors text-slate-400 rounded">Скасувати</button>
+                <button onclick="window.openCopyTargetModal()" class="flex-1 py-2 text-[10px] uppercase font-bold bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors shadow-lg">Копіювати</button>
+                <button onclick="document.getElementById('custom-modal-confirm-btn').click()" class="flex-1 py-2 text-[10px] uppercase font-bold bg-red-700 hover:bg-red-600 text-white rounded transition-colors shadow-lg">Видалити</button>
+            </div>
         </div>
     `;
 
     showCustomModal({
-        title: "Видалити виділені об'єкти",
+        title: "Дії з виділеними об'єктами",
         htmlContent: htmlContent,
-        confirmText: "Видалити",
+        confirmText: "Видалити об'єкти",
         confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
         onConfirm: () => {
             deleteSelectedObjects();
