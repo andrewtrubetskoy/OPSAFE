@@ -1890,7 +1890,7 @@ function renderMarkers() {
 
                 // Probability-based diamond color for secondary threats
                 const secDiamondStyle = getProbabilityDiamondStyle(secActiveResProb);
-                const secPulseClass = (secResRiskInfo && secResRiskInfo.short === 'ND') ? ' pulse-border-red' : '';
+                const secPulseClass = (!secActiveResProb) ? ' pulse-border-red' : '';
 
                 // Probability label shown to the LEFT of the marker
                 const secLabelPulseClass = secActiveResProb ? '' : ' pulse-border-red';
@@ -2439,7 +2439,7 @@ function viewCombined(pid) {
         html += `<div class="sidebar-item font-bold text-orange-400" style="border-color:#f97316; border-left-width:4px; margin-top:8px; margin-bottom: 2px;">${getThreatIcon(sec.name)} ${sec.name}</div>`;
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
-            <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
+            <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Початкова:</span>
             <select onchange="updateSingleThreatProbability(${pid}, ${idx}, this.value)" style="${getProbabilityColorStyle(sec.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!sec.probability ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold">
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!sec.probability ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${sec.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
@@ -2447,6 +2447,24 @@ function viewCombined(pid) {
                 <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${sec.probability === 'Можливо' ? 'selected' : ''}>Можливо</option>
                 <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${sec.probability === 'Рідко' ? 'selected' : ''}>Рідко</option>
                 <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${sec.probability === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
+            </select>
+        </div>`;
+
+        const hasMeasures = sec.measures && sec.measures.length > 0;
+        const disabledAttr = hasMeasures ? '' : ' disabled';
+        const disabledSelectClass = hasMeasures ? '' : ' opacity-50 !cursor-not-allowed pointer-events-none';
+
+        const resProbToUse = typeof sec.residualProbability !== 'undefined' ? sec.residualProbability : sec.probability;
+
+        html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
+            <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Залишкова:</span>
+            <select onchange="updateSingleThreatResidualProbability(${pid}, ${idx}, this.value)" style="${getProbabilityColorStyle(resProbToUse)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!resProbToUse ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
+                <option value="" style="color: #cbd5e1; background-color: #374151;" ${!resProbToUse ? 'selected' : ''}>-- Не вказано --</option>
+                <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${resProbToUse === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
+                <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Часто' ? 'selected' : ''}>Часто</option>
+                <option value="Можливо" style="color: #f97316; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Можливо' ? 'selected' : ''}>Можливо</option>
+                <option value="Рідко" style="color: #facc15; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Рідко' ? 'selected' : ''}>Рідко</option>
+                <option value="Малоймовірно" style="color: #60a5fa; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Малоймовірно' ? 'selected' : ''}>Малоймовірно</option>
             </select>
         </div>`;
 
