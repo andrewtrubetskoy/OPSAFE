@@ -57,6 +57,14 @@ layerStyle.innerHTML = `
         padding: 0 !important;
         display: inline-block !important;
     }
+    @keyframes borderBlinkRed {
+        0%, 100% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); }
+        50% { border-color: rgba(239, 68, 68, 0.2); box-shadow: none; }
+    }
+    .blink-red-border {
+        animation: borderBlinkRed 1.5s infinite;
+        border-width: 1px !important;
+    }
 `;
 document.head.appendChild(layerStyle);
 
@@ -2123,7 +2131,7 @@ function viewSingle(pid, sidx) {
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
-            <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!target.probability ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold">
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!target.probability ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${target.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
                 <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${target.probability === 'Часто' ? 'selected' : ''}>Часто</option>
@@ -2175,7 +2183,7 @@ function viewSingle(pid, sidx) {
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
-            <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
+            <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!activeResProb ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
                 <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Часто' ? 'selected' : ''}>Часто</option>
@@ -2219,7 +2227,7 @@ function viewSingle(pid, sidx) {
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Початкова:</span>
-            <select onchange="updateSingleThreatProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <select onchange="updateSingleThreatProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(target.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!target.probability ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold">
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!target.probability ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${target.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
                 <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${target.probability === 'Часто' ? 'selected' : ''}>Часто</option>
@@ -2237,7 +2245,7 @@ function viewSingle(pid, sidx) {
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Залишкова:</span>
-            <select onchange="updateSingleThreatResidualProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(resProbToUse)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
+            <select onchange="updateSingleThreatResidualProbability(${pid}, ${sidx}, this.value)" style="${getProbabilityColorStyle(resProbToUse)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!resProbToUse ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!resProbToUse ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${resProbToUse === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
                 <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${resProbToUse === 'Часто' ? 'selected' : ''}>Часто</option>
@@ -2312,7 +2320,7 @@ function viewCombined(pid) {
 
     html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
-        <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(item.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+        <select onchange="updateSingleThreatProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(item.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!item.probability ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold">
             <option value="" style="color: #cbd5e1; background-color: #374151;" ${!item.probability ? 'selected' : ''}>-- Не вказано --</option>
             <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${item.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
             <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${item.probability === 'Часто' ? 'selected' : ''}>Часто</option>
@@ -2359,7 +2367,7 @@ function viewCombined(pid) {
 
     html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
         <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
-        <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
+        <select onchange="updateSingleThreatResidualProbability(${pid}, null, this.value)" style="${getProbabilityColorStyle(activeResProb)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!activeResProb ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold${disabledSelectClass}" ${disabledAttr}>
             <option value="" style="color: #cbd5e1; background-color: #374151;" ${!activeResProb ? 'selected' : ''}>-- Не вказано --</option>
             <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${activeResProb === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
             <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${activeResProb === 'Часто' ? 'selected' : ''}>Часто</option>
@@ -2432,7 +2440,7 @@ function viewCombined(pid) {
 
         html += `<div class="mb-2 px-3 py-1 bg-slate-900/60 border border-white/5 rounded flex items-center justify-between gap-2">
             <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Ймовірність:</span>
-            <select onchange="updateSingleThreatProbability(${pid}, ${idx}, this.value)" style="${getProbabilityColorStyle(sec.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border border-white/10 rounded px-2 py-0.5 w-44 font-bold">
+            <select onchange="updateSingleThreatProbability(${pid}, ${idx}, this.value)" style="${getProbabilityColorStyle(sec.probability)}" class="probability-select bg-slate-700 text-[11px] outline-none cursor-pointer border ${!sec.probability ? 'blink-red-border' : 'border-white/10'} rounded px-2 py-0.5 w-44 font-bold">
                 <option value="" style="color: #cbd5e1; background-color: #374151;" ${!sec.probability ? 'selected' : ''}>-- Не вказано --</option>
                 <option value="Дуже часто" style="color: #ff3333; font-weight: 900; background-color: #374151;" ${sec.probability === 'Дуже часто' ? 'selected' : ''}>Дуже часто</option>
                 <option value="Часто" style="color: #dc2626; font-weight: 700; background-color: #374151;" ${sec.probability === 'Часто' ? 'selected' : ''}>Часто</option>
