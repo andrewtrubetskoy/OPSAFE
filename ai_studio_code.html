@@ -1233,9 +1233,12 @@
                 b.innerHTML = isP ? `<span class="text-xs font-bold uppercase">${getThreatIcon(t.name)} ${t.name}</span> <span class="text-[9px] font-black px-2 py-1 rounded border ${tagColorClass}">${t.tag}</span>` : `<span class="text-xs font-bold text-purple-400 uppercase">${getThreatIcon(t)} ${t}</span>`;
                 b.onclick = () => {
                     const m = missions.find(x => x.id === currentMissionId);
-                    m.data.database.push({ ...(isP ? t : { name: t }), id: Date.now(), latlng: tempLatLng, measures: [], secondaries: [], type: isP ? 'primary' : 'secondary_indep' });
+                    const newId = Date.now();
+                    m.data.database.push({ ...(isP ? t : { name: t }), id: newId, latlng: tempLatLng, measures: [], secondaries: [], type: isP ? 'primary' : 'secondary_indep' });
                     renderMarkers(); closeModals();
                     saveMissions();
+                    if (isP) viewCombined(newId);
+                    else viewSingle(newId, null);
                 };
                 list.appendChild(b);
             });
@@ -1736,14 +1739,25 @@
                 valid.filter(v => v.cat === cat).forEach(me => {
                     const active = target.measures.includes(me.name);
                     const b = document.createElement('button');
-                    b.className = `p-2 text-[10px] border font-bold text-left rounded ${active ? 'bg-blue-600 text-white border-blue-400' : 'glass-panel border-white/10 text-slate-400'}`;
+                    b.className = `p-2 text-[13px] border font-bold text-left rounded ${active ? 'bg-blue-600 text-white border-blue-400' : 'glass-panel border-white/10 text-slate-400'}`;
                     b.innerText = me.name;
                     b.onclick = () => {
                         if (!active) target.measures.push(me.name);
                         else target.measures = target.measures.filter(x => x !== me.name);
+                        
+                        if (target.measures.length === 0) {
+                            delete target.residualSeverity;
+                            delete target.residualProbability;
+                        }
+
                         openControls(pid, sidx);
                         renderMarkers();
                         saveMissions();
+                        if (sidx === null && target.type === 'primary') {
+                            viewCombined(pid);
+                        } else {
+                            viewSingle(pid, sidx);
+                        }
                     };
                     grid.appendChild(b);
                 });
@@ -1818,6 +1832,7 @@
                     renderMarkers();
                     closeModals();
                     saveMissions();
+                    viewSingle(pid, p.secondaries.length - 1);
                 };
                 list.appendChild(b);
             });

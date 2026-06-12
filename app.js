@@ -27,28 +27,7 @@ const layerControl = L.control.layers(null, {
     "Лінія зіткнення (DeepState)": frontlineLayer
 }, { position: 'topright', collapsed: false }).addTo(map);
 
-// Add Risk Legend Control
-const RiskLegendControl = L.Control.extend({
-    options: {
-        position: 'bottomleft'
-    },
-    onAdd: function (map) {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control bg-slate-900/90 border border-slate-700/50 p-2.5 rounded-lg shadow-xl backdrop-blur-sm text-slate-200 text-xs');
-        container.innerHTML = `
-            <div class="flex items-center gap-4">
-                <div class="font-bold text-[10px] uppercase text-slate-400 tracking-wider">Легенда:</div>
-                <div class="flex flex-row items-center gap-3">
-                    <div class="flex items-center gap-1.5"><span style="background-color: #ff3333;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-white/10">НВ</span><span class="text-slate-300 whitespace-nowrap">Надзвичайно високий ризик</span></div>
-                    <div class="flex items-center gap-1.5"><span style="background-color: #f97316;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shadow-sm border border-white/10">В</span><span class="text-slate-300 whitespace-nowrap">Високий ризик</span></div>
-                    <div class="flex items-center gap-1.5"><span style="background-color: #fef08a;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-slate-900 shadow-sm border border-black/10">С</span><span class="text-slate-300 whitespace-nowrap">Середній Ризик</span></div>
-                    <div class="flex items-center gap-1.5"><span style="background-color: #38bdf8;" class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-slate-900 shadow-sm border border-white/10">Н</span><span class="text-slate-300 whitespace-nowrap">Низький</span></div>
-                </div>
-            </div>
-        `;
-        return container;
-    }
-});
-map.addControl(new RiskLegendControl());
+
 
 window.amplifiersEnabled = true;
 
@@ -1538,9 +1517,10 @@ function toggleThreatTab(tab) {
 
         b.onclick = () => {
             const m = missions.find(x => x.id === currentMissionId);
+            const newId = Date.now();
             m.data.database.push({
                 ...(isP ? t : { name: t }),
-                id: Date.now(),
+                id: newId,
                 latlng: tempLatLng,
                 measures: [],
                 secondaries: [],
@@ -1549,6 +1529,8 @@ function toggleThreatTab(tab) {
             renderMarkers();
             saveMissions();
             closeModals();
+            if (isP) viewCombined(newId);
+            else viewSingle(newId, null);
         };
         list.appendChild(b);
     });
@@ -1954,32 +1936,35 @@ function openControls(pid, sidx) {
             if (g.selectable) {
                 const active = target.measures.includes(me.name);
                 const b = document.createElement('button');
-                b.className = `p-2.5 text-[10px] border font-bold text-left rounded transition-all duration-150 active:scale-95 ${active ? 'bg-emerald-600 text-white border-emerald-400 shadow-md' : 'glass-panel border-white/10 text-slate-400 hover:bg-slate-800'}`;
+                b.className = `p-2.5 text-[13px] border font-bold text-left rounded transition-all duration-150 active:scale-95 ${active ? 'bg-emerald-600 text-white border-emerald-400 shadow-md' : 'glass-panel border-white/10 text-slate-400 hover:bg-slate-800'}`;
                 const col = active ? catColors.a : catColors.i;
-                b.innerHTML = `<div class="mb-1">${me.name}</div><div class="text-[8.5px] uppercase tracking-wider font-extrabold ${col}">${me.cat || 'Без категорії'}</div>`;
+                b.innerHTML = `<div class="mb-1 leading-snug">${me.name}</div><div class="text-[8.5px] uppercase tracking-wider font-extrabold ${col}">${me.cat || 'Без категорії'}</div>`;
                 b.onclick = () => {
-                    
                     if (!active) {
-                    
                         target.measures.push(me.name);
-                    
                     } else {
-                    
                         target.measures = target.measures.filter(x => x !== me.name);
-                    
                     }
                     
+                    if (target.measures.length === 0) {
+                        delete target.residualSeverity;
+                        delete target.residualProbability;
+                    }
+
                     openControls(pid, sidx); // Перезавантажуємо модальне вікно
-                    
                     renderMarkers();
-                    
                     saveMissions();
+                    if (sidx === null && target.type === 'primary') {
+                        viewCombined(pid);
+                    } else {
+                        viewSingle(pid, sidx);
+                    }
                 };
                 grid.appendChild(b);
             } else {
                 const card = document.createElement('div');
-                card.className = "p-2.5 text-[10px] border border-white/5 text-slate-400 bg-slate-900/40 rounded font-medium text-left flex items-start gap-2 select-none";
-                card.innerHTML = `<span class="text-slate-600 font-bold shrink-0 mt-0.5">●</span> <div class="flex flex-col"><span class="leading-relaxed">${me.name}</span><span class="text-[8.5px] uppercase tracking-wider font-extrabold ${catColors.i} mt-1">${me.cat || 'Без категорії'}</span></div>`;
+                card.className = "p-2.5 text-[13px] border border-white/5 text-slate-400 bg-slate-900/40 rounded font-medium text-left flex items-start gap-2 select-none";
+                card.innerHTML = `<span class="text-slate-600 font-bold shrink-0 mt-0.5">●</span> <div class="flex flex-col"><span class="leading-snug">${me.name}</span><span class="text-[8.5px] uppercase tracking-wider font-extrabold ${catColors.i} mt-1">${me.cat || 'Без категорії'}</span></div>`;
                 grid.appendChild(card);
             }
         });
@@ -2519,6 +2504,7 @@ function openLinked(pid) {
             renderMarkers();
             saveMissions();
             closeModals();
+            viewSingle(pid, p.secondaries.length - 1);
         };
         list.appendChild(b);
     });
