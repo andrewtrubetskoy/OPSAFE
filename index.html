@@ -93,6 +93,12 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-6">
+                    <div id="auth-status-container" class="text-[9px] text-slate-300 font-mono text-right flex flex-col items-end gap-1">
+                        <div class="flex items-center gap-2">
+                            <span id="user-profile-name" class="text-emerald-400 font-bold text-[11px] tracking-widest">АВТОРИЗАЦІЯ...</span>
+                            <button id="logout-btn" onclick="logout()" class="hidden bg-red-900/50 hover:bg-red-800 border border-red-700/50 text-red-200 px-2 py-1 rounded transition-colors uppercase tracking-widest text-[8px]">Вийти</button>
+                        </div>
+                    </div>
                     <div id="header-status"
                         class="text-[9px] text-slate-400 font-mono text-right uppercase leading-tight bg-black/30 p-2 rounded border border-white/10">
                         Очікування...<br>RECO_ENGINE: READY
@@ -570,6 +576,71 @@
                     class="save-btn bg-blue-800/80 hover:bg-blue-700 border border-blue-500 text-white text-[10px] px-3 py-1.5 rounded font-bold uppercase tracking-wider transition-colors">
                     Зберегти дані
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: AUTHENTICATION -->
+    <div id="modal-auth" class="fixed inset-0 bg-black/95 flex items-center justify-center z-[9999] p-4">
+        <div class="glass-panel w-[400px] border border-white/10 rounded-xl overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-4 border-b border-white/10 bg-slate-900 flex flex-col items-center justify-center gap-2">
+                <h2 class="text-emerald-500 font-bold tracking-[0.3em] uppercase text-xs">OPSAFE</h2>
+                <p class="text-slate-400 text-[10px] italic">Авторизація обов'язкова</p>
+            </div>
+            
+            <div class="flex border-b border-white/10 bg-black/30">
+                <button id="tab-login" onclick="switchAuthTab('login')" class="flex-1 py-3 text-[10px] uppercase font-bold tracking-widest text-emerald-400 border-b-2 border-emerald-500 transition-colors">Вхід</button>
+                <button id="tab-register" onclick="switchAuthTab('register')" class="flex-1 py-3 text-[10px] uppercase font-bold tracking-widest text-slate-500 border-b-2 border-transparent transition-colors">Реєстрація</button>
+            </div>
+
+            <div class="p-6 flex flex-col gap-3">
+                <!-- LOGIN FORM -->
+                <div id="auth-login-form" class="flex flex-col gap-3">
+                    <div>
+                        <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Логін</label>
+                        <input type="text" id="auth-login-username" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Пароль</label>
+                        <input type="password" id="auth-login-password" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                    </div>
+                    <button onclick="performLogin()" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded transition-colors shadow-lg shadow-emerald-900/50">Увійти</button>
+                </div>
+
+                <!-- REGISTER FORM -->
+                <div id="auth-register-form" class="hidden flex flex-col gap-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Логін</label>
+                            <input type="text" id="auth-reg-username" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Пароль</label>
+                            <input type="password" id="auth-reg-password" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">ПІП</label>
+                        <input type="text" id="auth-reg-fullname" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Позивний</label>
+                            <input type="text" id="auth-reg-callsign" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Телефон</label>
+                            <input type="text" id="auth-reg-phone" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Підрозділ</label>
+                        <input type="text" id="auth-reg-unit" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                    </div>
+                    <button onclick="performRegister()" class="mt-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded transition-colors shadow-lg shadow-blue-900/50">Зареєструватись</button>
+                </div>
+                
+                <div id="auth-error-msg" class="hidden mt-2 p-2 bg-red-900/30 border border-red-500/50 rounded text-red-400 text-[10px] text-center"></div>
             </div>
         </div>
     </div>

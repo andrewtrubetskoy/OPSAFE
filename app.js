@@ -7,6 +7,146 @@ const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
 
 console.log("APP.JS STARTING. Database opsafeDb active:", typeof opsafeDb !== 'undefined');
 
+// --- AUTH & API ---
+const API_BASE = 'http://127.0.0.1:8080/api';
+
+function getToken() { return localStorage.getItem('opsafe_jwt'); }
+function setToken(token) { localStorage.setItem('opsafe_jwt', token); }
+function clearToken() { localStorage.removeItem('opsafe_jwt'); }
+
+async function apiCall(endpoint, method = 'GET', body = null) {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
+    
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`, options);
+        if (!response.ok) {
+            if ((response.status === 401 || response.status === 403) && !endpoint.startsWith('/auth/')) {
+                clearToken();
+                showAuthModal();
+            }
+            throw new Error(`API Error: ${response.status}`);
+        }
+        const text = await response.text();
+        return text ? JSON.parse(text) : null;
+    } catch (error) {
+        throw error;
+    }
+}
+
+function showAuthModal() {
+    document.getElementById('modal-auth').classList.remove('hidden');
+    switchAuthTab('login');
+}
+
+function hideAuthModal() {
+    document.getElementById('modal-auth').classList.add('hidden');
+}
+
+function switchAuthTab(tab) {
+    document.getElementById('auth-error-msg').classList.add('hidden');
+    if (tab === 'login') {
+        document.getElementById('auth-login-form').classList.remove('hidden');
+        document.getElementById('auth-register-form').classList.add('hidden');
+        document.getElementById('tab-login').classList.add('text-emerald-400', 'border-emerald-500');
+        document.getElementById('tab-login').classList.remove('text-slate-500', 'border-transparent');
+        document.getElementById('tab-register').classList.add('text-slate-500', 'border-transparent');
+        document.getElementById('tab-register').classList.remove('text-emerald-400', 'border-emerald-500');
+    } else {
+        document.getElementById('auth-login-form').classList.add('hidden');
+        document.getElementById('auth-register-form').classList.remove('hidden');
+        document.getElementById('tab-register').classList.add('text-emerald-400', 'border-emerald-500');
+        document.getElementById('tab-register').classList.remove('text-slate-500', 'border-transparent');
+        document.getElementById('tab-login').classList.add('text-slate-500', 'border-transparent');
+        document.getElementById('tab-login').classList.remove('text-emerald-400', 'border-emerald-500');
+    }
+}
+
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch(e) { return null; }
+}
+
+function updateHeaderProfile() {
+    const token = getToken();
+    const nameSpan = document.getElementById('user-profile-name');
+    const logoutBtn = document.getElementById('logout-btn');
+    if (token) {
+        const payload = parseJwt(token);
+        nameSpan.innerText = payload ? payload.sub : 'АВТОРИЗОВАНО';
+        logoutBtn.classList.remove('hidden');
+    } else {
+        nameSpan.innerText = 'НЕ АВТОРИЗОВАНО';
+        logoutBtn.classList.add('hidden');
+    }
+}
+
+window.performLogin = async function() {
+    const username = document.getElementById('auth-login-username').value;
+    const password = document.getElementById('auth-login-password').value;
+    const errDiv = document.getElementById('auth-error-msg');
+    errDiv.classList.add('hidden');
+    try {
+        const data = await apiCall('/auth/login', 'POST', { username, password });
+        setToken(data.token);
+        hideAuthModal();
+        updateHeaderProfile();
+        loadMissions();
+    } catch (e) {
+        errDiv.innerText = "Помилка входу. Перевірте логін та пароль.";
+        errDiv.classList.remove('hidden');
+    }
+};
+
+window.performRegister = async function() {
+    const username = document.getElementById('auth-reg-username').value;
+    const password = document.getElementById('auth-reg-password').value;
+    const fullName = document.getElementById('auth-reg-fullname').value;
+    const callsign = document.getElementById('auth-reg-callsign').value;
+    const phone = document.getElementById('auth-reg-phone').value;
+    const unit = document.getElementById('auth-reg-unit').value;
+    const errDiv = document.getElementById('auth-error-msg');
+    errDiv.classList.add('hidden');
+    
+    if (!username || !password || !fullName) {
+        errDiv.innerText = "Заповніть обов'язкові поля!";
+        errDiv.classList.remove('hidden');
+        return;
+    }
+    
+    try {
+        const data = await apiCall('/auth/register', 'POST', { username, password, fullName, callsign, phone, unit });
+        setToken(data.token);
+        hideAuthModal();
+        updateHeaderProfile();
+        loadMissions();
+    } catch (e) {
+        errDiv.innerText = "Помилка реєстрації. Можливо, такий логін вже існує.";
+        errDiv.classList.remove('hidden');
+    }
+};
+
+window.logout = function() {
+    clearToken();
+    missions = [];
+    currentMissionId = null;
+    updateMissionDropdown();
+    renderSidebar();
+    clearMap();
+    updateHeaderProfile();
+    showAuthModal();
+};
+// --- END AUTH & API ---
 
 // --- MAP ENGINE ---
 const map = L.map('map', { center: [47.749631, 35.919113], zoom: 11, zoomControl: false });
@@ -655,12 +795,27 @@ function deleteCurrentMission() {
         htmlContent: htmlContent,
         confirmText: "Видалити місію",
         confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
-        onConfirm: () => {
-            missions.splice(idx, 1);
-            currentMissionId = missions.length > 0 ? missions[0].id : null;
-            saveMissions();
-            updateMissionSelect();
-            handleMissionChange(currentMissionId);
+        onConfirm: async () => {
+            const backendId = m.backendId;
+            try {
+                if (backendId) {
+                    await apiCall(`/missions/${backendId}`, 'DELETE');
+                }
+                missions.splice(idx, 1);
+                currentMissionId = missions.length > 0 ? missions[0].id : null;
+                // Force save the new state of currentMissionId to local storage
+                localStorage.setItem('opsafe_current_mission_id', currentMissionId || '');
+                updateMissionSelect();
+                handleMissionChange(currentMissionId);
+            } catch (e) {
+                console.error("Failed to delete mission", e);
+                showCustomModal({
+                    title: "Помилка",
+                    htmlContent: "<p class='text-red-400 text-sm'>Помилка видалення на сервері. Перевірте з'єднання з інтернетом.</p>",
+                    confirmText: "Зрозуміло",
+                    onConfirm: (m) => m.remove()
+                });
+            }
             return true;
         }
     });
