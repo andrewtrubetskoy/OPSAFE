@@ -613,6 +613,41 @@
             "Лінія зіткнення (DeepState)": frontlineLayer
         }, { position: 'topright', collapsed: false }).addTo(map);
 
+        const layerStyle = document.createElement('style');
+        layerStyle.innerHTML = `
+            .leaflet-control-layers-overlays label {
+                display: block !important;
+                margin-bottom: 8px !important;
+            }
+            .leaflet-control-layers-overlays label:last-child {
+                margin-bottom: 0 !important;
+            }
+            .leaflet-control-layers-overlays label div {
+                display: flex !important;
+                align-items: center !important;
+            }
+            .leaflet-control-layers-selector {
+                width: 14px !important;
+                height: 14px !important;
+                margin: 0 8px 0 0 !important;
+                padding: 0 !important;
+                cursor: pointer !important;
+                flex-shrink: 0 !important;
+                position: relative !important;
+                top: 0 !important;
+            }
+            .leaflet-control-layers-overlays span {
+                font-size: 13px !important;
+                line-height: 14px !important;
+                cursor: pointer !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+            }
+        `;
+        document.head.appendChild(layerStyle);
+
         window.amplifiersEnabled = true;
 
         // Inject "Ампліфікатори" checkbox into layer control panel
@@ -624,9 +659,6 @@
             if (!overlaysList) {
                 overlaysList = container.querySelector('form') || container;
             }
-
-            const separator = document.createElement('div');
-            separator.className = 'leaflet-control-layers-separator';
 
             const label = document.createElement('label');
             const div = document.createElement('div');
@@ -640,7 +672,7 @@
             };
 
             const span = document.createElement('span');
-            span.innerText = ' Ампліфікатори';
+            span.innerText = 'Ампліфікатори';
 
             div.appendChild(checkbox);
             div.appendChild(span);
@@ -658,9 +690,7 @@
 
             if (frontlineLabel) {
                 overlaysList.insertBefore(label, frontlineLabel);
-                overlaysList.insertBefore(separator, frontlineLabel);
             } else {
-                overlaysList.appendChild(separator);
                 overlaysList.appendChild(label);
             }
         }
@@ -1744,7 +1774,7 @@
                     b.onclick = () => {
                         if (!active) target.measures.push(me.name);
                         else target.measures = target.measures.filter(x => x !== me.name);
-                        
+
                         if (target.measures.length === 0) {
                             delete target.residualSeverity;
                             delete target.residualProbability;

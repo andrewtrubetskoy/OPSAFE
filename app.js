@@ -1,6 +1,6 @@
 let missions = [];
 window.initialRiskCardState = null;
-window.markRiskCardDirty = function() { console.log("markRiskCardDirty called"); riskCardDirty = true; };
+window.markRiskCardDirty = function () { console.log("markRiskCardDirty called"); riskCardDirty = true; };
 let currentMissionId = null;
 let missionCounter = 1;
 const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
@@ -26,7 +26,40 @@ const layerControl = L.control.layers(null, {
     "Базові маршрути": baseRoutesLayer,
     "Лінія зіткнення (DeepState)": frontlineLayer
 }, { position: 'topright', collapsed: false }).addTo(map);
-
+const layerStyle = document.createElement('style');
+layerStyle.innerHTML = `
+    .leaflet-control-layers-overlays label {
+        display: block !important;
+        margin-bottom: 8px !important;
+    }
+    .leaflet-control-layers-overlays label:last-child {
+        margin-bottom: 0 !important;
+    }
+    .leaflet-control-layers-overlays label div {
+        display: flex !important;
+        align-items: center !important;
+    }
+    .leaflet-control-layers-selector {
+        width: 14px !important;
+        height: 14px !important;
+        margin: 0 8px 0 0 !important; 
+        padding: 0 !important;
+        cursor: pointer !important;
+        flex-shrink: 0 !important;
+        position: relative !important;
+        top: 0 !important;
+    }
+    .leaflet-control-layers-overlays span {
+        font-size: 13px !important;
+        line-height: 14px !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+`;
+document.head.appendChild(layerStyle);
 
 
 window.amplifiersEnabled = true;
@@ -35,18 +68,15 @@ window.amplifiersEnabled = true;
 function injectCheckboxIntoLayerControl(control) {
     const container = control.getContainer();
     if (!container) return;
-    
+
     let overlaysList = container.querySelector('.leaflet-control-layers-overlays');
     if (!overlaysList) {
         overlaysList = container.querySelector('form') || container;
     }
-    
-    const separator = document.createElement('div');
-    separator.className = 'leaflet-control-layers-separator';
-    
+
     const label = document.createElement('label');
     const div = document.createElement('div');
-    
+
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'leaflet-control-layers-selector';
@@ -54,14 +84,14 @@ function injectCheckboxIntoLayerControl(control) {
     checkbox.onchange = (e) => {
         toggleAmplifiers(e.target.checked);
     };
-    
+
     const span = document.createElement('span');
     span.innerText = ' Ампліфікатори';
-    
+
     div.appendChild(checkbox);
     div.appendChild(span);
     label.appendChild(div);
-    
+
     // Find frontline label if it exists to swap their positions
     const labels = Array.from(overlaysList.querySelectorAll('label'));
     let frontlineLabel = null;
@@ -71,12 +101,10 @@ function injectCheckboxIntoLayerControl(control) {
             break;
         }
     }
-    
+
     if (frontlineLabel) {
         overlaysList.insertBefore(label, frontlineLabel);
-        overlaysList.insertBefore(separator, frontlineLabel);
     } else {
-        overlaysList.appendChild(separator);
         overlaysList.appendChild(label);
     }
 }
@@ -116,7 +144,7 @@ function showContextMenu(latlng, originalEvent, targetLayer = null) {
                 btn.classList.remove('hidden');
                 const deleteText = document.getElementById('menu-delete-shape-text');
                 if (deleteText) {
-                    
+
                     deleteText.innerText = (contextMenuTargetLayer instanceof L.Polygon) ? "Видалити район" : "Видалити маршрут";
                 }
             } else {
@@ -275,13 +303,13 @@ document.addEventListener('keydown', (e) => {
             const m = missions.find(x => x.id === currentMissionId);
             if (m) {
                 m.data.database.forEach(item => {
-                    
+
                     item.editing = false;
-                    
+
                     item.secondaries.forEach(sec => {
-                    
+
                         sec.editing = false;
-                    
+
                     });
                 });
                 renderMarkers();
@@ -397,17 +425,17 @@ function deleteShape(layer) {
             confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
             onConfirm: () => {
                 m.data.areas = m.data.areas.filter(areaCoords => {
-                    
+
                     const flat = areaCoords.map(c => L.latLng(c));
-                    
+
                     if (flat.length !== layerCoords.length) return true;
-                    
+
                     for (let i = 0; i < flat.length; i++) {
-                    
+
                         if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
-                    
+
                     }
-                    
+
                     return false;
                 });
                 activeLayers.removeLayer(layer);
@@ -431,17 +459,17 @@ function deleteShape(layer) {
             confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
             onConfirm: () => {
                 m.data.routes = m.data.routes.filter(routeCoords => {
-                    
+
                     const flat = routeCoords.map(c => L.latLng(c));
-                    
+
                     if (flat.length !== layerCoords.length) return true;
-                    
+
                     for (let i = 0; i < flat.length; i++) {
-                    
+
                         if (flat[i].distanceTo(layerCoords[i]) > 0.1) return true;
-                    
+
                     }
-                    
+
                     return false;
                 });
                 activeLayers.removeLayer(layer);
@@ -476,21 +504,21 @@ function loadMissions() {
             // Reset transient editing state on load
             missions.forEach(m => {
                 if (m.data && m.data.database) {
-                    
+
                     m.data.database.forEach(item => {
-                    
+
                         item.editing = false;
-                    
+
                         if (item.secondaries) {
-                    
+
                             item.secondaries.forEach(sec => {
-                    
+
                                 sec.editing = false;
-                    
+
                             });
-                    
+
                         }
-                    
+
                     });
                 }
             });
@@ -514,53 +542,53 @@ function initDefaultMission() {
             type: "Рекогностування",
             data: {
                 routes: [
-                    
+
                     [
-                    
+
                         { lat: 47.694463, lng: 36.086256 },
-                    
+
                         { lat: 47.705000, lng: 36.100000 },
-                    
+
                         { lat: 47.715000, lng: 36.120000 }
-                    
+
                     ]
                 ],
                 areas: [
-                    
+
                     [
-                    
+
                         { lat: 47.680000, lng: 36.050000 },
-                    
+
                         { lat: 47.690000, lng: 36.050000 },
-                    
+
                         { lat: 47.690000, lng: 36.070000 },
-                    
+
                         { lat: 47.680000, lng: 36.070000 }
-                    
+
                     ]
                 ],
                 database: [
-                    
+
                     {
-                    
+
                         id: 123456789,
-                    
+
                         name: "Ураження FPV \\ баражуючий боєприпас",
-                    
+
                         tag: "#критично",
-                    
+
                         severity: "критично",
-                    
+
                         rel: [0, 1, 2, 3, 4, 6],
-                    
+
                         latlng: { lat: 47.705000, lng: 36.100000 },
-                    
+
                         measures: ["Постійний моніторинг ефіру", "Використання засобів окопного РЕБ"],
-                    
+
                         secondaries: [],
-                    
+
                         type: "primary"
-                    
+
                     }
                 ]
             }
@@ -996,7 +1024,7 @@ function findObjectsInBounds(bounds) {
     });
 }
 
-window.copySelectedObjects = function() {
+window.copySelectedObjects = function () {
     const targetSelect = document.getElementById('copy-target-mission');
     if (!targetSelect) return;
     const targetMissionId = targetSelect.value;
@@ -1035,7 +1063,7 @@ window.copySelectedObjects = function() {
     });
 
     saveMissions();
-    
+
     // Close modal
     const modal = document.getElementById('custom-dynamic-modal');
     if (modal) modal.remove();
@@ -1044,7 +1072,7 @@ window.copySelectedObjects = function() {
     selectedObjects = { routes: [], areas: [], threats: [] };
 };
 
-window.openCopyTargetModal = function() {
+window.openCopyTargetModal = function () {
     // Close the current modal
     const currentModal = document.getElementById('custom-dynamic-modal');
     if (currentModal) currentModal.remove();
@@ -1060,9 +1088,9 @@ window.openCopyTargetModal = function() {
             <label class="text-[10px] text-slate-400 uppercase font-bold mb-2 block tracking-wider">Оберіть місію-призначення:</label>
             <select id="copy-target-mission" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs text-white mb-2 font-medium focus:outline-none focus:border-blue-500">
                 ${otherMissions.map(m => {
-                    const idx = missions.findIndex(x => x.id === m.id);
-                    return `<option value="${m.id}">#${idx + 1} ${m.type}: ${m.name}</option>`;
-                }).join('')}
+        const idx = missions.findIndex(x => x.id === m.id);
+        return `<option value="${m.id}">#${idx + 1} ${m.type}: ${m.name}</option>`;
+    }).join('')}
             </select>
         </div>
     `;
@@ -1309,15 +1337,15 @@ function findNearestLayer(latlng, thresholdPx = 45) {
                 // If clicked inside the polygon, distance is 0
                 const bounds = layer.getBounds();
                 if (bounds.contains(latlng)) {
-                    
+
                     if (isPointInPolygon(clickPoint, points)) {
-                    
+
                         closestLayer = layer;
-                    
+
                         minDistance = 0;
-                    
+
                         return;
-                    
+
                     }
                 }
             }
@@ -1325,7 +1353,7 @@ function findNearestLayer(latlng, thresholdPx = 45) {
             // Calculate minimum distance to polygon/polyline boundary segments
             for (let i = 0; i < points.length; i++) {
                 if (i === points.length - 1 && !(layer instanceof L.Polygon)) {
-                    
+
                     continue;
                 }
                 const p1 = points[i];
@@ -1333,9 +1361,9 @@ function findNearestLayer(latlng, thresholdPx = 45) {
 
                 const dist = getDistanceToSegment(clickPoint, p1, p2);
                 if (dist < minDistance) {
-                    
+
                     minDistance = dist;
-                    
+
                     closestLayer = layer;
                 }
             }
@@ -1599,7 +1627,7 @@ function toggleThreatTab(tab) {
     src.forEach(t => {
         const b = document.createElement('button');
         b.className = "w-full text-left p-2.5 glass-panel border-white/10 hover:bg-emerald-900/40 flex justify-between items-center mb-1 active:scale-95";
-        
+
         let tagHtml = '';
         if (isP) {
             let tagStyle = '';
@@ -1710,7 +1738,7 @@ function getResidualBadgeHtml(sev, prob, isPrimary) {
         case 'Рідко': probColor = '#facc15'; break;
         case 'Малоймовірно': probColor = '#60a5fa'; break;
     }
-    
+
     let sevColor = '#cbd5e1';
     switch (sev) {
         case 'катастрофічно': sevColor = '#fca5a5'; break;
@@ -1738,7 +1766,7 @@ function getResidualBadgeHtml(sev, prob, isPrimary) {
             <span style="color: ${probColor};">${fullProb}</span>
         </div>
     </div>`;
-    
+
     const levelHtml = `<div class="badge-res-level-top${glowClass}${window.amplifiersEnabled ? '' : ' hidden'}" style="color: ${riskInfo.color};">${textLabel}</div>`;
 
     return { details: detailsHtml, level: levelHtml };
@@ -1752,9 +1780,9 @@ function showToast(message, duration = 1500) {
     toast.id = 'floating-toast';
     toast.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-red-900/90 text-red-100 px-4 py-2 rounded-lg border border-red-500/50 shadow-2xl z-[7000] font-bold text-sm pointer-events-none transition-opacity duration-300';
     toast.innerText = message;
-    
+
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
@@ -1795,9 +1823,9 @@ function renderMarkers() {
         let sevLabelColor = 'text-white';
         if (isP) {
             if (item.severity === 'катастрофічно') sevLabelColor = 'text-red-400';
-            else if (item.severity === 'критично')    sevLabelColor = 'text-orange-400';
-            else if (item.severity === 'помірно')     sevLabelColor = 'text-yellow-400';
-            else if (item.severity === 'незначні')    sevLabelColor = 'text-blue-400';
+            else if (item.severity === 'критично') sevLabelColor = 'text-orange-400';
+            else if (item.severity === 'помірно') sevLabelColor = 'text-yellow-400';
+            else if (item.severity === 'незначні') sevLabelColor = 'text-blue-400';
         }
 
         // Probability-based diamond style and left-positioned label for independent secondary threats
@@ -1832,7 +1860,7 @@ function renderMarkers() {
             </div>`;
 
         if (isP) {
-                item.secondaries.forEach((sec, idx) => {
+            item.secondaries.forEach((sec, idx) => {
                 const offset = 78.98 + (idx * 58.5); // first offset is 78.98 (+another 3%), subsequent gap is 58.5
                 const secHasMeasures = sec.measures && sec.measures.length > 0;
                 const secExtraClass = '';
@@ -1842,14 +1870,14 @@ function renderMarkers() {
                 const secActiveResProb = typeof sec.residualProbability !== 'undefined' ? sec.residualProbability : sec.probability;
                 const secResMarkerBadgeObj = getResidualBadgeHtml(secActiveResSev, secActiveResProb, false);
                 const secResRiskInfo = window.getRiskLevelInfo ? window.getRiskLevelInfo(secActiveResSev, secActiveResProb) : null;
-                
+
                 const secRiskDiamondClass = '';
 
                 // Resolve shortName for secondary threat label
                 const secEntry = opsafeDb && opsafeDb.secondaryThreats
-                    
+
                     ? opsafeDb.secondaryThreats.find(e => getSecThreatName(e) === sec.name)
-                    
+
                     : null;
                 const secDisplayName = (secEntry && getSecThreatShortName(secEntry)) || sec.shortName || sec.name;
 
@@ -1900,15 +1928,15 @@ function renderMarkers() {
             if (pane) {
                 console.log("=== LEAFLET MARKER PANE INSPECTION ===");
                 Array.from(pane.children).forEach((child, idx) => {
-                    
+
                     console.log(`Marker #${idx}:`, {
-                    
+
                         classes: child.className,
-                    
+
                         style: child.style.cssText,
-                    
+
                         html: child.innerHTML
-                    
+
                     });
                 });
             }
@@ -2051,7 +2079,7 @@ function openControls(pid, sidx) {
                     } else {
                         target.measures = target.measures.filter(x => x !== me.name);
                     }
-                    
+
                     if (target.measures.length === 0) {
                         delete target.residualSeverity;
                         delete target.residualProbability;
@@ -2262,7 +2290,7 @@ function viewCombined(pid) {
     const content = document.getElementById('sidebar-content');
 
     let html = `<div class="bg-emerald-950/40 p-2 text-center text-[10px] font-black uppercase mb-4 border border-emerald-500/50">ЗВІТ ОБ'ЄКТА</div>`;
-    
+
     let primaryColor = '#7f1d1d';
     let textClass = 'text-red-400';
     if (item.severity === 'катастрофічно') {
@@ -2278,7 +2306,7 @@ function viewCombined(pid) {
         primaryColor = '#1e3a8a';
         textClass = 'text-blue-400';
     }
-    
+
     html += `<div class="sidebar-item font-bold ${textClass}" style="border-color:${primaryColor}; border-left-width:4px; margin-bottom: 2px;">${getThreatIcon(item.name)} ${item.name}</div>`;
 
     html += `<div class="bg-slate-800/60 px-2.5 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-4 mb-2 border-b border-white/5">Початковий ризик</div>`;
@@ -2482,7 +2510,7 @@ function updateSingleThreatSeverity(pid, val) {
         parent.tag = "#" + val;
         saveMissions();
         renderMarkers();
-        
+
         // Refresh active sidebar view
         const sidebar = document.getElementById('sidebar-content');
         if (sidebar && sidebar.innerHTML.includes("ЗВІТ ОБ'ЄКТА")) {
@@ -2501,7 +2529,7 @@ function updateSingleThreatResidualSeverity(pid, val) {
         parent.residualSeverity = val;
         saveMissions();
         renderMarkers();
-        
+
         const sidebar = document.getElementById('sidebar-content');
         if (sidebar && sidebar.innerHTML.includes("ЗВІТ ОБ'ЄКТА")) {
             viewCombined(pid);
@@ -2520,7 +2548,7 @@ function updateSingleThreatResidualProbability(pid, sidx, val) {
         target.residualProbability = val;
         saveMissions();
         renderMarkers();
-        
+
         const sidebar = document.getElementById('sidebar-content');
         if (sidebar && sidebar.innerHTML.includes("ЗВІТ ОБ'ЄКТА")) {
             viewCombined(pid);
@@ -2534,7 +2562,7 @@ function confirmDeleteObj(id) {
     const m = missions.find(x => x.id === currentMissionId);
     const item = m ? m.data.database.find(d => d.id === id) : null;
     const name = item ? item.name : "загрозу";
-    
+
     showCustomModal({
         title: "Видалити загрозу",
         htmlContent: `
@@ -2561,7 +2589,7 @@ function confirmDeleteSec(pid, idx) {
     const p = m ? m.data.database.find(d => d.id === pid) : null;
     const sec = p && p.secondaries ? p.secondaries[idx] : null;
     const name = sec ? sec.name : "вторинну загрозу";
-    
+
     showCustomModal({
         title: "Видалити вторинну загрозу",
         htmlContent: `
@@ -2600,8 +2628,8 @@ function openLinked(pid) {
         const title = SECONDARY_TITLES[idx];
         const alreadyAdded = p.secondaries.some(s => s.name === title);
         const b = document.createElement('button');
-        b.className = alreadyAdded 
-            ? "w-full text-left p-2 glass-panel border-white/10 opacity-40 cursor-not-allowed text-[10px] mb-1 flex items-center" 
+        b.className = alreadyAdded
+            ? "w-full text-left p-2 glass-panel border-white/10 opacity-40 cursor-not-allowed text-[10px] mb-1 flex items-center"
             : "w-full text-left p-2 glass-panel border-white/10 hover:bg-orange-950 text-[10px] mb-1 transition-colors flex items-center cursor-pointer";
         b.innerHTML = getThreatIcon(title) + ' <span>' + title + (alreadyAdded ? ' <span class="text-green-400 ml-2 font-bold">(Вже додано)</span>' : '') + '</span>';
         b.disabled = alreadyAdded;
@@ -2716,7 +2744,7 @@ async function loadDeepStateFrontline() {
             style: styleFrontlineFeature,
             onEachFeature: (feature, layer) => {
                 if (feature.properties && feature.properties.name) {
-                    
+
                     layer.bindTooltip(feature.properties.name, { sticky: true, className: 'frontline-feature-tooltip' });
                 }
             }
@@ -2751,11 +2779,11 @@ async function loadDeepStateFrontline() {
             try {
                 const res = await fetch(url);
                 if (res.ok) {
-                    
+
                     geojsonData = await res.json();
-                    
+
                     loadedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
-                    
+
                     break;
                 }
             } catch (e) {
@@ -2767,17 +2795,17 @@ async function loadDeepStateFrontline() {
             try {
                 frontlineLayer.clearLayers();
                 const geojsonGroup = L.geoJSON(geojsonData, {
-                    
+
                     style: styleFrontlineFeature,
-                    
+
                     onEachFeature: (feature, layer) => {
-                    
+
                         if (feature.properties && feature.properties.name) {
-                    
+
                             layer.bindTooltip(feature.properties.name, { sticky: true, className: 'frontline-feature-tooltip' });
-                    
+
                         }
-                    
+
                     }
                 }).addTo(frontlineLayer);
 
@@ -2844,15 +2872,15 @@ async function loadBaseRoutes() {
             let comment = '';
             for (let k = 0; k < dataElements.length; k++) {
                 if (dataElements[k].getAttribute('name') === 'comments') {
-                    
+
                     const valEl = dataElements[k].getElementsByTagName('value')[0];
-                    
+
                     if (valEl) {
-                    
+
                         comment = valEl.textContent.trim();
-                    
+
                     }
-                    
+
                     break;
                 }
             }
@@ -2862,85 +2890,85 @@ async function loadBaseRoutes() {
             for (let j = 0; j < lineStrings.length; j++) {
                 const coordsEl = lineStrings[j].getElementsByTagName('coordinates')[0];
                 if (coordsEl) {
-                    
+
                     const coordsText = coordsEl.textContent.trim();
-                    
+
                     const pts = coordsText.split(/\s+/).map(str => {
-                    
+
                         const parts = str.split(',');
-                    
+
                         if (parts.length >= 2) {
-                    
+
                             const lon = parseFloat(parts[0]);
-                    
+
                             const lat = parseFloat(parts[1]);
-                    
+
                             if (!isNaN(lat) && !isNaN(lon)) {
-                    
+
                                 return [lat, lon];
-                    
+
                             }
-                    
+
                         }
-                    
+
                         return null;
-                    
+
                     }).filter(pt => pt !== null);
 
-                    
+
                     if (pts.length >= 2) {
-                    
+
                         const poly = L.polyline(pts, {
-                    
+
                             color: '#a855f7', // Purple color for base logistics routes
-                    
+
                             weight: 3.0,
-                    
+
                             dashArray: '6, 6',
-                    
+
                             opacity: 0.85 // Bright
-                    
+
                         }).addTo(baseRoutesLayer);
 
-                    
+
                         // Stop click propagation to prevent map click handler from disabling edit mode
-                    
+
                         poly.on('click', (e) => {
-                    
+
                             L.DomEvent.stopPropagation(e);
-                    
+
                         });
 
-                    
+
                         // Prepare tooltip
-                    
+
                         let tooltipText = '';
-                    
+
                         if (name) {
-                    
+
                             tooltipText += `<strong style="display:block; margin-bottom: 2px;">${name}</strong>`;
-                    
-                        }
-                    
-                        if (comment) {
-                    
-                            tooltipText += `<span style="font-size: 10px; color: #cbd5e1; white-space: normal; display: block; max-width: 200px;">${comment}</span>`;
-                    
+
                         }
 
-                    
-                        if (tooltipText) {
-                    
-                            poly.bindTooltip(tooltipText, {
-                    
-                                sticky: true,
-                    
-                                className: 'base-route-tooltip'
-                    
-                            });
-                    
+                        if (comment) {
+
+                            tooltipText += `<span style="font-size: 10px; color: #cbd5e1; white-space: normal; display: block; max-width: 200px;">${comment}</span>`;
+
                         }
-                    
+
+
+                        if (tooltipText) {
+
+                            poly.bindTooltip(tooltipText, {
+
+                                sticky: true,
+
+                                className: 'base-route-tooltip'
+
+                            });
+
+                        }
+
                     }
                 }
             }
@@ -2984,14 +3012,14 @@ function openSettingsModal() {
 function switchSettingsTab(tab) {
     currentSettingsTab = tab;
     const tabs = ['threats', 'measures', 'tools', 'connections', 'riskMatrix'];
-    
+
     // Check if the tab button is style-colored blue or green
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
-                    
-                      document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+
+        document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const activeColor = isEmerald ? 'text-emerald-400 border-emerald-500' : 'text-blue-400 border-blue-500';
     const activeClassParts = activeColor.split(' ');
-    
+
     tabs.forEach(t => {
         const btn = document.getElementById('settings-tab-' + t);
         if (!btn) return;
@@ -3003,7 +3031,7 @@ function switchSettingsTab(tab) {
             btn.classList.add('text-slate-400', 'border-transparent');
         }
     });
-    
+
     renderSettingsTabContent();
 }
 
@@ -3021,7 +3049,7 @@ function renderSettingsTabContent() {
     const container = document.getElementById('settings-tab-content');
     if (!container) return;
     container.innerHTML = '';
-    
+
     if (currentSettingsTab === 'threats') {
         renderThreatsSettings(container);
     } else if (currentSettingsTab === 'measures') {
@@ -3038,10 +3066,10 @@ function renderSettingsTabContent() {
 function renderThreatsSettings(container) {
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400');
     const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
-    
+
     const wrapper = document.createElement('div');
     wrapper.className = "grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-[50vh]";
-    
+
     const colPrimary = document.createElement('div');
     colPrimary.className = "flex flex-col h-[55vh] border border-white/5 bg-slate-900/40 p-4 rounded-xl";
     colPrimary.innerHTML = `
@@ -3051,7 +3079,7 @@ function renderThreatsSettings(container) {
         </div>
         <div class="flex-1 overflow-y-auto space-y-2" id="settings-primary-threats-list"></div>
     `;
-    
+
     const colSecondary = document.createElement('div');
     colSecondary.className = "flex flex-col h-[55vh] border border-white/5 bg-slate-900/40 p-4 rounded-xl";
     colSecondary.innerHTML = `
@@ -3061,16 +3089,16 @@ function renderThreatsSettings(container) {
         </div>
         <div class="flex-1 overflow-y-auto space-y-2" id="settings-secondary-threats-list"></div>
     `;
-    
+
     wrapper.appendChild(colPrimary);
     wrapper.appendChild(colSecondary);
     container.appendChild(wrapper);
-    
+
     const listPrimary = colPrimary.querySelector('#settings-primary-threats-list');
     opsafeDb.primaryThreats.forEach((t, index) => {
         const item = document.createElement('div');
         item.className = "flex justify-between items-center bg-slate-900/80 p-2.5 rounded border border-white/5 hover:border-white/10";
-        
+
         let severityColorClass = 'text-yellow-500';
         if (t.severity === 'катастрофічно') {
             severityColorClass = 'text-red-500 font-extrabold';
@@ -3083,7 +3111,7 @@ function renderThreatsSettings(container) {
         const shortNameDisplay = t.shortName
             ? `<span class="text-[9px] text-slate-400 font-mono">Скорочення: <span class="text-slate-300 font-semibold">${t.shortName}</span></span>`
             : `<span class="text-[9px] text-slate-600 font-mono italic">Скорочення: не задано</span>`;
-        
+
         item.innerHTML = `
             <div class="flex-1 min-w-0 pr-2">
                 <div class="text-xs font-bold text-white truncate" title="${t.name}">${getThreatIcon(t.name)} ${t.name}</div>
@@ -3107,7 +3135,7 @@ function renderThreatsSettings(container) {
         `;
         listPrimary.appendChild(item);
     });
-    
+
     const listSecondary = colSecondary.querySelector('#settings-secondary-threats-list');
     opsafeDb.secondaryThreats.forEach((entry, index) => {
         const tName = getSecThreatName(entry);
@@ -3140,11 +3168,11 @@ function renderThreatsSettings(container) {
 function showCustomModal({ title, htmlContent, onConfirm, onCancel, confirmText = 'Зберегти', cancelText = 'Скасувати', confirmBtnClass = 'bg-emerald-600 hover:bg-emerald-500 text-white' }) {
     const existing = document.getElementById('custom-dynamic-modal');
     if (existing) existing.remove();
-    
+
     const overlay = document.createElement('div');
     overlay.id = 'custom-dynamic-modal';
     overlay.className = 'fixed inset-0 bg-black/90 flex items-center justify-center z-[5000] p-4';
-    
+
     overlay.innerHTML = `
         <div class="glass-panel border-emerald-500 w-full max-w-md rounded-2xl flex flex-col shadow-2xl overflow-hidden">
             <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex justify-between items-center">
@@ -3160,17 +3188,17 @@ function showCustomModal({ title, htmlContent, onConfirm, onCancel, confirmText 
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(overlay);
-    
+
     const close = () => {
         overlay.remove();
         if (onCancel) onCancel();
     };
-    
+
     overlay.querySelector('#custom-modal-close-btn').onclick = close;
     overlay.querySelector('#custom-modal-cancel-btn').onclick = close;
-    
+
     overlay.querySelector('#custom-modal-confirm-btn').onclick = () => {
         if (onConfirm) {
             const shouldClose = onConfirm(overlay);
@@ -3203,7 +3231,7 @@ function addNewPrimaryThreat() {
             </select>
         </div>
     `;
-    
+
     showCustomModal({
         title: "Нова основна загроза",
         htmlContent: htmlContent,
@@ -3212,24 +3240,24 @@ function addNewPrimaryThreat() {
             const nameInput = modal.querySelector('#threat-name-input');
             const shortNameInput = modal.querySelector('#threat-shortname-input');
             const severitySelect = modal.querySelector('#threat-severity-select');
-            
+
             const name = nameInput.value.trim();
             if (!name) {
                 alert("Назва не може бути порожньою!");
                 return false;
             }
-            
+
             if (opsafeDb.primaryThreats.some(t => t.name.toLowerCase() === name.toLowerCase())) {
                 alert("Така загроза вже існує!");
                 return false;
             }
-            
+
             const shortName = shortNameInput.value.trim();
             const severity = severitySelect.value;
-            
+
             opsafeDb.primaryThreats.push({ name, shortName, severity });
             opsafeDb.threatConnections.push({ primaryThreat: name, secondaryThreats: [] });
-            
+
             saveOpsafeDb();
             renderSettingsTabContent();
             renderMarkers();
@@ -3240,7 +3268,7 @@ function addNewPrimaryThreat() {
 
 function editPrimaryThreat(index) {
     const t = opsafeDb.primaryThreats[index];
-    
+
     const htmlContent = `
         <div>
             <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва загрози</label>
@@ -3260,7 +3288,7 @@ function editPrimaryThreat(index) {
             </select>
         </div>
     `;
-    
+
     showCustomModal({
         title: "Редагувати основну загрозу",
         htmlContent: htmlContent,
@@ -3269,61 +3297,61 @@ function editPrimaryThreat(index) {
             const nameInput = modal.querySelector('#threat-name-input');
             const shortNameInput = modal.querySelector('#threat-shortname-input');
             const severitySelect = modal.querySelector('#threat-severity-select');
-            
+
             const newName = nameInput.value.trim();
             if (!newName) {
                 alert("Назва не може бути порожньою!");
                 return false;
             }
-            
+
             if (newName.toLowerCase() !== t.name.toLowerCase() && opsafeDb.primaryThreats.some(x => x.name.toLowerCase() === newName.toLowerCase())) {
                 alert("Така загроза вже існує!");
                 return false;
             }
-            
+
             const newShortName = shortNameInput.value.trim();
             const newSeverity = severitySelect.value;
             const oldName = t.name;
-            
+
             opsafeDb.threatConnections.forEach(tc => {
                 if (tc.primaryThreat === oldName) {
-                    
+
                     tc.primaryThreat = newName;
                 }
             });
-            
+
             opsafeDb.measures.forEach(m => {
                 m.threatRelations = m.threatRelations.map(n => n === oldName ? newName : n);
             });
-            
+
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
-                    
+
                     it.threatRelations = it.threatRelations.map(n => n === oldName ? newName : n);
                 });
             }
-            
+
             missions.forEach(m => {
                 m.data.database.forEach(d => {
-                    
+
                     if (d.name === oldName) {
-                    
+
                         d.name = newName;
-                    
+
                         d.shortName = newShortName;
-                    
+
                         d.severity = newSeverity;
-                    
+
                         d.tag = "#" + newSeverity;
-                    
+
                     }
                 });
             });
-            
+
             t.name = newName;
             t.shortName = newShortName;
             t.severity = newSeverity;
-            
+
             saveOpsafeDb();
             saveMissions();
             renderSettingsTabContent();
@@ -3336,14 +3364,14 @@ function editPrimaryThreat(index) {
 
 function deletePrimaryThreat(index) {
     const t = opsafeDb.primaryThreats[index];
-    
+
     const htmlContent = `
         <div class="text-center py-2">
             <p class="text-sm">Ви дійсно бажаєте видалити основну загрозу <strong>"${t.name}"</strong>?</p>
             <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
         </div>
     `;
-    
+
     showCustomModal({
         title: "Видалити загрозу",
         htmlContent: htmlContent,
@@ -3351,20 +3379,20 @@ function deletePrimaryThreat(index) {
         confirmBtnClass: "bg-red-700 hover:bg-red-600 text-white",
         onConfirm: () => {
             opsafeDb.threatConnections = opsafeDb.threatConnections.filter(tc => tc.primaryThreat !== t.name);
-            
+
             opsafeDb.measures.forEach(m => {
                 m.threatRelations = m.threatRelations.filter(n => n !== t.name);
             });
-            
+
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
-                    
+
                     it.threatRelations = it.threatRelations.filter(n => n !== t.name);
                 });
             }
-            
+
             opsafeDb.primaryThreats.splice(index, 1);
-            
+
             saveOpsafeDb();
             renderSettingsTabContent();
             renderMarkers();
@@ -3385,7 +3413,7 @@ function addNewSecondaryThreat() {
             <input type="text" id="threat-shortname-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" placeholder="Напр.: Спостереження, Завади...">
         </div>
     `;
-    
+
     showCustomModal({
         title: "Нова вторинна загроза",
         htmlContent: htmlContent,
@@ -3398,15 +3426,15 @@ function addNewSecondaryThreat() {
                 alert("Назва не може бути порожньою!");
                 return false;
             }
-            
+
             if (opsafeDb.secondaryThreats.some(t => getSecThreatName(t).toLowerCase() === name.toLowerCase())) {
                 alert("Така загроза вже існує!");
                 return false;
             }
-            
+
             const shortName = shortNameInput.value.trim();
             opsafeDb.secondaryThreats.push({ name, shortName });
-            
+
             saveOpsafeDb();
             renderSettingsTabContent();
             renderMarkers();
@@ -3419,7 +3447,7 @@ function editSecondaryThreat(index) {
     const entry = opsafeDb.secondaryThreats[index];
     const oldName = getSecThreatName(entry);
     const oldShortName = getSecThreatShortName(entry);
-    
+
     const htmlContent = `
         <div>
             <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold tracking-tight">Назва вторинної загрози</label>
@@ -3430,7 +3458,7 @@ function editSecondaryThreat(index) {
             <input type="text" id="threat-shortname-input" class="w-full bg-slate-900 border border-slate-700 p-2 text-white rounded text-sm outline-none focus:border-emerald-500" value="${oldShortName}" placeholder="Напр.: Спостереження, Завади...">
         </div>
     `;
-    
+
     showCustomModal({
         title: "Редагувати вторинну загрозу",
         htmlContent: htmlContent,
@@ -3443,45 +3471,45 @@ function editSecondaryThreat(index) {
                 alert("Назва не може бути порожньою!");
                 return false;
             }
-            
+
             if (newName.toLowerCase() !== oldName.toLowerCase() && opsafeDb.secondaryThreats.some(x => getSecThreatName(x).toLowerCase() === newName.toLowerCase())) {
                 alert("Така загроза вже існує!");
                 return false;
             }
-            
+
             const newShortName = shortNameInput.value.trim();
 
             opsafeDb.threatConnections.forEach(tc => {
                 tc.secondaryThreats = tc.secondaryThreats.map(n => n === oldName ? newName : n);
             });
-            
+
             opsafeDb.measures.forEach(m => {
                 m.threatRelations = m.threatRelations.map(n => n === oldName ? newName : n);
             });
-            
+
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
-                    
+
                     it.threatRelations = it.threatRelations.map(n => n === oldName ? newName : n);
                 });
             }
-            
+
             missions.forEach(m => {
                 m.data.database.forEach(d => {
-                    
+
                     if (d.name === oldName) d.name = newName;
-                    
+
                     d.secondaries.forEach(sec => {
-                    
+
                         if (sec.name === oldName) sec.name = newName;
-                    
+
                     });
                 });
             });
-            
+
             // Store as object (migrates legacy string entries automatically)
             opsafeDb.secondaryThreats[index] = { name: newName, shortName: newShortName };
-            
+
             saveOpsafeDb();
             saveMissions();
             renderSettingsTabContent();
@@ -3495,14 +3523,14 @@ function editSecondaryThreat(index) {
 function deleteSecondaryThreat(index) {
     const entry = opsafeDb.secondaryThreats[index];
     const name = getSecThreatName(entry);
-    
+
     const htmlContent = `
         <div class="text-center py-2">
             <p class="text-sm">Ви дійсно бажаєте видалити вторинну загрозу <strong>"${name}"</strong>?</p>
             <p class="text-red-400 mt-2 text-[10px] uppercase tracking-wide">Цю дію неможливо скасувати!</p>
         </div>
     `;
-    
+
     showCustomModal({
         title: "Видалити вторинну загрозу",
         htmlContent: htmlContent,
@@ -3512,20 +3540,20 @@ function deleteSecondaryThreat(index) {
             opsafeDb.threatConnections.forEach(tc => {
                 tc.secondaryThreats = tc.secondaryThreats.filter(n => n !== name);
             });
-            
+
             opsafeDb.measures.forEach(m => {
                 m.threatRelations = m.threatRelations.filter(n => n !== name);
             });
-            
+
             if (opsafeDb.identTools) {
                 opsafeDb.identTools.forEach(it => {
-                    
+
                     it.threatRelations = it.threatRelations.filter(n => n !== name);
                 });
             }
-            
+
             opsafeDb.secondaryThreats.splice(index, 1);
-            
+
             saveOpsafeDb();
             renderSettingsTabContent();
             renderMarkers();
@@ -3537,13 +3565,13 @@ function deleteSecondaryThreat(index) {
 
 function renderMeasuresSettings(container) {
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
-                    
-                      document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+
+        document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
-    
+
     const splitView = document.createElement('div');
     splitView.className = "flex flex-col lg:flex-row gap-6 h-full min-h-[50vh]";
-    
+
     const listPane = document.createElement('div');
     listPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh]";
     listPane.innerHTML = `
@@ -3553,21 +3581,21 @@ function renderMeasuresSettings(container) {
         </div>
         <div class="flex-1 overflow-y-auto space-y-1.5 pr-1" id="settings-measures-list"></div>
     `;
-    
+
     const editPane = document.createElement('div');
     editPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh] overflow-y-auto";
     editPane.id = "settings-measure-edit-pane";
-    
+
     splitView.appendChild(listPane);
     splitView.appendChild(editPane);
     container.appendChild(splitView);
-    
+
     const searchInput = listPane.querySelector('#measure-search-input');
     searchInput.addEventListener('input', (e) => {
         measureFilterText = e.target.value.toLowerCase();
         populateMeasuresList(accentBtn);
     });
-    
+
     populateMeasuresList(accentBtn);
     populateMeasureEditForm();
 }
@@ -3576,10 +3604,10 @@ function populateMeasuresList(btnClass) {
     const listContainer = document.getElementById('settings-measures-list');
     if (!listContainer) return;
     listContainer.innerHTML = '';
-    
+
     opsafeDb.measures.forEach((m, idx) => {
         if (measureFilterText && !m.name.toLowerCase().includes(measureFilterText)) return;
-        
+
         const item = document.createElement('div');
         const isActive = editingMeasureIndex === idx;
         const activeClass = isActive ? 'bg-slate-800 border-emerald-500/50' : 'bg-slate-900/80 border-white/5 hover:bg-slate-900';
@@ -3589,7 +3617,7 @@ function populateMeasuresList(btnClass) {
             populateMeasuresList(btnClass);
             populateMeasureEditForm();
         };
-        
+
         item.innerHTML = `
             <div class="flex-1 min-w-0 pr-2">
                 <div class="text-xs font-bold text-white truncate" title="${m.name}">${m.name}</div>
@@ -3617,12 +3645,12 @@ function populateMeasureEditForm() {
         `;
         return;
     }
-    
+
     const m = opsafeDb.measures[editingMeasureIndex];
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400');
     const saveBtnClass = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
     const accentBorder = isEmerald ? 'focus:border-emerald-500' : 'focus:border-blue-500';
-    
+
     const activeMissions = (m.missionType || '').split(',').map(x => x.trim()).filter(Boolean);
     const activeResponses = (m.responseType || '').split(',').map(x => x.trim()).filter(Boolean);
     const activeStages = (m.planningStage || '').split(',').map(x => x.trim()).filter(Boolean);
@@ -3686,14 +3714,14 @@ function populateMeasureEditForm() {
                     <div class="flex flex-wrap gap-1 mt-1">
                     
                         ${['рекон', 'маневр', 'позиція'].map(opt => {
-                    
-                            const active = activeMissions.includes(opt);
-                    
-                            const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
-                    
-                            return `<button type="button" data-val="${opt}" class="pill-mission px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
-                    
-                        }).join('')}
+
+        const active = activeMissions.includes(opt);
+
+        const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+
+        return `<button type="button" data-val="${opt}" class="pill-mission px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+
+    }).join('')}
                     
                     </div>
                 </div>
@@ -3704,14 +3732,14 @@ function populateMeasureEditForm() {
                     <div class="flex flex-wrap gap-1 mt-1">
                     
                         ${['уникнення ризику', 'зменшення ризику', 'розподіл ризику', 'перенесення ризику', 'прийняття ризику'].map(opt => {
-                    
-                            const active = activeResponses.includes(opt);
-                    
-                            const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
-                    
-                            return `<button type="button" data-val="${opt}" class="pill-response px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
-                    
-                        }).join('')}
+
+        const active = activeResponses.includes(opt);
+
+        const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+
+        return `<button type="button" data-val="${opt}" class="pill-response px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+
+    }).join('')}
                     
                     </div>
                 </div>
@@ -3722,14 +3750,14 @@ function populateMeasureEditForm() {
                     <div class="flex flex-wrap gap-1 mt-1">
                     
                         ${['плановий', 'передопераційний', 'операційний'].map(opt => {
-                    
-                            const active = activeStages.includes(opt);
-                    
-                            const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
-                    
-                            return `<button type="button" data-val="${opt}" class="pill-stage px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
-                    
-                        }).join('')}
+
+        const active = activeStages.includes(opt);
+
+        const actCls = active ? (isEmerald ? 'bg-emerald-600 border-emerald-500 text-white font-bold active-pill' : 'bg-blue-600 border-blue-500 text-white font-bold active-pill') : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200';
+
+        return `<button type="button" data-val="${opt}" class="pill-stage px-2 py-0.5 rounded text-[10px] border active:scale-95 transition-all ${actCls}" onclick="this.classList.toggle('${isEmerald ? 'bg-emerald-600' : 'bg-blue-600'}'); this.classList.toggle('${isEmerald ? 'border-emerald-500' : 'border-blue-500'}'); this.classList.toggle('text-white'); this.classList.toggle('font-bold'); this.classList.toggle('bg-slate-900'); this.classList.toggle('border-slate-700'); this.classList.toggle('text-slate-400'); this.classList.toggle('hover:text-slate-200'); this.classList.toggle('active-pill');">${opt}</button>`;
+
+    }).join('')}
                     
                     </div>
                 </div>
@@ -3739,7 +3767,7 @@ function populateMeasureEditForm() {
                 <label class="block text-[10px] text-slate-400 uppercase mb-2 font-bold">Зв'язок з загрозами (активує цей захід для загрози)</label>
                 <div class="border border-white/5 bg-black/20 rounded-lg p-3 max-h-[160px] overflow-y-auto space-y-2">
     `;
-    
+
     html += `<div class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mb-1.5">Основні загрози:</div>`;
     opsafeDb.primaryThreats.forEach(t => {
         const checked = m.threatRelations.includes(t.name) ? 'checked' : '';
@@ -3750,7 +3778,7 @@ function populateMeasureEditForm() {
             </label>
         `;
     });
-    
+
     html += `<div class="text-[9px] text-orange-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mt-3 mb-1.5">Вторинні загрози:</div>`;
     opsafeDb.secondaryThreats.forEach(entry => {
         const name = getSecThreatName(entry);
@@ -3762,7 +3790,7 @@ function populateMeasureEditForm() {
             </label>
         `;
     });
-    
+
     html += `
                 </div>
             </div>
@@ -3773,7 +3801,7 @@ function populateMeasureEditForm() {
             </div>
         </div>
     `;
-    
+
     editContainer.innerHTML = html;
 }
 
@@ -3785,22 +3813,22 @@ function cancelMeasureEdit() {
 function saveMeasureEdit(idx) {
     const name = document.getElementById('edit-measure-name').value.trim();
     if (name === "") return alert("Назва заходу не може бути порожньою!");
-    
+
     const category = document.getElementById('edit-measure-category').value.trim();
     const implementation = document.getElementById('edit-measure-impl').value.trim();
     const missionType = Array.from(document.querySelectorAll('.pill-mission.active-pill')).map(p => p.getAttribute('data-val')).join(', ');
     const responseType = Array.from(document.querySelectorAll('.pill-response.active-pill')).map(p => p.getAttribute('data-val')).join(', ');
     const planningStage = Array.from(document.querySelectorAll('.pill-stage.active-pill')).map(p => p.getAttribute('data-val')).join(', ');
-    
+
     const checkBoxes = document.getElementsByName('edit-measure-threat');
     const threatRelations = [];
     Array.from(checkBoxes).forEach(cb => {
         if (cb.checked) threatRelations.push(cb.value);
     });
-    
+
     const m = opsafeDb.measures[idx];
     const oldName = m.name;
-    
+
     missions.forEach(mission => {
         mission.data.database.forEach(d => {
             d.measures = d.measures.map(val => val === oldName ? name : val);
@@ -3809,7 +3837,7 @@ function saveMeasureEdit(idx) {
             });
         });
     });
-    
+
     m.name = name;
     m.category = category;
     m.implementation = implementation;
@@ -3817,10 +3845,10 @@ function saveMeasureEdit(idx) {
     m.responseType = responseType;
     m.planningStage = planningStage;
     m.threatRelations = threatRelations;
-    
+
     saveOpsafeDb();
     saveMissions();
-    
+
     editingMeasureIndex = null;
     renderSettingsTabContent();
     if (currentMissionId) handleMissionChange(currentMissionId);
@@ -3831,12 +3859,12 @@ function addNewMeasure() {
     if (!name) return;
     const cleaned = name.trim();
     if (cleaned === "") return;
-    
+
     if (opsafeDb.measures.some(m => m.name.toLowerCase() === cleaned.toLowerCase())) {
         alert("Такий захід контролю вже існує!");
         return;
     }
-    
+
     opsafeDb.measures.push({
         name: cleaned,
         category: "Тактичні",
@@ -3846,7 +3874,7 @@ function addNewMeasure() {
         planningStage: "плановий",
         threatRelations: []
     });
-    
+
     editingMeasureIndex = opsafeDb.measures.length - 1;
     saveOpsafeDb();
     renderSettingsTabContent();
@@ -3859,20 +3887,20 @@ function deleteMeasure(idx) {
             mission.data.database.forEach(d => {
                 d.measures = d.measures.filter(val => val !== m.name);
                 d.secondaries.forEach(sec => {
-                    
+
                     sec.measures = sec.measures.filter(val => val !== m.name);
                 });
             });
         });
-        
+
         opsafeDb.measures.splice(idx, 1);
-        
+
         if (editingMeasureIndex === idx) {
             editingMeasureIndex = null;
         } else if (editingMeasureIndex > idx) {
             editingMeasureIndex--;
         }
-        
+
         saveOpsafeDb();
         saveMissions();
         renderSettingsTabContent();
@@ -3882,13 +3910,13 @@ function deleteMeasure(idx) {
 
 function renderToolsSettings(container) {
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
-                    
-                      document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+
+        document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const accentBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
-    
+
     const splitView = document.createElement('div');
     splitView.className = "flex flex-col lg:flex-row gap-6 h-full min-h-[50vh]";
-    
+
     const listPane = document.createElement('div');
     listPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh]";
     listPane.innerHTML = `
@@ -3898,21 +3926,21 @@ function renderToolsSettings(container) {
         </div>
         <div class="flex-1 overflow-y-auto space-y-1.5 pr-1" id="settings-tools-list"></div>
     `;
-    
+
     const editPane = document.createElement('div');
     editPane.className = "w-full lg:w-1/2 flex flex-col border border-white/5 bg-slate-900/40 p-4 rounded-xl h-[55vh] overflow-y-auto";
     editPane.id = "settings-tool-edit-pane";
-    
+
     splitView.appendChild(listPane);
     splitView.appendChild(editPane);
     container.appendChild(splitView);
-    
+
     const searchInput = listPane.querySelector('#tool-search-input');
     searchInput.addEventListener('input', (e) => {
         toolFilterText = e.target.value.toLowerCase();
         populateToolsList(accentBtn);
     });
-    
+
     populateToolsList(accentBtn);
     populateToolEditForm();
 }
@@ -3921,12 +3949,12 @@ function populateToolsList(btnClass) {
     const listContainer = document.getElementById('settings-tools-list');
     if (!listContainer) return;
     listContainer.innerHTML = '';
-    
+
     if (!opsafeDb.identTools) opsafeDb.identTools = [];
-    
+
     opsafeDb.identTools.forEach((t, idx) => {
         if (toolFilterText && !t.name.toLowerCase().includes(toolFilterText)) return;
-        
+
         const item = document.createElement('div');
         const isActive = editingToolIndex === idx;
         const activeClass = isActive ? 'bg-slate-800 border-emerald-500/50' : 'bg-slate-900/80 border-white/5 hover:bg-slate-900';
@@ -3936,7 +3964,7 @@ function populateToolsList(btnClass) {
             populateToolsList(btnClass);
             populateToolEditForm();
         };
-        
+
         item.innerHTML = `
             <div class="flex-1 min-w-0 pr-2">
                 <div class="text-xs font-bold text-white truncate" title="${t.name}">${t.name}</div>
@@ -3964,14 +3992,14 @@ function populateToolEditForm() {
         `;
         return;
     }
-    
+
     const t = opsafeDb.identTools[editingToolIndex];
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400');
     const saveBtnClass = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
     const accentBorder = isEmerald ? 'focus:border-emerald-500' : 'focus:border-blue-500';
-    
+
     if (!t.threatRelations) t.threatRelations = [];
-    
+
     let html = `
         <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-4 border-b border-white/10 pb-2">Редагування інструменту</h4>
         <div class="space-y-4">
@@ -3984,7 +4012,7 @@ function populateToolEditForm() {
                 <label class="block text-[10px] text-slate-400 uppercase mb-2 font-bold">Зв'язок з загрозами (активує цей шар/інструмент для загрози)</label>
                 <div class="border border-white/5 bg-black/20 rounded-lg p-3 max-h-[200px] overflow-y-auto space-y-2">
     `;
-    
+
     html += `<div class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mb-1.5">Основні загрози:</div>`;
     opsafeDb.primaryThreats.forEach(pt => {
         const checked = t.threatRelations.includes(pt.name) ? 'checked' : '';
@@ -3995,7 +4023,7 @@ function populateToolEditForm() {
             </label>
         `;
     });
-    
+
     html += `<div class="text-[9px] text-orange-400 font-bold uppercase tracking-wider border-b border-white/5 pb-0.5 mt-3 mb-1.5">Вторинні загрози:</div>`;
     opsafeDb.secondaryThreats.forEach(entry => {
         const stName = getSecThreatName(entry);
@@ -4007,7 +4035,7 @@ function populateToolEditForm() {
             </label>
         `;
     });
-    
+
     html += `
                 </div>
             </div>
@@ -4018,7 +4046,7 @@ function populateToolEditForm() {
             </div>
         </div>
     `;
-    
+
     editContainer.innerHTML = html;
 }
 
@@ -4030,17 +4058,17 @@ function cancelToolEdit() {
 function saveToolEdit(idx) {
     const name = document.getElementById('edit-tool-name').value.trim();
     if (name === "") return alert("Назва інструменту не може бути порожньою!");
-    
+
     const checkBoxes = document.getElementsByName('edit-tool-threat');
     const threatRelations = [];
     Array.from(checkBoxes).forEach(cb => {
         if (cb.checked) threatRelations.push(cb.value);
     });
-    
+
     const t = opsafeDb.identTools[idx];
     t.name = name;
     t.threatRelations = threatRelations;
-    
+
     saveOpsafeDb();
     editingToolIndex = null;
     renderSettingsTabContent();
@@ -4052,19 +4080,19 @@ function addNewTool() {
     if (!name) return;
     const cleaned = name.trim();
     if (cleaned === "") return;
-    
+
     if (!opsafeDb.identTools) opsafeDb.identTools = [];
-    
+
     if (opsafeDb.identTools.some(t => t.name.toLowerCase() === cleaned.toLowerCase())) {
         alert("Такий інструмент вже існує!");
         return;
     }
-    
+
     opsafeDb.identTools.push({
         name: cleaned,
         threatRelations: []
     });
-    
+
     editingToolIndex = opsafeDb.identTools.length - 1;
     saveOpsafeDb();
     renderSettingsTabContent();
@@ -4086,20 +4114,20 @@ function deleteTool(idx) {
 
 function renderConnectionsSettings(container) {
     const isEmerald = document.getElementById('settings-tab-threats').classList.contains('text-emerald-400') ||
-                    
-                      document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
+
+        document.getElementById('settings-tab-threats').classList.contains('border-emerald-500');
     const accentColorClass = isEmerald ? 'accent-emerald-500' : 'accent-blue-500';
-    
+
     const wrapper = document.createElement('div');
     wrapper.className = "space-y-4 max-h-[55vh] overflow-y-auto pr-2";
-    
+
     opsafeDb.primaryThreats.forEach(pt => {
         let conn = opsafeDb.threatConnections.find(tc => tc.primaryThreat === pt.name);
         if (!conn) {
             conn = { primaryThreat: pt.name, secondaryThreats: [] };
             opsafeDb.threatConnections.push(conn);
         }
-        
+
         const ptCard = document.createElement('div');
         const borderClass = isEmerald ? 'border-emerald-950/20 bg-slate-900/40' : 'border-blue-950/20 bg-slate-900/40';
         ptCard.className = `border p-4 rounded-xl ${borderClass}`;
@@ -4110,12 +4138,12 @@ function renderConnectionsSettings(container) {
             </h5>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 ${opsafeDb.secondaryThreats.map(entry => {
-                    
-                    const st = getSecThreatName(entry);
-                    
-                    const checked = conn.secondaryThreats.includes(st) ? 'checked' : '';
-                    
-                    return `
+
+            const st = getSecThreatName(entry);
+
+            const checked = conn.secondaryThreats.includes(st) ? 'checked' : '';
+
+            return `
                     
                         <label class="flex items-start gap-2 text-[11px] text-slate-300 hover:text-white cursor-pointer select-none bg-black/10 p-1.5 rounded hover:bg-black/25 transition-colors">
                     
@@ -4126,12 +4154,12 @@ function renderConnectionsSettings(container) {
                         </label>
                     
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
         wrapper.appendChild(ptCard);
     });
-    
+
     container.appendChild(wrapper);
 }
 
@@ -4141,7 +4169,7 @@ function toggleThreatConnection(primaryName, secondaryName, isChecked) {
         conn = { primaryThreat: primaryName, secondaryThreats: [] };
         opsafeDb.threatConnections.push(conn);
     }
-    
+
     if (isChecked) {
         if (!conn.secondaryThreats.includes(secondaryName)) {
             conn.secondaryThreats.push(secondaryName);
@@ -4149,7 +4177,7 @@ function toggleThreatConnection(primaryName, secondaryName, isChecked) {
     } else {
         conn.secondaryThreats = conn.secondaryThreats.filter(n => n !== secondaryName);
     }
-    
+
     missions.forEach(mission => {
         mission.data.database.forEach(d => {
             if (d.name === primaryName) {
@@ -4159,7 +4187,7 @@ function toggleThreatConnection(primaryName, secondaryName, isChecked) {
             }
         });
     });
-    
+
     saveOpsafeDb();
     saveMissions();
     renderMarkers();
@@ -4168,27 +4196,27 @@ function toggleThreatConnection(primaryName, secondaryName, isChecked) {
 function renderRiskMatrixSettings(container) {
     const severities = ["катастрофічно", "критично", "помірно", "незначні"];
     const probabilities = ["Дуже часто", "Часто", "Можливо", "Рідко", "Малоймовірно"];
-    
+
     const wrapper = document.createElement('div');
     wrapper.className = "space-y-4 max-h-[55vh] overflow-y-auto pr-2";
 
     const tableContainer = document.createElement('div');
     tableContainer.className = "overflow-x-auto rounded-xl border border-white/10 bg-slate-900/40 p-4 shadow-xl";
-    
+
     const table = document.createElement('table');
     table.className = "w-full min-w-[750px] border-collapse text-xs table-fixed";
-    
+
     // Header
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
     headerRow.className = "border-b border-white/10 bg-slate-950/60";
-    
+
     const cornerTh = document.createElement('th');
     cornerTh.className = "p-3 text-left font-bold text-white tracking-wider border border-white/5";
     cornerTh.style.width = "200px";
     cornerTh.innerText = "Тяжкість загрози \\ Ймовірність";
     headerRow.appendChild(cornerTh);
-    
+
     probabilities.forEach(p => {
         const th = document.createElement('th');
         th.className = "p-3 text-center font-bold text-slate-300 tracking-wider border border-white/5";
@@ -4198,27 +4226,27 @@ function renderRiskMatrixSettings(container) {
     });
     thead.appendChild(headerRow);
     table.appendChild(thead);
-    
+
     // Body
     const tbody = document.createElement('tbody');
-    
+
     severities.forEach(sev => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-white/[0.02] transition-colors border-b border-white/5";
-        
+
         const labelTd = document.createElement('td');
         labelTd.className = "p-3 text-left font-bold text-white uppercase tracking-wide border border-white/5 bg-slate-950/20";
         labelTd.innerText = sev;
         tr.appendChild(labelTd);
-        
+
         probabilities.forEach(prob => {
             const td = document.createElement('td');
             td.className = "p-2 border border-white/5 text-center";
-            
+
             const currentLevel = opsafeDb.riskMatrix.matrix[sev] ? opsafeDb.riskMatrix.matrix[sev][prob] : null;
             const select = document.createElement('select');
             select.className = "w-full p-2 rounded text-xs font-bold text-white outline-none cursor-pointer text-center transition-all border";
-            
+
             Object.keys(opsafeDb.riskMatrix.levels).forEach(levelCode => {
                 if (levelCode === 'ND') return;
                 const levelInfo = opsafeDb.riskMatrix.levels[levelCode];
@@ -4227,54 +4255,54 @@ function renderRiskMatrixSettings(container) {
                 option.text = levelCode;
                 option.className = "bg-slate-900 text-white font-bold text-center";
                 if (levelCode === currentLevel) {
-                    
+
                     option.selected = true;
                 }
                 select.appendChild(option);
             });
-            
+
             function updateSelectStyle(sel, levelCode) {
                 const levelInfo = opsafeDb.riskMatrix.levels[levelCode];
                 if (levelInfo) {
-                    
+
                     sel.style.backgroundColor = levelInfo.bg;
-                    
+
                     sel.style.color = "#ffffff";
-                    
+
                     sel.style.borderColor = levelInfo.color;
                 } else {
-                    
+
                     sel.style.backgroundColor = "#1e293b";
-                    
+
                     sel.style.color = "#cbd5e1";
-                    
+
                     sel.style.borderColor = "rgba(255,255,255,0.1)";
                 }
             }
-            
+
             updateSelectStyle(select, currentLevel);
-            
+
             select.addEventListener('change', (e) => {
                 const newLevel = e.target.value;
                 if (!opsafeDb.riskMatrix.matrix[sev]) {
-                    
+
                     opsafeDb.riskMatrix.matrix[sev] = {};
                 }
                 opsafeDb.riskMatrix.matrix[sev][prob] = newLevel;
                 saveOpsafeDb();
                 updateSelectStyle(select, newLevel);
                 if (typeof renderMarkers === 'function') {
-                    
+
                     renderMarkers();
                 }
             });
-            
+
             td.appendChild(select);
             tr.appendChild(td);
         });
         tbody.appendChild(tr);
     });
-    
+
     table.appendChild(tbody);
     tableContainer.appendChild(table);
     wrapper.appendChild(tableContainer);
@@ -4283,7 +4311,7 @@ function renderRiskMatrixSettings(container) {
     const levels = opsafeDb.riskMatrix.levels;
     const legend = document.createElement('div');
     legend.className = "mt-4 bg-slate-900/40 border border-white/5 p-4 rounded-xl space-y-2";
-    
+
     const legendItems = Object.keys(levels).filter(code => code !== 'ND').map(code => {
         const info = levels[code];
         let customLabel = info.label;
@@ -4291,7 +4319,7 @@ function renderRiskMatrixSettings(container) {
         if (code === "В") customLabel = "Високий ризик";
         if (code === "С") customLabel = "Середній ризик";
         if (code === "Н") customLabel = "Низький ризик";
-        
+
         return `
             <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold text-white border" style="background-color: ${info.bg}; border-color: ${info.color};">${code}</span>
@@ -4307,7 +4335,7 @@ function renderRiskMatrixSettings(container) {
         </div>
     `;
     wrapper.appendChild(legend);
-    
+
     container.appendChild(wrapper);
 }
 
@@ -4389,10 +4417,10 @@ async function autoFillRiskCardSettlements(onProgress) {
             } else {
                 inp.placeholder = 'Не знайдено';
             }
-        } catch(e) {
+        } catch (e) {
             inp.placeholder = 'Помилка API';
         }
-        
+
         current++;
         if (onProgress) onProgress(current, total);
 
@@ -4412,7 +4440,7 @@ async function openRiskManagementCard() {
         m.data.database.forEach(item => {
             if (item.type === 'primary') {
                 let riskCode = 'ND';
-                try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
+                try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch (e) { }
                 if (!item.severity || !item.probability || riskCode === 'ND') issues.push(`\u2022 Основна загроза "${item.shortName || item.name}": не визначений рівень ризику`);
                 if (item.secondaries) item.secondaries.forEach(sec => { if (!sec.probability) issues.push(`\u2022 Вторинна загроза "${sec.name}": не визначена ймовірність`); });
             } else if (item.type === 'secondary_indep') {
@@ -4427,7 +4455,7 @@ async function openRiskManagementCard() {
     }
 
     if (!m.data.riskCard) {
-        m.data.riskCard = { desc: '', date: '', prep: { name:'', callsign:'', role:'', phone:'', unit:'' }, appr: { name:'', callsign:'', role:'', phone:'', unit:'' }, overallRisk: '', events: [{name:'',date:'',desc:''},{name:'',date:'',desc:''},{name:'',date:'',desc:''}], apd:'', comments:'' };
+        m.data.riskCard = { desc: '', date: '', prep: { name: '', callsign: '', role: '', phone: '', unit: '' }, appr: { name: '', callsign: '', role: '', phone: '', unit: '' }, overallRisk: '', events: [{ name: '', date: '', desc: '' }, { name: '', date: '', desc: '' }, { name: '', date: '', desc: '' }], apd: '', comments: '' };
     }
 
     const rc = m.data.riskCard;
@@ -4456,9 +4484,9 @@ async function openRiskManagementCard() {
                 const s = typeof p.residualSeverity !== 'undefined' ? p.residualSeverity : p.severity;
                 const pr = typeof p.residualProbability !== 'undefined' ? p.residualProbability : p.probability;
                 if (s && pr) {
-                    
+
                     const info = getRiskLevelInfo(s, pr);
-                    
+
                     if (info && weights[info.short] > highestLevel) { highestLevel = weights[info.short]; calcRisk = info.short; }
                 }
             });
@@ -4467,12 +4495,16 @@ async function openRiskManagementCard() {
         selRisk.value = defaultRisk || '';
         if (typeof updateRcOverallRiskStyle === 'function') updateRcOverallRiskStyle(selRisk.value);
     }
-    const eventRows = document.getElementById('rc-events-tbody').querySelectorAll('tr');
-    rc.events.forEach((ev, idx) => { if (eventRows[idx]) { eventRows[idx].querySelector('.rc-event-name').value = ev.name||''; eventRows[idx].querySelector('.rc-event-date').value = ev.date||''; eventRows[idx].querySelector('.rc-event-desc').value = ev.desc||''; } });
+    const tbodyEvents = document.getElementById('rc-events-tbody');
+    tbodyEvents.innerHTML = '';
+    const eventsToRender = rc.events && rc.events.length > 0 ? rc.events : [{}, {}, {}];
+    eventsToRender.forEach(ev => {
+        window.addRiskCardEventRow(ev.name || '', ev.date || '', ev.desc || '');
+    });
     document.getElementById('rc-apd').value = rc.apd || '';
     document.getElementById('rc-comments').value = rc.comments || '';
     renderRiskCardThreatsTable(m);
-    
+
     const inputsToFetch = Array.from(document.querySelectorAll('.rc-settlement')).filter(inp => inp.dataset.lat && inp.dataset.lng);
     if (inputsToFetch.length > 0) {
         const overlay = document.createElement('div');
@@ -4481,10 +4513,10 @@ async function openRiskManagementCard() {
         overlay.innerHTML = '<div class="w-full max-w-md bg-gray-800 rounded-xl p-6 border border-emerald-500/30 shadow-2xl flex flex-col items-center text-center">' +
             '<h3 class="text-emerald-400 font-bold uppercase tracking-wider text-sm mb-4">Визначення населених пунктів</h3>' +
             '<div class="w-full bg-gray-900 rounded-full h-4 mb-2 overflow-hidden border border-gray-700">' +
-                '<div id="loading-progress-bar" class="bg-emerald-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>' +
+            '<div id="loading-progress-bar" class="bg-emerald-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>' +
             '</div>' +
             '<p id="loading-progress-text" class="text-slate-400 text-xs mt-2">Оброблено 0 з ' + inputsToFetch.length + '</p>' +
-        '</div>';
+            '</div>';
         document.body.appendChild(overlay);
 
         await autoFillRiskCardSettlements((curr, tot) => {
@@ -4516,10 +4548,10 @@ function renderRiskCardThreatsTable(m) {
     const tbody = document.getElementById('rc-threats-tbody');
     if (!tbody) return;
     if (!m.data || !m.data.database || m.data.database.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="border border-gray-400 p-4 text-center text-gray-500 italic">Немає загроз у базі даних місії</td></tr>'; return; }
-    const getRiskBg = c => ({ НВ:'#ff3333', В:'#f97316', С:'#eab308', Н:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
-    const getProbColor = c => ({ 'Дуже часто':'#dc2626', 'Часто':'#ea580c', 'Можливо':'#ca8a04', 'Рідко':'#65a30d', 'Малоймовірно':'#0284c7' }[c] || '#64748b');
-    const getRiskText = c => ({ НВ:'Надзвичайно високий', В:'Високий', С:'Середній', Н:'Низький', ND:'Не визначено' }[c] || 'Не визначено');
-    
+    const getRiskBg = c => ({ НВ: '#ff3333', В: '#f97316', С: '#eab308', Н: '#38bdf8', ND: '#94a3b8' }[c] || '#e2e8f0');
+    const getProbColor = c => ({ 'Дуже часто': '#dc2626', 'Часто': '#ea580c', 'Можливо': '#ca8a04', 'Рідко': '#65a30d', 'Малоймовірно': '#0284c7' }[c] || '#64748b');
+    const getRiskText = c => ({ НВ: 'Надзвичайно високий', В: 'Високий', С: 'Середній', Н: 'Низький', ND: 'Не визначено' }[c] || 'Не визначено');
+
     function buildThreatRows(itemObj, threatName, riskCode, resRiskCode, stHtml, isSecondary, isIndepSecondary, sp, srp, pid, sid) {
         let rowsHtml = '';
         const measures = (itemObj.measures && itemObj.measures.length > 0) ? itemObj.measures : [null];
@@ -4567,19 +4599,19 @@ function renderRiskCardThreatsTable(m) {
         const gmapLink = (lat && lng) ? `href="https://www.google.com/maps?q=${lat},${lng}&z=10" target="_blank" class="flex items-center justify-center gap-1 text-xs w-full text-blue-500 group print:text-black print:no-underline" title="Відкрити в Google Maps"` : `class="flex items-center justify-center gap-1 text-xs w-full text-gray-700"`;
 
         if (item.type === 'primary') {
-            let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch(e) {}
-            let resRiskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix) { const rs = typeof item.residualSeverity !== 'undefined' ? item.residualSeverity : item.severity; const rp = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability; if (rs && rp) { resRiskCode = opsafeDb.riskMatrix.matrix[rs][rp] || 'ND'; } } } catch(e) {}
+            let riskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix && item.severity && item.probability) riskCode = opsafeDb.riskMatrix.matrix[item.severity][item.probability] || 'ND'; } catch (e) { }
+            let resRiskCode = 'ND'; try { if (opsafeDb.riskMatrix && opsafeDb.riskMatrix.matrix) { const rs = typeof item.residualSeverity !== 'undefined' ? item.residualSeverity : item.severity; const rp = typeof item.residualProbability !== 'undefined' ? item.residualProbability : item.probability; if (rs && rp) { resRiskCode = opsafeDb.riskMatrix.matrix[rs][rp] || 'ND'; } } } catch (e) { }
             const stHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
             html += buildThreatRows(item, item.name, riskCode, resRiskCode, stHtml, false, false, '', '', item.id, null);
-            
-            if (item.secondaries) item.secondaries.forEach((sec,si) => { 
-                const sp=sec.probability||'ND'; const srp=sec.residualProbability || sec.probability || 'ND';
+
+            if (item.secondaries) item.secondaries.forEach((sec, si) => {
+                const sp = sec.probability || 'ND'; const srp = sec.residualProbability || sec.probability || 'ND';
                 const sstHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${sec.rcSettlement || ''}" data-id="${item.id}" data-sid="${si}" data-lat="${lat}" data-lng="${lng}"></a>`;
                 html += buildThreatRows(sec, sec.name, '', '', sstHtml, true, false, sp, srp, item.id, si);
             });
             counter++;
         } else if (item.type === 'secondary_indep') {
-            const p=item.probability||'ND'; const rp=item.residualProbability || item.probability || 'ND';
+            const p = item.probability || 'ND'; const rp = item.residualProbability || item.probability || 'ND';
             const istHtml = `<a ${gmapLink}><span class="text-gray-400 print:text-black underline">район</span><input type="text" class="rc-settlement w-full bg-transparent border-none outline-none text-left text-blue-500 underline font-normal cursor-pointer print:text-black" placeholder="..." value="${item.rcSettlement || ''}" data-id="${item.id}" data-lat="${lat}" data-lng="${lng}"></a>`;
             html += buildThreatRows(item, item.name, '', '', istHtml, false, true, p, rp, item.id, null);
             counter++;
@@ -4609,9 +4641,9 @@ function saveRiskCard() {
     rc.overallRisk = selRisk ? selRisk.value : '';
     rc.events = [];
     document.getElementById('rc-events-tbody').querySelectorAll('tr').forEach(row => {
-        rc.events.push({ name: row.querySelector('.rc-event-name')?.value||'', date: row.querySelector('.rc-event-date')?.value||'', desc: row.querySelector('.rc-event-desc')?.value||'' });
+        rc.events.push({ name: row.querySelector('.rc-event-name')?.value || '', date: row.querySelector('.rc-event-date')?.value || '', desc: row.querySelector('.rc-event-desc')?.value || '' });
     });
-        rc.apd = document.getElementById('rc-apd').value;
+    rc.apd = document.getElementById('rc-apd').value;
     rc.comments = document.getElementById('rc-comments').value;
 
     document.querySelectorAll('.rc-who-input').forEach(inp => {
@@ -4640,7 +4672,7 @@ function saveRiskCard() {
     });
 
     window.initialRiskCardState = window.getRiskCardState();
-    
+
     // Save settlements
     document.querySelectorAll('.rc-settlement').forEach(inp => {
         const id = inp.getAttribute('data-id');
@@ -4648,14 +4680,14 @@ function saveRiskCard() {
         m.data.database.forEach(item => {
             if (item.id == id) {
                 if (sid !== null && sid !== undefined) {
-                    
+
                     if (item.secondaries && item.secondaries[sid]) {
-                    
+
                         item.secondaries[sid].rcSettlement = inp.value;
-                    
+
                     }
                 } else {
-                    
+
                     item.rcSettlement = inp.value;
                 }
             }
@@ -4664,10 +4696,10 @@ function saveRiskCard() {
 
     saveMissions();
     const btn = document.querySelector('#modal-risk-card .save-btn');
-    if (btn) { const o=btn.innerText; btn.innerText='Збережено!'; btn.classList.add('bg-green-600'); setTimeout(()=>{ btn.innerText=o; btn.classList.remove('bg-green-600'); }, 2000); }
+    if (btn) { const o = btn.innerText; btn.innerText = 'Збережено!'; btn.classList.add('bg-green-600'); setTimeout(() => { btn.innerText = o; btn.classList.remove('bg-green-600'); }, 2000); }
 }
 
-window.getRiskCardState = function() {
+window.getRiskCardState = function () {
     return JSON.stringify({
         desc: document.getElementById('rc-mission-desc')?.value || '',
         date: document.getElementById('rc-mission-date')?.value || '',
@@ -4774,7 +4806,7 @@ function printRiskCard() {
     window.print();
 }
 
-window.updateRcOverallRiskStyle = function(val) {
+window.updateRcOverallRiskStyle = function (val) {
     const display = document.getElementById('rc-overall-risk-display');
     if (!display) return;
     if (!val) {
@@ -4782,7 +4814,7 @@ window.updateRcOverallRiskStyle = function(val) {
         return;
     }
     const info = opsafeDb && opsafeDb.riskMatrix && opsafeDb.riskMatrix.levels ? opsafeDb.riskMatrix.levels[val] : null;
-    const getRiskBg = c => ({ НВ:'#ff3333', В:'#f97316', С:'#eab308', Н:'#38bdf8', ND:'#94a3b8' }[c] || '#e2e8f0');
+    const getRiskBg = c => ({ НВ: '#ff3333', В: '#f97316', С: '#eab308', Н: '#38bdf8', ND: '#94a3b8' }[c] || '#e2e8f0');
     if (info) {
         display.innerHTML = '<div class="flex items-center justify-start gap-1"><span class="px-2 py-1 rounded-sm text-xs font-bold text-white shadow-sm" style="background-color:' + getRiskBg(val) + '">' + info.short + '</span><span class="text-xs text-slate-200 font-medium">' + info.label + '</span></div><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
     } else {
@@ -4863,6 +4895,28 @@ function importMissionsFile() {
     input.click();
 }
 
+window.addRiskCardEventRow = function(name = '', date = '', desc = '') {
+    const tbody = document.getElementById('rc-events-tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td colspan="2" class="border border-gray-400 p-0">
+            <input type="text" oninput="window.markRiskCardDirty()" class="w-full p-1 outline-none text-sm rc-event-name">
+        </td>
+        <td colspan="1" class="border border-gray-400 p-0">
+            <input type="datetime-local" style="color-scheme: dark;" onchange="window.markRiskCardDirty()" class="w-full p-1 outline-none text-xs rc-event-date">
+        </td>
+        <td colspan="4" class="border border-gray-400 p-0">
+            <div class="flex items-center w-full">
+                <input type="text" oninput="window.markRiskCardDirty()" class="flex-1 p-1 outline-none text-sm rc-event-desc">
+                <button type="button" onclick="this.closest('tr').remove(); window.markRiskCardDirty();" class="px-2 text-red-500 hover:text-red-700 print:hidden font-bold text-lg leading-none" title="Видалити подію">&times;</button>
+            </div>
+        </td>
+    `;
+    tr.querySelector('.rc-event-name').value = name;
+    tr.querySelector('.rc-event-date').value = date;
+    tr.querySelector('.rc-event-desc').value = desc;
+    tbody.appendChild(tr);
+};
 
 
 

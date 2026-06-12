@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="uk">
 
 <head>
@@ -505,8 +505,15 @@
 
                         <!-- 6. Події -->
                         <tr class="bg-gray-100">
-                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">6. Події (опис
-                                передбачених та непередбачених інцидентів (реалізованих загроз))</td>
+                            <td colspan="7" class="font-bold py-1 px-2 border border-gray-400">
+                                <div class="flex justify-between items-center">
+                                    <span>6. Події (опис передбачених та непередбачених інцидентів (реалізованих загроз))</span>
+                                    <button type="button" onclick="addRiskCardEventRow()" class="bg-blue-600/80 hover:bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase transition-colors print:hidden shadow-sm flex items-center gap-1">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                        Додати
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                         <tr class="bg-gray-50 text-center text-xs">
                             <td colspan="2" class="border border-gray-400 p-1">Назва події<br>(приклад: Обстріл
@@ -516,30 +523,7 @@
                         </tr>
                     </tbody>
                     <tbody id="rc-events-tbody">
-                        <tr>
-                            <td colspan="2" class="border border-gray-400 p-0"><input type="text" oninput="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-sm rc-event-name"></td>
-                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" style="color-scheme: dark;" onchange="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-xs rc-event-date"></td>
-                            <td colspan="4" class="border border-gray-400 p-0"><input type="text" oninput="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-sm rc-event-desc"></td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" class="border border-gray-400 p-0"><input type="text" oninput="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-sm rc-event-name"></td>
-                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" style="color-scheme: dark;" onchange="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-xs rc-event-date"></td>
-                            <td colspan="4" class="border border-gray-400 p-0"><input type="text" oninput="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-sm rc-event-desc"></td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" class="border border-gray-400 p-0"><input type="text" oninput="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-sm rc-event-name"></td>
-                            <td colspan="1" class="border border-gray-400 p-0"><input type="datetime-local" style="color-scheme: dark;" onchange="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-xs rc-event-date"></td>
-                            <td colspan="4" class="border border-gray-400 p-0"><input type="text" oninput="window.markRiskCardDirty()"
-                                    class="w-full p-1 outline-none text-sm rc-event-desc"></td>
-                        </tr>
+                        <!-- Events will be dynamically injected here by openRiskCard -->
                     </tbody>
 
                     <tbody>
