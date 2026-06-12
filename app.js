@@ -30,7 +30,7 @@ const layerStyle = document.createElement('style');
 layerStyle.innerHTML = `
     .leaflet-control-layers-overlays label {
         display: block !important;
-        margin-bottom: 8px !important;
+        margin-bottom: 12px !important;
     }
     .leaflet-control-layers-overlays label:last-child {
         margin-bottom: 0 !important;
@@ -38,25 +38,24 @@ layerStyle.innerHTML = `
     .leaflet-control-layers-overlays label div {
         display: flex !important;
         align-items: center !important;
+        width: 100% !important;
     }
     .leaflet-control-layers-selector {
-        width: 14px !important;
-        height: 14px !important;
+        width: 16px !important;
+        height: 16px !important;
         margin: 0 8px 0 0 !important; 
         padding: 0 !important;
         cursor: pointer !important;
         flex-shrink: 0 !important;
-        position: relative !important;
-        top: 0 !important;
+        box-sizing: border-box !important;
     }
     .leaflet-control-layers-overlays span {
         font-size: 13px !important;
-        line-height: 14px !important;
+        line-height: 16px !important;
         cursor: pointer !important;
         margin: 0 !important;
         padding: 0 !important;
-        display: inline-flex !important;
-        align-items: center !important;
+        display: inline-block !important;
     }
 `;
 document.head.appendChild(layerStyle);
