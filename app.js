@@ -18,10 +18,10 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    
+
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
-    
+
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, options);
         if (!response.ok) {
@@ -72,11 +72,11 @@ function parseJwt(token) {
     try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         return JSON.parse(jsonPayload);
-    } catch(e) { return null; }
+    } catch (e) { return null; }
 }
 
 function updateHeaderProfile() {
@@ -85,7 +85,7 @@ function updateHeaderProfile() {
     const profileBtn = document.getElementById('profile-btn');
     const nameSpan = document.getElementById('user-profile-name');
     const mainLayout = document.getElementById('main-layout');
-    
+
     if (token) {
         const decoded = parseJwt(token);
         nameSpan.innerText = `Користувач: ${decoded.fullName || decoded.sub}`;
@@ -106,7 +106,7 @@ function updateHeaderProfile() {
     }
 }
 
-window.performLogin = async function() {
+window.performLogin = async function () {
     const username = document.getElementById('auth-login-username').value;
     const password = document.getElementById('auth-login-password').value;
     const errDiv = document.getElementById('auth-error-msg');
@@ -127,7 +127,7 @@ window.performLogin = async function() {
     }
 };
 
-window.performRegister = async function() {
+window.performRegister = async function () {
     const username = document.getElementById('auth-reg-username').value;
     const password = document.getElementById('auth-reg-password').value;
     const fullName = document.getElementById('auth-reg-fullname').value;
@@ -136,13 +136,13 @@ window.performRegister = async function() {
     const unit = document.getElementById('auth-reg-unit').value;
     const errDiv = document.getElementById('auth-error-msg');
     errDiv.classList.add('hidden');
-    
+
     if (!username || !password || !fullName) {
         errDiv.innerText = "Заповніть обов'язкові поля!";
         errDiv.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const data = await apiCall('/auth/register', 'POST', { username, password, fullName, callsign, phone, unit });
         setToken(data.token);
@@ -159,7 +159,7 @@ window.performRegister = async function() {
     }
 };
 
-window.openProfileModal = async function() {
+window.openProfileModal = async function () {
     try {
         const profile = await apiCall('/users/me', 'GET');
         document.getElementById('prof-fullname').value = profile.fullName || '';
@@ -168,10 +168,10 @@ window.openProfileModal = async function() {
         document.getElementById('prof-unit').value = profile.unit || '';
         document.getElementById('prof-password').value = '';
         document.getElementById('prof-old-password').value = '';
-        
+
         document.getElementById('profile-success-msg').classList.add('hidden');
         document.getElementById('profile-error-msg').classList.add('hidden');
-        
+
         document.getElementById('modal-profile').classList.remove('hidden');
     } catch (e) {
         console.error("Error loading profile", e);
@@ -179,11 +179,11 @@ window.openProfileModal = async function() {
     }
 };
 
-window.closeProfileModal = function() {
+window.closeProfileModal = function () {
     document.getElementById('modal-profile').classList.add('hidden');
 };
 
-window.saveProfile = async function() {
+window.saveProfile = async function () {
     const fullName = document.getElementById('prof-fullname').value;
     const callsign = document.getElementById('prof-callsign').value;
     const phone = document.getElementById('prof-phone').value;
@@ -191,7 +191,7 @@ window.saveProfile = async function() {
     const password = document.getElementById('prof-password').value;
     const oldPassword = document.getElementById('prof-old-password').value;
     const errDiv = document.getElementById('profile-error-msg');
-    
+
     const payload = { fullName, callsign, phone, unit };
     if (password && password.trim() !== '') {
         if (!oldPassword || oldPassword.trim() === '') {
@@ -203,14 +203,14 @@ window.saveProfile = async function() {
         payload.password = password;
         payload.oldPassword = oldPassword;
     }
-    
+
     try {
         await apiCall('/users/me', 'PUT', payload);
         document.getElementById('profile-success-msg').classList.remove('hidden');
         errDiv.classList.add('hidden');
-        
+
         document.getElementById('user-profile-name').innerText = `Користувач: ${fullName || 'Невідомо'}`;
-        
+
         setTimeout(() => closeProfileModal(), 1500);
     } catch (e) {
         document.getElementById('profile-success-msg').classList.add('hidden');
@@ -219,7 +219,7 @@ window.saveProfile = async function() {
     }
 };
 
-window.logout = function() {
+window.logout = function () {
     clearToken();
     missions = [];
     currentMissionId = null;
@@ -717,7 +717,7 @@ async function syncMissionToBackend(missionId) {
     if (!getToken()) return;
     const m = missions.find(x => x.id === missionId);
     if (!m) return;
-    
+
     const payload = {
         name: m.name,
         data: JSON.stringify({
@@ -726,11 +726,11 @@ async function syncMissionToBackend(missionId) {
             data: m.data
         })
     };
-    
+
     if (m.backendId) {
         payload.id = m.backendId;
     }
-    
+
     try {
         const response = await apiCall('/missions', 'POST', payload);
         if (response && response.id) {
@@ -746,7 +746,7 @@ function saveMissions() {
     localStorage.setItem('opsafe_missions', JSON.stringify(missions));
     localStorage.setItem('opsafe_current_mission_id', currentMissionId || '');
     localStorage.setItem('opsafe_mission_counter', missionCounter);
-    
+
     if (currentMissionId && getToken()) {
         if (syncTimeouts[currentMissionId]) {
             clearTimeout(syncTimeouts[currentMissionId]);
@@ -774,7 +774,7 @@ function resetTransientState() {
 
 async function loadMissions() {
     let fallbackToLocal = false;
-    
+
     if (getToken()) {
         try {
             const data = await apiCall('/missions', 'GET');
@@ -798,10 +798,10 @@ async function loadMissions() {
                 const savedCurrentId = localStorage.getItem('opsafe_current_mission_id');
                 const exists = missions.some(x => x.id === savedCurrentId);
                 currentMissionId = exists ? savedCurrentId : missions[0].id;
-                
+
                 localStorage.setItem('opsafe_missions', JSON.stringify(missions));
                 localStorage.setItem('opsafe_current_mission_id', currentMissionId || '');
-                
+
                 let maxCounter = 0;
                 missions.forEach(m => {
                     if (m.id && m.id.startsWith("m_")) {
@@ -810,7 +810,7 @@ async function loadMissions() {
                     }
                 });
                 missionCounter = maxCounter > 1000000 ? 1 : Math.max(1, maxCounter + 1);
-                
+
             } else if (Array.isArray(data) && data.length === 0) {
                 initDefaultMission();
                 if (currentMissionId) {
@@ -826,12 +826,12 @@ async function loadMissions() {
     } else {
         fallbackToLocal = true;
     }
-    
+
     if (fallbackToLocal) {
         const savedMissions = localStorage.getItem('opsafe_missions');
         const savedCurrentId = localStorage.getItem('opsafe_current_mission_id');
         const savedCounter = localStorage.getItem('opsafe_mission_counter');
-    
+
         if (savedMissions) {
             try {
                 const migratedMissions = savedMissions.replace(/Висока ймовірність/g, 'Часто');
@@ -852,7 +852,7 @@ async function loadMissions() {
             initDefaultMission();
         }
     }
-    
+
     updateMissionSelect();
     if (currentMissionId) {
         handleMissionChange(currentMissionId);
@@ -5228,7 +5228,7 @@ function importMissionsFile() {
     input.click();
 }
 
-window.addRiskCardEventRow = function(name = '', date = '', desc = '') {
+window.addRiskCardEventRow = function (name = '', date = '', desc = '') {
     const tbody = document.getElementById('rc-events-tbody');
     const tr = document.createElement('tr');
     tr.innerHTML = `
