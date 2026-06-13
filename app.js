@@ -8,7 +8,7 @@ const DEFAULT_MISSION_NAME = "Ми спалимо вам все нахуй";
 console.log("APP.JS STARTING. Database opsafeDb active:", typeof opsafeDb !== 'undefined');
 
 // --- AUTH & API ---
-const API_BASE = 'http://127.0.0.1:8080/api';
+const API_BASE = 'https://idance.net.ua/api';
 
 function getToken() { return localStorage.getItem('opsafe_jwt'); }
 function setToken(token) { localStorage.setItem('opsafe_jwt', token); }
