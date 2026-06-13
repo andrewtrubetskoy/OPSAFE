@@ -39,6 +39,8 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 }
 
 function showAuthModal() {
+    document.getElementById('auth-login-password').value = '';
+    document.getElementById('auth-reg-password').value = '';
     document.getElementById('modal-auth').classList.remove('hidden');
     switchAuthTab('login');
 }
@@ -79,15 +81,28 @@ function parseJwt(token) {
 
 function updateHeaderProfile() {
     const token = getToken();
+    const btn = document.getElementById('logout-btn');
+    const profileBtn = document.getElementById('profile-btn');
     const nameSpan = document.getElementById('user-profile-name');
-    const logoutBtn = document.getElementById('logout-btn');
+    const mainLayout = document.getElementById('main-layout');
+    
     if (token) {
-        const payload = parseJwt(token);
-        nameSpan.innerText = payload ? payload.sub : 'АВТОРИЗОВАНО';
-        logoutBtn.classList.remove('hidden');
+        const decoded = parseJwt(token);
+        nameSpan.innerText = `Користувач: ${decoded.fullName || decoded.sub}`;
+        btn.classList.remove('hidden');
+        if (profileBtn) profileBtn.classList.remove('hidden');
+        if (mainLayout) {
+            mainLayout.classList.remove('hidden');
+            // Leaflet needs to recalculate its size if it was hidden during initialization
+            if (typeof map !== 'undefined') {
+                setTimeout(() => map.invalidateSize(), 100);
+            }
+        }
     } else {
-        nameSpan.innerText = 'НЕ АВТОРИЗОВАНО';
-        logoutBtn.classList.add('hidden');
+        nameSpan.innerText = "АВТОРИЗАЦІЯ...";
+        btn.classList.add('hidden');
+        if (profileBtn) profileBtn.classList.add('hidden');
+        if (mainLayout) mainLayout.classList.add('hidden');
     }
 }
 
@@ -103,7 +118,11 @@ window.performLogin = async function() {
         updateHeaderProfile();
         await loadMissions();
     } catch (e) {
-        errDiv.innerText = "Помилка входу. Перевірте логін та пароль.";
+        if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('fetch'))) {
+            errDiv.innerText = "Немає з'єднання з сервером. Перевірте підключення.";
+        } else {
+            errDiv.innerText = "Помилка входу. Перевірте логін та пароль.";
+        }
         errDiv.classList.remove('hidden');
     }
 };
@@ -131,7 +150,71 @@ window.performRegister = async function() {
         updateHeaderProfile();
         await loadMissions();
     } catch (e) {
-        errDiv.innerText = "Помилка реєстрації. Можливо, такий логін вже існує.";
+        if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('fetch'))) {
+            errDiv.innerText = "Немає з'єднання з сервером. Перевірте підключення.";
+        } else {
+            errDiv.innerText = "Помилка реєстрації. Можливо, такий логін вже існує.";
+        }
+        errDiv.classList.remove('hidden');
+    }
+};
+
+window.openProfileModal = async function() {
+    try {
+        const profile = await apiCall('/users/me', 'GET');
+        document.getElementById('prof-fullname').value = profile.fullName || '';
+        document.getElementById('prof-callsign').value = profile.callsign || '';
+        document.getElementById('prof-phone').value = profile.phone || '';
+        document.getElementById('prof-unit').value = profile.unit || '';
+        document.getElementById('prof-password').value = '';
+        document.getElementById('prof-old-password').value = '';
+        
+        document.getElementById('profile-success-msg').classList.add('hidden');
+        document.getElementById('profile-error-msg').classList.add('hidden');
+        
+        document.getElementById('modal-profile').classList.remove('hidden');
+    } catch (e) {
+        console.error("Error loading profile", e);
+        showToast("Помилка завантаження профілю");
+    }
+};
+
+window.closeProfileModal = function() {
+    document.getElementById('modal-profile').classList.add('hidden');
+};
+
+window.saveProfile = async function() {
+    const fullName = document.getElementById('prof-fullname').value;
+    const callsign = document.getElementById('prof-callsign').value;
+    const phone = document.getElementById('prof-phone').value;
+    const unit = document.getElementById('prof-unit').value;
+    const password = document.getElementById('prof-password').value;
+    const oldPassword = document.getElementById('prof-old-password').value;
+    const errDiv = document.getElementById('profile-error-msg');
+    
+    const payload = { fullName, callsign, phone, unit };
+    if (password && password.trim() !== '') {
+        if (!oldPassword || oldPassword.trim() === '') {
+            errDiv.innerText = "Для зміни пароля потрібно ввести поточний пароль.";
+            errDiv.classList.remove('hidden');
+            document.getElementById('profile-success-msg').classList.add('hidden');
+            return;
+        }
+        payload.password = password;
+        payload.oldPassword = oldPassword;
+    }
+    
+    try {
+        await apiCall('/users/me', 'PUT', payload);
+        document.getElementById('profile-success-msg').classList.remove('hidden');
+        errDiv.classList.add('hidden');
+        
+        document.getElementById('user-profile-name').innerText = `Користувач: ${fullName || 'Невідомо'}`;
+        
+        setTimeout(() => closeProfileModal(), 1500);
+    } catch (e) {
+        document.getElementById('profile-success-msg').classList.add('hidden');
+        errDiv.innerText = "Помилка оновлення профілю. Можливо, невірний пароль.";
         errDiv.classList.remove('hidden');
     }
 };

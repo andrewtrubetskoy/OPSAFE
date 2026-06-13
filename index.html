@@ -23,7 +23,7 @@
 
 <body class="bg-slate-950 text-slate-200 p-2 overflow-hidden text-[13px]">
 
-    <div class="flex h-screen gap-2">
+    <div id="main-layout" class="hidden flex h-screen gap-2">
         <!-- SIDEBAR -->
         <aside id="sidebar" class="w-96 glass-panel rounded-xl flex flex-col shadow-2xl z-[1000] relative">
             <img src="sidebar_logo.png" class="sidebar-logo-img" alt="Sidebar Background Logo">
@@ -96,6 +96,7 @@
                     <div id="auth-status-container" class="text-[9px] text-slate-300 font-mono text-right flex flex-col items-end gap-1">
                         <div class="flex items-center gap-2">
                             <span id="user-profile-name" class="text-emerald-400 font-bold text-[11px] tracking-widest">АВТОРИЗАЦІЯ...</span>
+                            <button id="profile-btn" onclick="openProfileModal()" class="hidden bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white px-2 py-1 rounded transition-colors uppercase tracking-widest text-[8px]">Профіль</button>
                             <button id="logout-btn" onclick="logout()" class="hidden bg-red-900/50 hover:bg-red-800 border border-red-700/50 text-red-200 px-2 py-1 rounded transition-colors uppercase tracking-widest text-[8px]">Вийти</button>
                         </div>
                     </div>
@@ -383,11 +384,11 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="border border-gray-400 align-top w-28 p-0">
+                            <td class="border border-gray-400 align-top w-44 p-0">
                                 <div class="flex flex-col h-full">
                                     <span
-                                        class="px-2 py-1 text-xs bg-gray-50 border-b border-gray-400">Дата</span>
-                                    <input type="date" id="rc-mission-date" onchange="window.markRiskCardDirty()"
+                                        class="px-2 py-1 text-xs bg-gray-50 border-b border-gray-400">Дата та час</span>
+                                    <input type="datetime-local" id="rc-mission-date" onchange="window.markRiskCardDirty()"
                                         class="w-full px-2 py-1 outline-none text-sm bg-transparent" style="color-scheme: dark;">
                                 </div>
                             </td>
@@ -602,7 +603,7 @@
                     </div>
                     <div>
                         <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Пароль</label>
-                        <input type="password" id="auth-login-password" onkeypress="if(event.key === 'Enter') performLogin()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        <input type="password" id="auth-login-password" autocomplete="new-password" onkeypress="if(event.key === 'Enter') performLogin()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                     </div>
                     <button onclick="performLogin()" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded transition-colors shadow-lg shadow-emerald-900/50">Увійти</button>
                 </div>
@@ -616,7 +617,7 @@
                         </div>
                         <div>
                             <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Пароль</label>
-                            <input type="password" id="auth-reg-password" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                            <input type="password" id="auth-reg-password" autocomplete="new-password" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                         </div>
                     </div>
                     <div>
@@ -641,6 +642,48 @@
                 </div>
                 
                 <div id="auth-error-msg" class="hidden mt-2 p-2 bg-red-900/30 border border-red-500/50 rounded text-red-400 text-[10px] text-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PROFILE EDIT -->
+    <div id="modal-profile" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-[9999] p-4">
+        <div class="glass-panel w-[400px] border border-white/10 rounded-xl overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-4 border-b border-white/10 bg-slate-900 flex justify-between items-center">
+                <h2 class="text-emerald-500 font-bold tracking-widest uppercase text-xs">Мій профіль</h2>
+                <button onclick="closeProfileModal()" class="text-white text-xl font-light hover:text-red-500 transition-colors leading-none">&times;</button>
+            </div>
+            
+            <div class="p-6 flex flex-col gap-3">
+                <div id="profile-success-msg" class="hidden p-2 bg-emerald-900/30 border border-emerald-500/50 rounded text-emerald-400 text-[10px] text-center mb-2">Профіль успішно оновлено!</div>
+                <div id="profile-error-msg" class="hidden p-2 bg-red-900/30 border border-red-500/50 rounded text-red-400 text-[10px] text-center mb-2">Помилка оновлення профілю.</div>
+                
+                <div>
+                    <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">ПІП</label>
+                    <input type="text" id="prof-fullname" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Позивний</label>
+                        <input type="text" id="prof-callsign" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Телефон</label>
+                        <input type="text" id="prof-phone" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Підрозділ</label>
+                    <input type="text" id="prof-unit" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                </div>
+                <div class="mt-2 border-t border-white/10 pt-4">
+                    <label class="block text-[9px] uppercase tracking-widest text-amber-500 mb-1">Поточний пароль (потрібен для зміни)</label>
+                    <input type="password" id="prof-old-password" placeholder="Введіть поточний пароль..." class="w-full bg-black/50 border border-amber-900/50 rounded px-3 py-2 text-xs outline-none focus:border-amber-500/50 transition-colors mb-2">
+                    
+                    <label class="block text-[9px] uppercase tracking-widest text-amber-500 mb-1">Новий пароль</label>
+                    <input type="password" id="prof-password" placeholder="Залиште порожнім, щоб не змінювати" class="w-full bg-black/50 border border-amber-900/50 rounded px-3 py-2 text-xs outline-none focus:border-amber-500/50 transition-colors">
+                </div>
+                <button onclick="saveProfile()" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded transition-colors shadow-lg shadow-emerald-900/50">Зберегти зміни</button>
             </div>
         </div>
     </div>
