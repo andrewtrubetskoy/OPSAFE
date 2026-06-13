@@ -101,7 +101,7 @@ window.performLogin = async function() {
         setToken(data.token);
         hideAuthModal();
         updateHeaderProfile();
-        loadMissions();
+        await loadMissions();
     } catch (e) {
         errDiv.innerText = "Помилка входу. Перевірте логін та пароль.";
         errDiv.classList.remove('hidden');
@@ -129,7 +129,7 @@ window.performRegister = async function() {
         setToken(data.token);
         hideAuthModal();
         updateHeaderProfile();
-        loadMissions();
+        await loadMissions();
     } catch (e) {
         errDiv.innerText = "Помилка реєстрації. Можливо, такий логін вже існує.";
         errDiv.classList.remove('hidden');
@@ -140,9 +140,8 @@ window.logout = function() {
     clearToken();
     missions = [];
     currentMissionId = null;
-    updateMissionDropdown();
-    renderSidebar();
-    clearMap();
+    updateMissionSelect();
+    handleMissionChange(null);
     updateHeaderProfile();
     showAuthModal();
 };
@@ -629,55 +628,151 @@ function deleteShape(layer) {
 }
 
 // --- MISSION LOGIC ---
+let syncTimeouts = {};
+
+async function syncMissionToBackend(missionId) {
+    if (!getToken()) return;
+    const m = missions.find(x => x.id === missionId);
+    if (!m) return;
+    
+    const payload = {
+        name: m.name,
+        data: JSON.stringify({
+            id: m.id,
+            type: m.type,
+            data: m.data
+        })
+    };
+    
+    if (m.backendId) {
+        payload.id = m.backendId;
+    }
+    
+    try {
+        const response = await apiCall('/missions', 'POST', payload);
+        if (response && response.id) {
+            m.backendId = response.id;
+            localStorage.setItem('opsafe_missions', JSON.stringify(missions));
+        }
+    } catch (e) {
+        console.error("Failed to sync mission to backend:", e);
+    }
+}
+
 function saveMissions() {
     localStorage.setItem('opsafe_missions', JSON.stringify(missions));
     localStorage.setItem('opsafe_current_mission_id', currentMissionId || '');
     localStorage.setItem('opsafe_mission_counter', missionCounter);
+    
+    if (currentMissionId && getToken()) {
+        if (syncTimeouts[currentMissionId]) {
+            clearTimeout(syncTimeouts[currentMissionId]);
+        }
+        syncTimeouts[currentMissionId] = setTimeout(() => {
+            syncMissionToBackend(currentMissionId);
+        }, 1500);
+    }
 }
 
-function loadMissions() {
-    const savedMissions = localStorage.getItem('opsafe_missions');
-    const savedCurrentId = localStorage.getItem('opsafe_current_mission_id');
-    const savedCounter = localStorage.getItem('opsafe_mission_counter');
-
-    if (savedMissions) {
-        try {
-            const migratedMissions = savedMissions.replace(/Висока ймовірність/g, 'Часто');
-            missions = JSON.parse(migratedMissions);
-            if (savedMissions !== migratedMissions) saveMissions();
-            if (!Array.isArray(missions)) {
-                missions = [];
-            }
-            // Reset transient editing state on load
-            missions.forEach(m => {
-                if (m.data && m.data.database) {
-
-                    m.data.database.forEach(item => {
-
-                        item.editing = false;
-
-                        if (item.secondaries) {
-
-                            item.secondaries.forEach(sec => {
-
-                                sec.editing = false;
-
-                            });
-
-                        }
-
+function resetTransientState() {
+    missions.forEach(m => {
+        if (m.data && m.data.database) {
+            m.data.database.forEach(item => {
+                item.editing = false;
+                if (item.secondaries) {
+                    item.secondaries.forEach(sec => {
+                        sec.editing = false;
                     });
                 }
             });
-            const exists = missions.some(x => x.id === savedCurrentId);
-            currentMissionId = exists ? savedCurrentId : (missions.length > 0 ? missions[0].id : null);
-            missionCounter = savedCounter ? parseInt(savedCounter) : 1;
+        }
+    });
+}
+
+async function loadMissions() {
+    let fallbackToLocal = false;
+    
+    if (getToken()) {
+        try {
+            const data = await apiCall('/missions', 'GET');
+            if (Array.isArray(data) && data.length > 0) {
+                missions = data.map(backendMission => {
+                    let parsedData;
+                    try {
+                        parsedData = JSON.parse(backendMission.data);
+                    } catch (e) {
+                        parsedData = { routes: [], areas: [], database: [] };
+                    }
+                    return {
+                        id: parsedData.id || "m_" + backendMission.id,
+                        backendId: backendMission.id,
+                        name: backendMission.name,
+                        type: parsedData.type || "Рекогностування",
+                        data: parsedData.data || { routes: [], areas: [], database: [] }
+                    };
+                });
+                resetTransientState();
+                const savedCurrentId = localStorage.getItem('opsafe_current_mission_id');
+                const exists = missions.some(x => x.id === savedCurrentId);
+                currentMissionId = exists ? savedCurrentId : missions[0].id;
+                
+                localStorage.setItem('opsafe_missions', JSON.stringify(missions));
+                localStorage.setItem('opsafe_current_mission_id', currentMissionId || '');
+                
+                let maxCounter = 0;
+                missions.forEach(m => {
+                    if (m.id && m.id.startsWith("m_")) {
+                        const num = parseInt(m.id.split("_")[1]);
+                        if (!isNaN(num) && num > maxCounter) maxCounter = num;
+                    }
+                });
+                missionCounter = maxCounter > 1000000 ? 1 : Math.max(1, maxCounter + 1);
+                
+            } else if (Array.isArray(data) && data.length === 0) {
+                initDefaultMission();
+                if (currentMissionId) {
+                    syncMissionToBackend(currentMissionId);
+                }
+            } else {
+                fallbackToLocal = true;
+            }
         } catch (e) {
-            console.error("Error loading missions from localStorage:", e);
-            initDefaultMission();
+            console.error("Failed to load missions from backend. Falling back to local.", e);
+            fallbackToLocal = true;
         }
     } else {
-        initDefaultMission();
+        fallbackToLocal = true;
+    }
+    
+    if (fallbackToLocal) {
+        const savedMissions = localStorage.getItem('opsafe_missions');
+        const savedCurrentId = localStorage.getItem('opsafe_current_mission_id');
+        const savedCounter = localStorage.getItem('opsafe_mission_counter');
+    
+        if (savedMissions) {
+            try {
+                const migratedMissions = savedMissions.replace(/Висока ймовірність/g, 'Часто');
+                missions = JSON.parse(migratedMissions);
+                if (savedMissions !== migratedMissions) saveMissions();
+                if (!Array.isArray(missions)) {
+                    missions = [];
+                }
+                resetTransientState();
+                const exists = missions.some(x => x.id === savedCurrentId);
+                currentMissionId = exists ? savedCurrentId : (missions.length > 0 ? missions[0].id : null);
+                missionCounter = savedCounter ? parseInt(savedCounter) : 1;
+            } catch (e) {
+                console.error("Error loading missions from localStorage:", e);
+                initDefaultMission();
+            }
+        } else {
+            initDefaultMission();
+        }
+    }
+    
+    updateMissionSelect();
+    if (currentMissionId) {
+        handleMissionChange(currentMissionId);
     }
 }
 
@@ -689,53 +784,31 @@ function initDefaultMission() {
             type: "Рекогностування",
             data: {
                 routes: [
-
                     [
-
                         { lat: 47.694463, lng: 36.086256 },
-
                         { lat: 47.705000, lng: 36.100000 },
-
                         { lat: 47.715000, lng: 36.120000 }
-
                     ]
                 ],
                 areas: [
-
                     [
-
                         { lat: 47.680000, lng: 36.050000 },
-
                         { lat: 47.690000, lng: 36.050000 },
-
                         { lat: 47.690000, lng: 36.070000 },
-
                         { lat: 47.680000, lng: 36.070000 }
-
                     ]
                 ],
                 database: [
-
                     {
-
                         id: 123456789,
-
                         name: "Ураження FPV \\ баражуючий боєприпас",
-
                         tag: "#критично",
-
                         severity: "критично",
-
                         rel: [0, 1, 2, 3, 4, 6],
-
                         latlng: { lat: 47.705000, lng: 36.100000 },
-
                         measures: ["Постійний моніторинг ефіру", "Використання засобів окопного РЕБ"],
-
                         secondaries: [],
-
                         type: "primary"
-
                     }
                 ]
             }
@@ -761,6 +834,7 @@ function createMission() {
     missions.push({ id, name, type, data: { routes: [], areas: [], database: [] } });
     missionCounter++;
     saveMissions();
+    syncMissionToBackend(id);
     closeModals();
     updateMissionSelect();
     handleMissionChange(id);
@@ -3163,10 +3237,6 @@ loadBaseRoutes();
 
 // Load saved missions on startup
 loadMissions();
-updateMissionSelect();
-if (currentMissionId) {
-    handleMissionChange(currentMissionId);
-}
 
 // --- DATABASE SETTINGS INTERFACE ---
 let currentSettingsTab = 'threats';

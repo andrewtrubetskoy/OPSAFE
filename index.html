@@ -598,11 +598,11 @@
                 <div id="auth-login-form" class="flex flex-col gap-3">
                     <div>
                         <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Логін</label>
-                        <input type="text" id="auth-login-username" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        <input type="text" id="auth-login-username" onkeypress="if(event.key === 'Enter') performLogin()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                     </div>
                     <div>
                         <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Пароль</label>
-                        <input type="password" id="auth-login-password" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        <input type="password" id="auth-login-password" onkeypress="if(event.key === 'Enter') performLogin()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                     </div>
                     <button onclick="performLogin()" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded transition-colors shadow-lg shadow-emerald-900/50">Увійти</button>
                 </div>
@@ -612,30 +612,30 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Логін</label>
-                            <input type="text" id="auth-reg-username" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                            <input type="text" id="auth-reg-username" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                         </div>
                         <div>
                             <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Пароль</label>
-                            <input type="password" id="auth-reg-password" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                            <input type="password" id="auth-reg-password" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                         </div>
                     </div>
                     <div>
                         <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">ПІП</label>
-                        <input type="text" id="auth-reg-fullname" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        <input type="text" id="auth-reg-fullname" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Позивний</label>
-                            <input type="text" id="auth-reg-callsign" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                            <input type="text" id="auth-reg-callsign" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                         </div>
                         <div>
                             <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Телефон</label>
-                            <input type="text" id="auth-reg-phone" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                            <input type="text" id="auth-reg-phone" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                         </div>
                     </div>
                     <div>
                         <label class="block text-[9px] uppercase tracking-widest text-slate-500 mb-1">Підрозділ</label>
-                        <input type="text" id="auth-reg-unit" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
+                        <input type="text" id="auth-reg-unit" onkeypress="if(event.key === 'Enter') performRegister()" class="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs outline-none focus:border-emerald-500/50 transition-colors">
                     </div>
                     <button onclick="performRegister()" class="mt-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] uppercase tracking-widest py-3 rounded transition-colors shadow-lg shadow-blue-900/50">Зареєструватись</button>
                 </div>
