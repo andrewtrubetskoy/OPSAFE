@@ -2958,19 +2958,50 @@ function closeModals() {
 
 function openLinked(pid) {
     const m = missions.find(x => x.id === currentMissionId);
+    if (!m) return;
     const p = m.data.database.find(d => d.id === pid);
+    if (!p) return;
     const list = document.getElementById('linked-list');
     list.innerHTML = '';
 
-    p.rel.forEach(idx => {
+    const relatedIndices = p.rel || [];
+    const allIndices = SECONDARY_TITLES.map((_, i) => i);
+    
+    allIndices.sort((a, b) => {
+        const aRel = relatedIndices.includes(a);
+        const bRel = relatedIndices.includes(b);
+        if (aRel && !bRel) return -1;
+        if (!aRel && bRel) return 1;
+        return 0;
+    });
+
+    allIndices.forEach(idx => {
         const title = SECONDARY_TITLES[idx];
+        const isRelated = relatedIndices.includes(idx);
         const alreadyAdded = p.secondaries.some(s => s.name === title);
+        
         const b = document.createElement('button');
-        b.className = alreadyAdded
-            ? "w-full text-left p-2 glass-panel border-white/10 opacity-40 cursor-not-allowed text-[10px] mb-1 flex items-center"
-            : "w-full text-left p-2 glass-panel border-white/10 hover:bg-orange-950 text-[10px] mb-1 transition-colors flex items-center cursor-pointer";
-        b.innerHTML = getThreatIcon(title) + ' <span>' + title + (alreadyAdded ? ' <span class="text-green-400 ml-2 font-bold">(Вже додано)</span>' : '') + '</span>';
+        let btnClass = "w-full text-left p-2 glass-panel border-white/10 text-[10px] mb-1 flex items-center";
+        
+        if (alreadyAdded) {
+            btnClass += " opacity-40 cursor-not-allowed";
+        } else {
+            btnClass += " hover:bg-orange-950 transition-colors cursor-pointer active:scale-95";
+        }
+        
+        b.className = btnClass;
+        let innerHTML = getThreatIcon(title) + ' <span>' + title;
+        
+        if (alreadyAdded) {
+            innerHTML += ' <span class="text-green-400 ml-2 font-bold">(Вже додано)</span>';
+        } else if (isRelated) {
+            innerHTML += ' <span class="text-blue-400 ml-2 font-bold">(Рекомендовано)</span>';
+        }
+        
+        innerHTML += '</span>';
+        b.innerHTML = innerHTML;
         b.disabled = alreadyAdded;
+        
         b.onclick = () => {
             p.secondaries.push({ name: title, measures: [] });
             renderMarkers();
@@ -2980,6 +3011,7 @@ function openLinked(pid) {
         };
         list.appendChild(b);
     });
+
     document.getElementById('modal-linked').classList.remove('hidden');
 }
 
